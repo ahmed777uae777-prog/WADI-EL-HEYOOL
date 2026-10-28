@@ -1,8 +1,16 @@
-name = "smart-teacher-platform"
+name = "wadi-el-heyool"
+main = "src/worker.js"
 compatibility_date = "2026-10-01"
-pages_build_output_dir = "public"
+
+[assets]
+directory = "./public"
+binding = "ASSETS"
+run_worker_first = true
 
 [[d1_databases]]
 binding = "DB"
 database_name = "school-db"
-database_id = "PUT-YOUR-D1-DATABASE-ID-HERE"
+database_id = "cc412eba-4001-4ad0-9378-721357eae398"
+
+[observability]
+enabled = true
