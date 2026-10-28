@@ -1,6 +1,6 @@
 // Cloudflare Worker: serves public/ as static assets and /api/doc backed by D1 (binding: DB).
-// Protection: HTTP Basic Auth on EVERYTHING using the secret SITE_PASSWORD (any username).
-// If SITE_PASSWORD is not set, the site is locked (deny by default) so student data is never exposed.
+// Protection (optional): if the secret SITE_PASSWORD is set, HTTP Basic Auth guards EVERYTHING (any username).
+// If it is NOT set, the site is OPEN — temporary mode; do not import real student data in this mode.
 import { onRequest as docHandler } from "../functions/api/doc.js";
 
 function timingSafeEqual(a, b) {
@@ -23,11 +23,7 @@ function authorized(request, env) {
 
 export default {
   async fetch(request, env, ctx) {
-    if (!env.SITE_PASSWORD) {
-      return new Response("الموقع مقفل: لم تُضبط كلمة المرور SITE_PASSWORD في إعدادات الـ Worker.", {
-        status: 503, headers: { "content-type": "text/plain; charset=utf-8" } });
-    }
-    if (!authorized(request, env)) {
+    if (env.SITE_PASSWORD && !authorized(request, env)) {
       return new Response("مطلوب تسجيل الدخول", {
         status: 401,
         headers: { "WWW-Authenticate": 'Basic realm="Smart Teacher Platform", charset="UTF-8"',

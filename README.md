@@ -9,10 +9,11 @@ Cloudflare Worker يقدّم الصفحة (`public/index.html`) كملف ثاب�
 ## النشر
 مربوط بـ Cloudflare Workers Builds: أي `push` إلى `main` يُنشر تلقائيًا (`npx wrangler deploy`).
 
-## الحماية (إلزامية)
-الموقع كله محمي بكلمة مرور (HTTP Basic Auth). اضبطها مرة واحدة:
+## الحماية (اختيارية حاليًا — الموقع مفتوح مؤقتًا)
+⚠️ بدون كلمة مرور يستطيع أي شخص معه الرابط قراءة البيانات وتعديلها. لا تستورد بيانات طلاب حقيقية في هذا الوضع.
+لتفعيل الحماية بكلمة مرور (HTTP Basic Auth):
 Workers & Pages ← wadi-el-heyool ← Settings ← Variables and Secrets ← Add ← Type: **Secret**، الاسم `SITE_PASSWORD`.
-بدونها يبقى الموقع مقفلًا تمامًا. عند الدخول: اسم المستخدم أي شيء، وكلمة المرور هي `SITE_PASSWORD`.
+عند الدخول: اسم المستخدم أي شيء، وكلمة المرور هي `SITE_PASSWORD`.
 
 ## استيراد البيانات الحالية
 ملف `seed/seed.sql` خارج Git عمدًا (أسماء وأرقام طلاب). يُستورد من Console قاعدة `school-db` أو:
