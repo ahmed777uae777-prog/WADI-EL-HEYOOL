@@ -469,6 +469,12 @@
   .acc-check{display:flex; align-items:center; gap:8px; font-size:13.5px; color:var(--text); cursor:pointer; margin:2px 0 6px;}
   .acc-check input{accent-color:var(--primary); width:16px; height:16px;}
   .acc-table td{vertical-align:middle;}
+  .acc-me{display:flex; align-items:center; justify-content:space-between; gap:14px; flex-wrap:wrap; margin-bottom:14px; padding:14px 16px; border-radius:var(--radius-m);
+    background:var(--accent-tint); border:1px solid color-mix(in srgb, var(--accent) 35%, var(--border));}
+  .acc-me strong{display:block; font-family:"Cairo",sans-serif; font-size:14.5px; margin-bottom:2px;}
+  .acc-me span{font-size:13px; color:var(--text-muted);}
+  .acc-me select{max-width:280px;}
+  .pill.admin{background:var(--accent-tint); color:var(--accent); border:1px solid color-mix(in srgb, var(--accent) 40%, transparent);}
   .acc-table .acc-user{font-family:ui-monospace,Consolas,monospace; direction:ltr; unicode-bidi:isolate; font-size:12.5px; background:var(--surface-2); padding:3px 8px; border-radius:6px; border:1px solid var(--border);}
   .acc-table .acc-pass{font-family:ui-monospace,Consolas,monospace; direction:ltr; unicode-bidi:isolate; font-size:12.5px; letter-spacing:.5px;}
   .acc-actions{display:flex; gap:4px; flex-wrap:wrap; justify-content:flex-end;}
@@ -529,7 +535,8 @@
     <div class="user-chip" id="userChip" hidden>
       <div class="av" id="userChipAv"></div>
       <span id="userChipName"></span>
-      <button class="back-btn" id="switchUserBtn" style="padding:5px 10px; font-size:12px;">تبديل المستخدم</button>
+      <button class="back-btn role-switch" id="roleSwitchBtn" hidden style="padding:5px 10px; font-size:12px;"></button>
+      <button class="back-btn" id="switchUserBtn" style="padding:5px 10px; font-size:12px;">تسجيل الخروج</button>
     </div>
   </div>
 
@@ -1253,6 +1260,10 @@
     <div class="card">
       <div class="view-head"><h2>🗄️ قاعدة بيانات المعلمين</h2><p>أنشئ حسابات المعلمين وعدّلها من مكان واحد: الاسم، المادة، اسم المستخدم، كلمة المرور، والحالة.</p></div>
       <div class="stats-row" id="accStats"></div>
+      <div class="acc-me" id="accMeBox" hidden>
+        <div><strong>حسابك كمعلم</strong><span>اربط حساب المدير بسجلّك في قائمة المعلمين، ليظهر لك زر «↔ حساب المعلم» في الأعلى وتنتقل بين اللوحتين بنفس بيانات دخولك.</span></div>
+        <select id="accMeSelect"></select>
+      </div>
       <div class="toolbar">
         <button class="btn" id="accNewBtn">+ معلم جديد</button>
         <div class="grp" style="flex:1; min-width:200px;"><input type="text" id="accSearch" placeholder="🔎 ابحث بالاسم أو المادة أو اسم المستخدم..."></div>
@@ -1274,6 +1285,7 @@
             <div class="acc-inline"><input type="text" id="accPass" autocomplete="off" spellcheck="false" placeholder="اضغط 🎲 للتوليد" dir="ltr"><button type="button" class="btn ghost sm" id="accGenPass" title="توليد كلمة مرور قوية">🎲</button></div></div>
         </div>
         <label class="acc-check"><input type="checkbox" id="accActive" checked> الحساب مفعّل (يستطيع تسجيل الدخول)</label>
+        <label class="acc-check" id="accAdminWrap"><input type="checkbox" id="accIsAdmin"> 👑 صلاحية مدير — يدخل لوحة المدير بحسابه، ويستطيع التبديل لحساب المعلم</label>
         <div id="accFormError" class="note warn" hidden></div>
         <div class="result-actions" style="margin-top:12px;"><button class="btn" id="accSaveBtn">حفظ</button> <button class="btn ghost" id="accCancelBtn">إلغاء</button></div>
       </div>
@@ -2473,6 +2485,8 @@ ${points?("نقاط يجب تضمينها صراحة: "+points+"."):""}
   // unchecked one persists only in sessionStorage (cleared when the tab/browser closes) — read
   // whichever one actually has a saved session.
   try{ const savedU = localStorage.getItem("tp_user") || sessionStorage.getItem("tp_user"); if(savedU) currentUser = JSON.parse(savedU); }catch(e){}
+  // sessions saved before co-admins existed: a plain admin session is the main admin account
+  if(currentUser && currentUser.role==="admin" && !currentUser.coAdmin && !currentUser.teacherId) currentUser.main = true;
 
   let schoolInfo = {name:"مدرسة وادي الحيول (١-١٢)", adminUsername:"", adminCode:""};
   let teachers = [];
@@ -2782,6 +2796,7 @@ ${points?("نقاط يجب تضمينها صراحة: "+points+"."):""}
           if(d.name) schoolInfo.name = d.name;
           if(d.adminUsername) schoolInfo.adminUsername = d.adminUsername;
           if(d.adminCode) schoolInfo.adminCode = d.adminCode;
+          schoolInfo.adminTeacherId = d.adminTeacherId || "";
         } else db.doc("school/info").set(schoolInfo).catch(()=>{});
         if(teachSnap.exists && Array.isArray(teachSnap.data().list) && teachSnap.data().list.length) teachers = cloneList(teachSnap.data().list);
         else { teachers = JSON.parse(JSON.stringify(DEFAULT_TEACHERS)); saveTeachers(); }
@@ -2886,8 +2901,15 @@ ${points?("نقاط يجب تضمينها صراحة: "+points+"."):""}
     });
     if(absNeedResave) saveAbsences();
     if(currentUser && currentUser.role==="teacher"){
-      const meNow = teachers.find(t=>t.name===currentUser.name);
+      const meNow = currentUser.teacherId ? teachers.find(t=>t.id===currentUser.teacherId) : teachers.find(t=>t.name===currentUser.name);
       if(!meNow || meNow.active===false) currentUser = null;
+      else if(currentUser.name!==meNow.name) currentUser.name = meNow.name;
+    }
+    // A co-admin whose "مدير" permission was revoked (or account disabled/deleted) loses admin access.
+    if(currentUser && currentUser.coAdmin && !currentUser.main){
+      const meNow = teachers.find(t=>t.id===currentUser.teacherId);
+      if(!meNow || meNow.active===false) currentUser = null;
+      else if(!meNow.isAdmin){ currentUser = {role:"teacher", name:meNow.name, subject:meNow.subject, teacherId:meNow.id}; }
     }
     renderBrand();
     renderLoginScreen();
@@ -2996,7 +3018,7 @@ ${points?("نقاط يجب تضمينها صراحة: "+points+"."):""}
   ];
   // null = still on the role-picker step (only reachable per pickerAvailable() above);
   // "admin"/"teacher" = which login form is showing. Every locked visit starts on "teacher".
-  let loginMode = dedicatedEntry() || (pickerAvailable() ? null : "teacher");
+  let loginMode = dedicatedEntry() || (pickerAvailable() ? null : "any");
 
   function renderRoleGrid(){
     const grid = document.getElementById("roleGrid");
@@ -3056,15 +3078,15 @@ ${points?("نقاط يجب تضمينها صراحة: "+points+"."):""}
       if(roleWrap) roleWrap.hidden = true;
       if(loginMode==="admin" && needsSetup){
         firstRun.hidden = false; loginWrap.hidden = true; if(waitWrap) waitWrap.hidden = true;
-      } else if(loginMode==="teacher" && needsSetup){
+      } else if((loginMode==="teacher" || loginMode==="any") && needsSetup){
         firstRun.hidden = true; loginWrap.hidden = true; if(waitWrap) waitWrap.hidden = false;
       } else {
         firstRun.hidden = true; if(waitWrap) waitWrap.hidden = true;
         loginWrap.hidden = false;
         const titleEl = document.getElementById("loginFormTitle");
         const noteEl = document.getElementById("loginFormNote");
-        if(titleEl) titleEl.textContent = loginMode==="admin" ? "تسجيل دخول المدير" : "تسجيل دخول المعلمين";
-        if(noteEl) noteEl.textContent = loginMode==="admin"
+        if(titleEl) titleEl.textContent = loginMode==="admin" ? "تسجيل دخول المدير" : loginMode==="any" ? "تسجيل الدخول" : "تسجيل دخول المعلمين";
+        if(noteEl) noteEl.textContent = loginMode==="any" ? "ادخل باسم المستخدم وكلمة المرور الخاصين بك — نفس الصفحة للمعلمين والإدارة." : loginMode==="admin"
           ? "هذه حماية بسيطة (اسم مستخدم ورمز دخول) وليست حماية بمستوى بنكي — لا تستخدم كلمة مرور تستخدمها في حسابات مهمة أخرى."
           : "استخدم اسم المستخدم وكلمة المرور اللذين زوّدتك بهما إدارة المدرسة. حساب المعلمين يُنشئه مدير المدرسة من \"حسابات الدخول\".";
         const errEl = document.getElementById("loginError"); if(errEl) errEl.style.display = "none";
@@ -3143,7 +3165,7 @@ ${points?("نقاط يجب تضمينها صراحة: "+points+"."):""}
     startLivePolling();
     const lu = document.getElementById("loginUser"), lp = document.getElementById("loginPass");
     if(lu) lu.value = ""; if(lp) lp.value = "";
-    loginMode = dedicatedEntry() || (pickerAvailable() ? null : "teacher"); // next logout returns to a clean state
+    loginMode = dedicatedEntry() || (pickerAvailable() ? null : "any"); // next logout returns to a clean state
   }
   function updateUserChip(){
     const chip = document.getElementById("userChip");
@@ -3152,14 +3174,51 @@ ${points?("نقاط يجب تضمينها صراحة: "+points+"."):""}
     chip.hidden = false;
     document.getElementById("userChipAv").innerHTML = currentUser.role==="admin" ? iconSVG("admin") : escapeHTML(currentUser.name.charAt(0));
     document.getElementById("userChipName").textContent = currentUser.name + (currentUser.role==="admin" ? " (مدير)" : " (معلم)");
+    const rs = document.getElementById("roleSwitchBtn");
+    if(rs){
+      const target = roleSwitchTarget();
+      rs.hidden = !target;
+      if(target) rs.textContent = target.role==="teacher" ? "↔ حساب المعلم" : "↔ لوحة المدير";
+    }
   }
+  // Who can switch: the main admin when their account is linked to a teacher record
+  // (schoolInfo.adminTeacherId), and any teacher the admin granted "مدير" (t.isAdmin).
+  function roleSwitchTarget(){
+    if(!currentUser) return null;
+    if(currentUser.role==="admin"){
+      const tid = currentUser.main ? schoolInfo.adminTeacherId : currentUser.teacherId;
+      const t = tid && teachers.find(x=>x.id===tid && x.active!==false);
+      return t ? {role:"teacher", name:t.name, subject:t.subject, teacherId:t.id, coAdmin:!currentUser.main, main:!!currentUser.main} : null;
+    }
+    if(currentUser.role==="teacher" && currentUser.teacherId){
+      if(currentUser.main && schoolInfo.adminTeacherId===currentUser.teacherId) return {role:"admin", name:"مدير المدرسة", main:true};
+      const t = teachers.find(x=>x.id===currentUser.teacherId);
+      if(t && t.isAdmin && t.active!==false) return {role:"admin", name:t.name, teacherId:t.id, coAdmin:true};
+    }
+    return null;
+  }
+  document.getElementById("roleSwitchBtn").addEventListener("click", ()=>{
+    const target = roleSwitchTarget(); if(!target) return;
+    let remember = true; try{ remember = !!localStorage.getItem("tp_user"); }catch(e){}
+    currentUser = target;
+    try{
+      if(remember){ localStorage.setItem("tp_user", JSON.stringify(target)); sessionStorage.removeItem("tp_user"); }
+      else { sessionStorage.setItem("tp_user", JSON.stringify(target)); }
+    }catch(e){}
+    updateUserChip();
+    renderDashboardTiles();
+    showView("dashboard");
+    toast(target.role==="admin" ? "تم التبديل إلى لوحة المدير" : `تم التبديل إلى حساب المعلم: ${target.name}`);
+    if(target.role==="admin"){ adminPendingNotified = false; maybeNotifyAdminPending(); }
+    if(target.role==="teacher"){ teacherSubNotified = false; maybeNotifyTeacherAssigned(); }
+  });
   const switchBtn = document.getElementById("switchUserBtn");
   if(switchBtn) switchBtn.addEventListener("click", ()=>{
     currentUser = null;
     stopLivePolling();
     try{ localStorage.removeItem("tp_user"); sessionStorage.removeItem("tp_user"); }catch(e){}
     updateUserChip();
-    loginMode = dedicatedEntry() || (pickerAvailable() ? null : "teacher");
+    loginMode = dedicatedEntry() || (pickerAvailable() ? null : "any");
     renderLoginScreen();
     showView("identify");
   });
@@ -3216,14 +3275,20 @@ ${points?("نقاط يجب تضمينها صراحة: "+points+"."):""}
       const uLower = u.toLowerCase();
       let matched = null;
       if(loginMode!=="teacher" && uLower === (schoolInfo.adminUsername||"").toLowerCase() && p === schoolInfo.adminCode){
-        matched = {role:"admin", name:"مدير المدرسة"};
+        matched = {role:"admin", name:"مدير المدرسة", main:true};
       }
-      if(!matched && loginMode!=="admin"){
+      if(!matched){
         const t = teachers.find(x=> x.username && x.username.toLowerCase()===uLower);
-        if(t){
+        if(t && (loginMode!=="admin" || t.isAdmin)){
           if(t.active===false){ errEl.textContent = "هذا الحساب معطّل حاليًا — راجع إدارة المدرسة."; errEl.style.display="block"; return; }
           if(!t.code){ errEl.textContent = "لم يتم تفعيل هذا الحساب بعد من قِبل الإدارة."; errEl.style.display="block"; return; }
-          if(t.code === p) matched = {role:"teacher", name:t.name, subject:t.subject};
+          if(t.code === p){
+            // A teacher the admin granted "مدير" lands in the admin view (unless they used the teacher-only link)
+            // and can switch to their own teacher view from the top bar.
+            matched = (t.isAdmin && loginMode!=="teacher")
+              ? {role:"admin", name:t.name, teacherId:t.id, coAdmin:true}
+              : {role:"teacher", name:t.name, subject:t.subject, teacherId:t.id, coAdmin:!!t.isAdmin};
+          }
         }
       }
       if(matched){ chooseUser(matched, remember); return; }
@@ -5737,6 +5802,17 @@ ${points?("نقاط يجب تضمينها صراحة: "+points+"."):""}
       <div class="stat-tile"><div class="stat-ic">${iconSVG("adminaccounts")}</div><div class="num">${ok}</div><div class="lbl">حسابات مفعّلة</div></div>
       <div class="stat-tile"><div class="stat-ic">${iconSVG("adminaccounts")}</div><div class="num" style="color:${pending?'var(--warning)':'inherit'};">${pending}</div><div class="lbl">بدون كلمة مرور</div></div>
       <div class="stat-tile"><div class="stat-ic">${iconSVG("adminaccounts")}</div><div class="num" style="color:${off?'var(--danger)':'inherit'};">${off}</div><div class="lbl">حسابات معطّلة</div></div>`;
+    const isMain = !!(currentUser && currentUser.main);
+    const meBox = document.getElementById("accMeBox");
+    if(meBox){
+      meBox.hidden = !isMain;
+      if(isMain){
+        const sel = document.getElementById("accMeSelect");
+        const sorted = teachers.slice().sort((a,b)=>(a.name||"").localeCompare(b.name||"","ar"));
+        sel.innerHTML = `<option value="">— غير مربوط —</option>` + sorted.map(t=>`<option value="${escapeHTML(t.id)}">${escapeHTML(t.name)} — ${escapeHTML(t.subject||"")}</option>`).join("");
+        sel.value = schoolInfo.adminTeacherId || "";
+      }
+    }
     const dl = document.getElementById("accSubjectList");
     if(dl) dl.innerHTML = [...new Set(teachers.map(t=>t.subject).filter(Boolean))].sort().map(x=>`<option value="${escapeHTML(x)}">`).join("");
     const q = (document.getElementById("accSearch").value||"").trim().toLowerCase();
@@ -5756,15 +5832,17 @@ ${points?("نقاط يجب تضمينها صراحة: "+points+"."):""}
         <td>${t.username ? `<span class="acc-user">${escapeHTML(t.username)}</span>` : `<span style="color:var(--text-muted);">—</span>`}</td>
         <td><span class="acc-pass">${pass}</span> ${t.code ? `<button class="btn ghost sm" data-acc="reveal" title="إظهار/إخفاء">${shown?"🙈":"👁️"}</button>` : ""}</td>
         <td>${pill(t)}</td>
+        <td>${t.isAdmin ? `<span class="pill admin">👑 مدير</span>` : (schoolInfo.adminTeacherId===t.id ? `<span class="pill admin">👑 حسابك</span>` : `<span class="pill neutral">معلم</span>`)}</td>
         <td><div class="acc-actions">
+          ${isMain && schoolInfo.adminTeacherId!==t.id ? `<button class="btn ghost sm" data-acc="admin">${t.isAdmin?"إلغاء صلاحية المدير":"👑 منح صلاحية مدير"}</button>` : ""}
           <button class="btn ghost sm" data-acc="edit">✏️ تعديل</button>
           <button class="btn ghost sm" data-acc="reset">🎲 كلمة مرور جديدة</button>
           <button class="btn ghost sm" data-acc="toggle">${t.active===false?"✅ تفعيل":"⛔ تعطيل"}</button>
           <button class="btn ghost sm danger-text" data-acc="delete">🗑️ حذف</button>
         </div></td>
       </tr>`;
-    }).join("") || `<tr><td colspan="6" style="text-align:center; color:var(--text-muted); padding:22px;">${teachers.length ? "لا نتائج مطابقة" : "لا يوجد معلمون بعد — اضغط «+ معلم جديد» لإضافة أول معلم."}</td></tr>`;
-    tbl.innerHTML = `<thead><tr><th>المعلم</th><th>المادة</th><th>اسم المستخدم</th><th>كلمة المرور</th><th>الحالة</th><th></th></tr></thead><tbody>${body}</tbody>`;
+    }).join("") || `<tr><td colspan="7" style="text-align:center; color:var(--text-muted); padding:22px;">${teachers.length ? "لا نتائج مطابقة" : "لا يوجد معلمون بعد — اضغط «+ معلم جديد» لإضافة أول معلم."}</td></tr>`;
+    tbl.innerHTML = `<thead><tr><th>المعلم</th><th>المادة</th><th>اسم المستخدم</th><th>كلمة المرور</th><th>الحالة</th><th>الصلاحية</th><th></th></tr></thead><tbody>${body}</tbody>`;
   }
   function accOpenForm(t){
     accEditingId = t ? t.id : null;
@@ -5775,6 +5853,8 @@ ${points?("نقاط يجب تضمينها صراحة: "+points+"."):""}
     document.getElementById("accPass").value = "";
     document.getElementById("accPass").placeholder = t && t.code ? "اتركها فارغة للإبقاء على الحالية" : "اضغط 🎲 للتوليد";
     document.getElementById("accActive").checked = t ? t.active!==false : true;
+    document.getElementById("accIsAdmin").checked = !!(t && t.isAdmin);
+    document.getElementById("accAdminWrap").hidden = !(currentUser && currentUser.main) || !!(t && schoolInfo.adminTeacherId===t.id);
     document.getElementById("accFormError").hidden = true;
     const form = document.getElementById("accForm"); form.hidden = false;
     form.scrollIntoView({behavior:"smooth", block:"center"});
@@ -5802,6 +5882,8 @@ ${points?("نقاط يجب تضمينها صراحة: "+points+"."):""}
     const username = document.getElementById("accUser").value.trim();
     const pass = document.getElementById("accPass").value;
     const active = document.getElementById("accActive").checked;
+    const canGrant = !!(currentUser && currentUser.main) && !document.getElementById("accAdminWrap").hidden;
+    const isAdmin = document.getElementById("accIsAdmin").checked;
     if(!name || !subject){ accFormError("الاسم والمادة مطلوبان."); return; }
     if(pass && pass.length < 4){ accFormError("كلمة المرور قصيرة جدًا (٤ خانات على الأقل)."); return; }
     if(pass && !username){ accFormError("اسم المستخدم مطلوب عند تعيين كلمة مرور."); return; }
@@ -5820,9 +5902,10 @@ ${points?("نقاط يجب تضمينها صراحة: "+points+"."):""}
       t = teachers.find(x=>x.id===accEditingId);
       if(!t){ btn.disabled = false; accCloseForm(); return; }
       t.name = name; t.subject = subject; t.username = username; t.active = active;
+      if(canGrant) t.isAdmin = isAdmin;
       if(pass) t.code = pass;
     } else {
-      t = { id: nextTeacherId(), name, subject, username, code: pass||"", active, substituteCount:0, weeklySchedule: emptyWeeklySchedule() };
+      t = { id: nextTeacherId(), name, subject, username, code: pass||"", active, isAdmin: canGrant && isAdmin, substituteCount:0, weeklySchedule: emptyWeeklySchedule() };
       teachers.push(t);
     }
     const ok = await saveTeachers();
@@ -5847,6 +5930,11 @@ ${points?("نقاط يجب تضمينها صراحة: "+points+"."):""}
       if(!t.username) t.username = generateUsername(t.name, t.id);
       t.code = generatePassword(10); accShown.add(t.id);
       msg = `كلمة مرور جديدة لـ ${t.name}: ${t.code}`;
+    } else if(act==="admin"){
+      if(!(currentUser && currentUser.main)) return;
+      if(!t.isAdmin && !window.confirm(`منح «${t.name}» صلاحية مدير؟\nسيستطيع اعتماد الطلبات وإدارة المعلمين والطلاب والجداول.`)) return;
+      t.isAdmin = !t.isAdmin;
+      msg = t.isAdmin ? `👑 أصبح ${t.name} مديرًا` : `أُلغيت صلاحية المدير عن ${t.name}`;
     } else if(act==="toggle"){
       t.active = t.active===false ? true : false;
       msg = t.active===false ? `تم تعطيل حساب: ${t.name}` : `تم تفعيل حساب: ${t.name}`;
@@ -5858,8 +5946,23 @@ ${points?("نقاط يجب تضمينها صراحة: "+points+"."):""}
     b.disabled = true;
     const ok = await saveTeachers();
     if(!ok){ teachers = JSON.parse(snapshot); toast("⚠️ تعذّر الحفظ — تحقق من الاتصال وحاول مرة أخرى"); renderAdminAccounts(); return; }
+    if(act==="admin"){ logAction(t.isAdmin ? "منح صلاحية مدير" : "إلغاء صلاحية مدير", {teacher:t.name}); toast(msg); renderAdminAccounts(); return; }
     logAction(act==="delete" ? "حذف معلم" : act==="reset" ? "إعادة تعيين كلمة مرور معلم" : (t.active===false ? "تعطيل حساب معلم" : "تفعيل حساب معلم"), {teacher:t.name});
     toast(msg);
+    renderAdminAccounts();
+  });
+  document.getElementById("accMeSelect").addEventListener("change", async e=>{
+    if(!(currentUser && currentUser.main)) return;
+    const prev = schoolInfo.adminTeacherId || "";
+    const val = e.target.value;
+    const linked = val && teachers.find(t=>t.id===val);
+    if(linked && linked.isAdmin){ linked.isAdmin = false; await saveTeachers(); }
+    schoolInfo.adminTeacherId = val;
+    let ok = false;
+    if(db){ try{ await db.doc("school/info").set(schoolInfo); ok = true; }catch(err){ ok = false; } }
+    if(!ok){ schoolInfo.adminTeacherId = prev; e.target.value = prev; toast("⚠️ تعذّر الحفظ — حاول مرة أخرى"); return; }
+    toast(linked ? `تم ربط حسابك بالمعلم: ${linked.name} — استخدم زر «↔ حساب المعلم» في الأعلى` : "تم إلغاء ربط حسابك بالمعلم");
+    updateUserChip();
     renderAdminAccounts();
   });
   document.getElementById("accExportBtn").addEventListener("click", ()=>{
