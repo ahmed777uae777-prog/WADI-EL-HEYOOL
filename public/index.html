@@ -464,6 +464,17 @@
   .stat-tile .num{font-size:25px; font-weight:800; font-family:"Cairo","IBM Plex Sans Arabic",sans-serif; color:var(--primary-strong);}
   .stat-tile .lbl{font-size:11.5px; color:var(--text-muted); font-weight:700;}
 
+  .acc-form{background:var(--surface-2); margin-bottom:14px; border-color:color-mix(in srgb, var(--primary) 25%, var(--border));}
+  .acc-inline{display:flex; gap:6px;} .acc-inline input{flex:1;}
+  .acc-check{display:flex; align-items:center; gap:8px; font-size:13.5px; color:var(--text); cursor:pointer; margin:2px 0 6px;}
+  .acc-check input{accent-color:var(--primary); width:16px; height:16px;}
+  .acc-table td{vertical-align:middle;}
+  .acc-table .acc-user{font-family:ui-monospace,Consolas,monospace; direction:ltr; unicode-bidi:isolate; font-size:12.5px; background:var(--surface-2); padding:3px 8px; border-radius:6px; border:1px solid var(--border);}
+  .acc-table .acc-pass{font-family:ui-monospace,Consolas,monospace; direction:ltr; unicode-bidi:isolate; font-size:12.5px; letter-spacing:.5px;}
+  .acc-actions{display:flex; gap:4px; flex-wrap:wrap; justify-content:flex-end;}
+  .acc-actions .btn{padding:6px 10px;}
+  .btn.danger{background:var(--danger); color:#fff;} .btn.danger:hover{filter:brightness(.92);}
+  .btn.ghost.danger-text{color:var(--danger);}
   .tbl-wrap{overflow-x:auto; border:1px solid var(--border); border-radius:var(--radius-s);}
   table.datatable{width:100%; border-collapse:collapse; font-size:13px; min-width:520px;}
   table.datatable th, table.datatable td{padding:11px 14px; border-bottom:1px solid var(--border); text-align:right; vertical-align:middle;}
@@ -1237,6 +1248,39 @@
     </div>
   </section>
 
+  <!-- ADMIN: unified teachers database (accounts + roster). Landing page of /admin -->
+  <section class="view" id="view-adminaccounts">
+    <div class="card">
+      <div class="view-head"><h2>🗄️ قاعدة بيانات المعلمين</h2><p>أنشئ حسابات المعلمين وعدّلها من مكان واحد: الاسم، المادة، اسم المستخدم، كلمة المرور، والحالة.</p></div>
+      <div class="stats-row" id="accStats"></div>
+      <div class="toolbar">
+        <button class="btn" id="accNewBtn">+ معلم جديد</button>
+        <div class="grp" style="flex:1; min-width:200px;"><input type="text" id="accSearch" placeholder="🔎 ابحث بالاسم أو المادة أو اسم المستخدم..."></div>
+        <div class="grp"><select id="accFilter" style="min-width:150px;">
+          <option value="all">كل الحسابات</option><option value="ok">مفعّلة</option><option value="pending">بدون كلمة مرور</option><option value="off">معطّلة</option>
+        </select></div>
+        <button class="btn ghost sm" id="accExportBtn">⬇️ تنزيل (Excel)</button>
+      </div>
+      <div class="card acc-form" id="accForm" hidden>
+        <h3 id="accFormTitle" style="font-size:16px; margin-bottom:14px;">معلم جديد</h3>
+        <div class="row">
+          <div class="field"><label>اسم المعلم</label><input type="text" id="accName" placeholder="مثال: محمد أحمد البادي"></div>
+          <div class="field"><label>المادة</label><input type="text" id="accSubject" list="accSubjectList" placeholder="مثال: الرياضيات"><datalist id="accSubjectList"></datalist></div>
+        </div>
+        <div class="row">
+          <div class="field"><label>اسم المستخدم</label>
+            <div class="acc-inline"><input type="text" id="accUser" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="يُولَّد تلقائيًا من الاسم" dir="ltr"><button type="button" class="btn ghost sm" id="accGenUser" title="توليد من الاسم">🔤</button></div></div>
+          <div class="field"><label id="accPassLabel">كلمة المرور</label>
+            <div class="acc-inline"><input type="text" id="accPass" autocomplete="off" spellcheck="false" placeholder="اضغط 🎲 للتوليد" dir="ltr"><button type="button" class="btn ghost sm" id="accGenPass" title="توليد كلمة مرور قوية">🎲</button></div></div>
+        </div>
+        <label class="acc-check"><input type="checkbox" id="accActive" checked> الحساب مفعّل (يستطيع تسجيل الدخول)</label>
+        <div id="accFormError" class="note warn" hidden></div>
+        <div class="result-actions" style="margin-top:12px;"><button class="btn" id="accSaveBtn">حفظ</button> <button class="btn ghost" id="accCancelBtn">إلغاء</button></div>
+      </div>
+      <div class="tbl-wrap"><table class="datatable acc-table" id="accTable"></table></div>
+    </div>
+  </section>
+
   <!-- TEACHER: absence wizard -->
   <section class="view" id="view-teacherabsence">
     <div class="card">
@@ -1332,7 +1376,7 @@
     renderLoginScreen();
     renderDashboardTiles();
     updateUserChip();
-    showView(currentUser ? "dashboard" : "identify");
+    showView(homeView());
 
     // Resolve "db" on its own timeline — never behind "sample"/"downloads" — so
     // loadSchool() (real credentials, real requests) is ready as soon as possible, and
@@ -1463,10 +1507,12 @@
     {id:"adminabsencehub", icon:"🗂️", title:"إدارة الغياب والحصص", desc:"غياب الطلاب والمعلمين — من الطلب إلى الاعتماد وتوزيع الاحتياط وإشعار أولياء الأمور والتقارير", accent:true},
     {id:"adminstudents", icon:"👨‍🎓", title:"سجل الطلاب", desc:"سجل الطلاب حسب الصف والشعبة، وبيانات أولياء الأمور"},
     {id:"adminai", icon:"✨", title:"الذكاء الاصطناعي", desc:"مولّد المستندات والمراسلات الإدارية"},
-    {id:"adminteachers", icon:"👥", title:"سجل ومعلمو المدرسة", desc:"سجل الكادر التعليمي الكامل، وإدارة حسابات الدخول"}
+    {id:"adminteachers", icon:"👥", title:"سجل ومعلمو المدرسة", desc:"سجل الكادر التعليمي الكامل، وإدارة حسابات الدخول"},
+    {id:"adminaccounts", icon:"🗄️", title:"قاعدة بيانات المعلمين", desc:"إنشاء حسابات المعلمين وتعديلها وتعطيلها وحذفها من مكان واحد", accent:true}
   ];
 
   const ICON_PATHS = {
+    adminaccounts: '<ellipse cx="12" cy="5.5" rx="7" ry="2.6"/><path d="M5 5.5v6.5c0 1.4 3.1 2.6 7 2.6s7-1.2 7-2.6V5.5"/><path d="M5 12v6.5c0 1.4 3.1 2.6 7 2.6s7-1.2 7-2.6V12"/>',
     subjects: '<rect x="4" y="5" width="16" height="14" rx="1.5"/><line x1="12" y1="5" x2="12" y2="19"/><line x1="7" y1="9" x2="9.5" y2="9"/><line x1="14.5" y1="9" x2="17" y2="9"/>',
     students: '<path d="M3 9l9-4 9 4-9 4-9-4Z"/><path d="M7 11v4c0 1.1 2.2 2 5 2s5-.9 5-2v-4"/><line x1="20" y1="9" x2="20" y2="14.5"/>',
     lesson: '<circle cx="12" cy="12" r="7.5"/><circle cx="12" cy="12" r="4"/><circle cx="12" cy="12" r=".8" fill="currentColor" stroke="none"/>',
@@ -1707,6 +1753,7 @@
     if(target) target.classList.add("active");
     else document.getElementById("view-dashboard").classList.add("active");
     if(id==="dashboard") renderDashboardTiles();
+    if(id==="adminaccounts" && currentUser && currentUser.role==="admin") renderAdminAccounts();
     document.getElementById("crumbWrap").hidden = (id==="dashboard" || id==="identify");
     window.scrollTo({top:0, behavior:"smooth"});
   }
@@ -2834,7 +2881,7 @@ ${points?("نقاط يجب تضمينها صراحة: "+points+"."):""}
     maybeNotifyAdminPending();
     maybeNotifyTeacherAssigned();
     if(currentUser) startLivePolling();
-    showView(currentUser ? "dashboard" : "identify");
+    showView(homeView());
     }catch(e){
       console.error("loadSchool: unexpected error — falling back to safe defaults so the app never hangs", e);
       if(!teachers.length) teachers = JSON.parse(JSON.stringify(DEFAULT_TEACHERS));
@@ -2867,7 +2914,14 @@ ${points?("نقاط يجب تضمينها صراحة: "+points+"."):""}
   // Reads the requested entry page from EITHER the query string (?login=admin|teacher) OR the
   // URL hash (#admin / #teacher / #login=admin) — some hosts drop one of the two before the
   // page's script sees it, so both are honoured.
+  function isAdminPath(){ try{ return /^\/admin\/?$/i.test(location.pathname); }catch(e){ return false; } }
+  function homeView(){
+    if(!currentUser) return "identify";
+    if(currentUser.role==="admin" && isAdminPath()) return "adminaccounts";
+    return "dashboard";
+  }
   function entryRoleFromUrl(){
+    if(isAdminPath()) return "admin";
     try{
       const q = new URLSearchParams(location.search).get("login");
       if(q==="admin" || q==="teacher") return q;
@@ -3067,7 +3121,7 @@ ${points?("نقاط يجب تضمينها صراحة: "+points+"."):""}
     }catch(e){}
     updateUserChip();
     renderDashboardTiles();
-    showView("dashboard");
+    showView(homeView());
     toast("✅ تم تسجيل الدخول بنجاح");
     if(u.role==="admin"){ adminPendingNotified = false; maybeNotifyAdminPending(); }
     if(u.role==="teacher"){ teacherSubNotified = false; maybeNotifyTeacherAssigned(); }
@@ -5385,7 +5439,7 @@ ${points?("نقاط يجب تضمينها صراحة: "+points+"."):""}
     let body = "";
     subjNames.forEach(subj=>{
       const ic = subjectIconKey(subj);
-      body += `<tr class="subj-group-row"><td colspan="4">
+      body += `<tr class="subj-group-row"><td colspan="6">
         <span class="subj-badge"><span class="subj-ic">${iconSVG(ic)}</span>${escapeHTML(subj)} (${groups[subj].length})</span>
       </td></tr>`;
       groups[subj].forEach(t=>{
@@ -5651,6 +5705,157 @@ ${points?("نقاط يجب تضمينها صراحة: "+points+"."):""}
       toast(`تم حفظ بيانات دخول: ${t.name}`);
     })();
   });
+  /* ---------------- ADMIN: unified teachers database (/admin) ---------------- */
+  let accEditingId = null;      // null = creating a new teacher
+  const accShown = new Set();   // teacher ids whose password is revealed in the table
+  function accStatus(t){ return t.active===false ? "off" : (t.code ? "ok" : "pending"); }
+  async function renderAdminAccounts(){
+    const tbl = document.getElementById("accTable"); if(!tbl) return;
+    if(!teachers.length) tbl.innerHTML = `<tbody><tr><td style="text-align:center; padding:22px; color:var(--text-muted);">جارٍ تحميل البيانات...</td></tr></tbody>`;
+    await schoolDataReady;
+    const total = teachers.length;
+    const ok = teachers.filter(t=>accStatus(t)==="ok").length;
+    const pending = teachers.filter(t=>accStatus(t)==="pending").length;
+    const off = teachers.filter(t=>accStatus(t)==="off").length;
+    document.getElementById("accStats").innerHTML = `
+      <div class="stat-tile"><div class="stat-ic">${iconSVG("adminteachers")}</div><div class="num">${total}</div><div class="lbl">إجمالي المعلمين</div></div>
+      <div class="stat-tile"><div class="stat-ic">${iconSVG("adminaccounts")}</div><div class="num">${ok}</div><div class="lbl">حسابات مفعّلة</div></div>
+      <div class="stat-tile"><div class="stat-ic">${iconSVG("adminaccounts")}</div><div class="num" style="color:${pending?'var(--warning)':'inherit'};">${pending}</div><div class="lbl">بدون كلمة مرور</div></div>
+      <div class="stat-tile"><div class="stat-ic">${iconSVG("adminaccounts")}</div><div class="num" style="color:${off?'var(--danger)':'inherit'};">${off}</div><div class="lbl">حسابات معطّلة</div></div>`;
+    const dl = document.getElementById("accSubjectList");
+    if(dl) dl.innerHTML = [...new Set(teachers.map(t=>t.subject).filter(Boolean))].sort().map(x=>`<option value="${escapeHTML(x)}">`).join("");
+    const q = (document.getElementById("accSearch").value||"").trim().toLowerCase();
+    const f = document.getElementById("accFilter").value;
+    const rows = teachers
+      .filter(t=> f==="all" || accStatus(t)===f)
+      .filter(t=> !q || (t.name||"").toLowerCase().includes(q) || (t.subject||"").toLowerCase().includes(q) || (t.username||"").toLowerCase().includes(q))
+      .slice().sort((a,b)=> (a.subject||"").localeCompare(b.subject||"","ar") || (a.name||"").localeCompare(b.name||"","ar"));
+    const pill = t=>{ const st = accStatus(t);
+      return st==="ok" ? `<span class="pill ok">مفعّل</span>` : st==="off" ? `<span class="pill bad">معطّل</span>` : `<span class="pill wait">بدون كلمة مرور</span>`; };
+    const body = rows.map(t=>{
+      const shown = accShown.has(t.id);
+      const pass = t.code ? (shown ? escapeHTML(t.code) : "••••••••") : `<span style="color:var(--text-muted);">—</span>`;
+      return `<tr data-tid="${escapeHTML(t.id)}">
+        <td><span class="subj-badge"><span class="subj-ic">${iconSVG(subjectIconKey(t.subject))}</span><span style="font-weight:700;">${escapeHTML(t.name)}</span></span></td>
+        <td>${escapeHTML(t.subject||"")}</td>
+        <td>${t.username ? `<span class="acc-user">${escapeHTML(t.username)}</span>` : `<span style="color:var(--text-muted);">—</span>`}</td>
+        <td><span class="acc-pass">${pass}</span> ${t.code ? `<button class="btn ghost sm" data-acc="reveal" title="إظهار/إخفاء">${shown?"🙈":"👁️"}</button>` : ""}</td>
+        <td>${pill(t)}</td>
+        <td><div class="acc-actions">
+          <button class="btn ghost sm" data-acc="edit">✏️ تعديل</button>
+          <button class="btn ghost sm" data-acc="reset">🎲 كلمة مرور جديدة</button>
+          <button class="btn ghost sm" data-acc="toggle">${t.active===false?"✅ تفعيل":"⛔ تعطيل"}</button>
+          <button class="btn ghost sm danger-text" data-acc="delete">🗑️ حذف</button>
+        </div></td>
+      </tr>`;
+    }).join("") || `<tr><td colspan="6" style="text-align:center; color:var(--text-muted); padding:22px;">${teachers.length ? "لا نتائج مطابقة" : "لا يوجد معلمون بعد — اضغط «+ معلم جديد» لإضافة أول معلم."}</td></tr>`;
+    tbl.innerHTML = `<thead><tr><th>المعلم</th><th>المادة</th><th>اسم المستخدم</th><th>كلمة المرور</th><th>الحالة</th><th></th></tr></thead><tbody>${body}</tbody>`;
+  }
+  function accOpenForm(t){
+    accEditingId = t ? t.id : null;
+    document.getElementById("accFormTitle").textContent = t ? `تعديل: ${t.name}` : "معلم جديد";
+    document.getElementById("accName").value = t ? t.name : "";
+    document.getElementById("accSubject").value = t ? (t.subject||"") : "";
+    document.getElementById("accUser").value = t ? (t.username||"") : "";
+    document.getElementById("accPass").value = "";
+    document.getElementById("accPass").placeholder = t && t.code ? "اتركها فارغة للإبقاء على الحالية" : "اضغط 🎲 للتوليد";
+    document.getElementById("accActive").checked = t ? t.active!==false : true;
+    document.getElementById("accFormError").hidden = true;
+    const form = document.getElementById("accForm"); form.hidden = false;
+    form.scrollIntoView({behavior:"smooth", block:"center"});
+    document.getElementById("accName").focus();
+  }
+  function accCloseForm(){ accEditingId = null; document.getElementById("accForm").hidden = true; }
+  function accFormError(msg){ const el = document.getElementById("accFormError"); el.textContent = msg; el.hidden = false; }
+  document.getElementById("accNewBtn").addEventListener("click", ()=> accOpenForm(null));
+  document.getElementById("accCancelBtn").addEventListener("click", accCloseForm);
+  document.getElementById("accSearch").addEventListener("input", ()=> renderAdminAccounts());
+  document.getElementById("accFilter").addEventListener("change", ()=> renderAdminAccounts());
+  document.getElementById("accGenUser").addEventListener("click", ()=>{
+    const n = document.getElementById("accName").value.trim();
+    if(!n){ accFormError("اكتب اسم المعلم أولًا لتوليد اسم المستخدم."); return; }
+    document.getElementById("accUser").value = generateUsername(n, accEditingId);
+  });
+  document.getElementById("accGenPass").addEventListener("click", ()=>{ document.getElementById("accPass").value = generatePassword(10); });
+  document.getElementById("accName").addEventListener("blur", ()=>{
+    const u = document.getElementById("accUser"); const n = document.getElementById("accName").value.trim();
+    if(!accEditingId && n && !u.value.trim()) u.value = generateUsername(n, null);
+  });
+  document.getElementById("accSaveBtn").addEventListener("click", async ()=>{
+    const name = document.getElementById("accName").value.trim();
+    const subject = document.getElementById("accSubject").value.trim();
+    const username = document.getElementById("accUser").value.trim();
+    const pass = document.getElementById("accPass").value;
+    const active = document.getElementById("accActive").checked;
+    if(!name || !subject){ accFormError("الاسم والمادة مطلوبان."); return; }
+    if(pass && pass.length < 4){ accFormError("كلمة المرور قصيرة جدًا (٤ خانات على الأقل)."); return; }
+    if(pass && !username){ accFormError("اسم المستخدم مطلوب عند تعيين كلمة مرور."); return; }
+    await schoolDataReady;
+    if(teachers.some(t=>t.id!==accEditingId && t.name===name)){ accFormError("يوجد معلم بنفس الاسم مسبقًا."); return; }
+    if(username){
+      const ul = username.toLowerCase();
+      const dupe = teachers.find(t=>t.id!==accEditingId && (t.username||"").toLowerCase()===ul);
+      if(dupe){ accFormError(`اسم المستخدم مستخدم مسبقًا من: ${dupe.name}`); return; }
+      if(ul===(schoolInfo.adminUsername||"").toLowerCase()){ accFormError("اسم المستخدم هذا محجوز لحساب المدير."); return; }
+    }
+    const btn = document.getElementById("accSaveBtn"); btn.disabled = true;
+    const snapshot = JSON.stringify(teachers);
+    let t;
+    if(accEditingId){
+      t = teachers.find(x=>x.id===accEditingId);
+      if(!t){ btn.disabled = false; accCloseForm(); return; }
+      t.name = name; t.subject = subject; t.username = username; t.active = active;
+      if(pass) t.code = pass;
+    } else {
+      t = { id: nextTeacherId(), name, subject, username, code: pass||"", active, substituteCount:0, weeklySchedule: emptyWeeklySchedule() };
+      teachers.push(t);
+    }
+    const ok = await saveTeachers();
+    btn.disabled = false;
+    if(!ok){ teachers = JSON.parse(snapshot); accFormError("تعذّر الحفظ — تحقق من الاتصال وحاول مرة أخرى."); return; }
+    logAction(accEditingId ? "تعديل حساب معلم" : "إضافة معلم جديد", {teacher:name, subject});
+    toast(accEditingId ? `تم حفظ تعديلات: ${name}` : `تمت إضافة: ${name}${pass?" — الحساب جاهز لتسجيل الدخول":""}`);
+    if(pass) accShown.add(t.id);
+    accCloseForm();
+    renderAdminAccounts();
+  });
+  document.getElementById("accTable").addEventListener("click", async e=>{
+    const b = e.target.closest("[data-acc]"); if(!b) return;
+    const tr = b.closest("tr"); const t = teachers.find(x=>x.id===tr.dataset.tid); if(!t) return;
+    const act = b.dataset.acc;
+    if(act==="reveal"){ accShown.has(t.id) ? accShown.delete(t.id) : accShown.add(t.id); renderAdminAccounts(); return; }
+    if(act==="edit"){ accOpenForm(t); return; }
+    await schoolDataReady;
+    const snapshot = JSON.stringify(teachers);
+    let msg = "";
+    if(act==="reset"){
+      if(!t.username) t.username = generateUsername(t.name, t.id);
+      t.code = generatePassword(10); accShown.add(t.id);
+      msg = `كلمة مرور جديدة لـ ${t.name}: ${t.code}`;
+    } else if(act==="toggle"){
+      t.active = t.active===false ? true : false;
+      msg = t.active===false ? `تم تعطيل حساب: ${t.name}` : `تم تفعيل حساب: ${t.name}`;
+    } else if(act==="delete"){
+      if(!window.confirm(`حذف المعلم «${t.name}» نهائيًا من قاعدة البيانات؟\nسيُحذف حسابه ولن يستطيع تسجيل الدخول. سجلات الغياب والاحتياط السابقة تبقى كما هي.`)) return;
+      teachers = teachers.filter(x=>x.id!==t.id);
+      msg = `تم حذف: ${t.name}`;
+    }
+    b.disabled = true;
+    const ok = await saveTeachers();
+    if(!ok){ teachers = JSON.parse(snapshot); toast("⚠️ تعذّر الحفظ — تحقق من الاتصال وحاول مرة أخرى"); renderAdminAccounts(); return; }
+    logAction(act==="delete" ? "حذف معلم" : act==="reset" ? "إعادة تعيين كلمة مرور معلم" : (t.active===false ? "تعطيل حساب معلم" : "تفعيل حساب معلم"), {teacher:t.name});
+    toast(msg);
+    renderAdminAccounts();
+  });
+  document.getElementById("accExportBtn").addEventListener("click", ()=>{
+    if(typeof XLSX==="undefined"){ toast("تعذّر تحميل مكتبة Excel"); return; }
+    const data = teachers.map(t=>({"الاسم":t.name, "المادة":t.subject, "اسم المستخدم":t.username||"", "كلمة المرور":t.code||"", "الحالة": accStatus(t)==="ok"?"مفعّل":accStatus(t)==="off"?"معطّل":"بدون كلمة مرور"}));
+    const ws = XLSX.utils.json_to_sheet(data); ws["!cols"]=[{wch:28},{wch:20},{wch:18},{wch:16},{wch:14}];
+    const wb = XLSX.utils.book_new(); wb.Workbook = {Views:[{RTL:true}]}; XLSX.utils.book_append_sheet(wb, ws, "المعلمون");
+    XLSX.writeFile(wb, "قاعدة-بيانات-المعلمين.xlsx");
+    toast("⚠️ الملف يحتوي كلمات مرور — احفظه في مكان آمن");
+  });
+
   function generatePassword(len){
     len = len || 10;
     const chars = "ABCDEFGHJKMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789#$%@";

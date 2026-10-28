@@ -31,6 +31,10 @@ export default {
     }
     const url = new URL(request.url);
     if (url.pathname === "/api/doc") return docHandler({ request, env, ctx });
+    // /admin opens the same single-page app; the page itself routes to the admin login / teachers database.
+    if (/^\/admin\/?$/i.test(url.pathname)) {
+      return env.ASSETS.fetch(new Request(new URL("/", url), request));
+    }
     return env.ASSETS.fetch(request);
   }
 };
