@@ -2996,7 +2996,7 @@ ${points?("نقاط يجب تضمينها صراحة: "+points+"."):""}
   // link opens the TEACHER login form directly — no role picker on either. Only the plain link
   // on a browser unlocked via the logo gesture still shows the picker.
   function dedicatedEntry(){ return entryRoleFromUrl(); }
-  function pickerAvailable(){ return false; } // admin signs in only via /admin
+  function pickerAvailable(){ return false; } // one login screen for everyone; the account decides the dashboard
 
   // The login screen's role picker (Section: "اختيار نوع الحساب"). Extensible on purpose: to
   // add a future role (وكيل المدرسة، المرشد الطلابي، مسؤول النظام) — add an entry here and a
@@ -3018,7 +3018,7 @@ ${points?("نقاط يجب تضمينها صراحة: "+points+"."):""}
   ];
   // null = still on the role-picker step (only reachable per pickerAvailable() above);
   // "admin"/"teacher" = which login form is showing. Every locked visit starts on "teacher".
-  let loginMode = dedicatedEntry() || (pickerAvailable() ? null : "teacher");
+  let loginMode = dedicatedEntry() || (pickerAvailable() ? null : "any");
 
   function renderRoleGrid(){
     const grid = document.getElementById("roleGrid");
@@ -3165,7 +3165,7 @@ ${points?("نقاط يجب تضمينها صراحة: "+points+"."):""}
     startLivePolling();
     const lu = document.getElementById("loginUser"), lp = document.getElementById("loginPass");
     if(lu) lu.value = ""; if(lp) lp.value = "";
-    loginMode = dedicatedEntry() || (pickerAvailable() ? null : "teacher"); // next logout returns to a clean state
+    loginMode = dedicatedEntry() || (pickerAvailable() ? null : "any"); // next logout returns to a clean state
   }
   function updateUserChip(){
     const chip = document.getElementById("userChip");
@@ -3190,7 +3190,7 @@ ${points?("نقاط يجب تضمينها صراحة: "+points+"."):""}
       const t = tid && teachers.find(x=>x.id===tid && x.active!==false);
       return t ? {role:"teacher", name:t.name, subject:t.subject, teacherId:t.id, coAdmin:!currentUser.main, main:!!currentUser.main, viaAdmin:true} : null;
     }
-    if(currentUser.role==="teacher" && currentUser.teacherId && currentUser.viaAdmin){
+    if(currentUser.role==="teacher" && currentUser.teacherId){
       if(currentUser.main && schoolInfo.adminTeacherId===currentUser.teacherId) return {role:"admin", name:"مدير المدرسة", main:true, viaAdmin:true};
       const t = teachers.find(x=>x.id===currentUser.teacherId);
       if(t && t.isAdmin && t.active!==false) return {role:"admin", name:t.name, teacherId:t.id, coAdmin:true, viaAdmin:true};
@@ -3218,7 +3218,7 @@ ${points?("نقاط يجب تضمينها صراحة: "+points+"."):""}
     stopLivePolling();
     try{ localStorage.removeItem("tp_user"); sessionStorage.removeItem("tp_user"); }catch(e){}
     updateUserChip();
-    loginMode = dedicatedEntry() || (pickerAvailable() ? null : "teacher");
+    loginMode = dedicatedEntry() || (pickerAvailable() ? null : "any");
     renderLoginScreen();
     showView("identify");
   });
@@ -3285,7 +3285,7 @@ ${points?("نقاط يجب تضمينها صراحة: "+points+"."):""}
           if(t.code === p){
             // A teacher the admin granted "مدير" lands in the admin view (unless they used the teacher-only link)
             // and can switch to their own teacher view from the top bar.
-            matched = (t.isAdmin && loginMode!=="teacher")
+            matched = (t.isAdmin && loginMode==="admin")
               ? {role:"admin", name:t.name, teacherId:t.id, coAdmin:true}
               : {role:"teacher", name:t.name, subject:t.subject, teacherId:t.id, coAdmin:!!t.isAdmin};
           }
