@@ -1432,7 +1432,7 @@
   <!-- المبادرات والإنجازات: teachers document their year's work (evidence for إجادة); leadership evaluates -->
   <section class="view" id="view-portfolio">
     <div class="card">
-      <div class="view-head"><h2 id="pfTitle">🏅 مبادراتي وإنجازاتي</h2><p id="pfSub">وثّق أعمالك ومبادراتك خلال العام الدراسي مع شواهدها (روابط، صور، فيديو، ملفات) لتصل للإدارة وتُقيَّم في منصة إجادة.</p></div>
+      <div class="view-head"><h2 id="pfTitle">🏅 مبادراتي وإنجازاتي</h2><p id="pfSub">وثّق أعمالك ومبادراتك خلال العام الدراسي مع شواهدها (روابط، صور، ملفات) لتصل للإدارة وتُقيَّم في منصة إجادة.</p></div>
       <div class="stats-row" id="pfStats"></div>
 
       <div class="lrc-block" id="pfFormCard" hidden>
@@ -1447,11 +1447,11 @@
           <div class="field"><label>المستفيدون (اختياري)</label><input type="text" id="pfBen" maxlength="300" placeholder="مثال: طلاب الصف الخامس/١ (٢٤ طالبًا)"></div>
         </div>
         <div class="field"><label>اكتب أعمالك: وصف العمل، أهدافه، ما نفّذته، والنتائج *</label><textarea id="pfDesc" rows="6" maxlength="6000" placeholder="اكتب هنا تفاصيل العمل بلغتك..."></textarea></div>
-        <div class="step-label">🔗 الروابط (يوتيوب، Google Drive، منشور، موقع...)</div>
+        <div class="step-label">🔗 الروابط (Google Drive، منشور، موقع...)</div>
         <div class="acc-inline"><input type="url" id="pfLinkIn" placeholder="https://..." dir="ltr"><button type="button" class="btn ghost sm" id="pfLinkAdd">+ إضافة رابط</button></div>
         <div class="pf-chips" id="pfLinks"></div>
-        <div class="step-label">📎 الشواهد: صور، فيديو، PDF، Word، PowerPoint، أي ملف (حتى ٢٠ ميجابايت للملف)</div>
-        <label class="pf-drop" id="pfDrop"><input type="file" id="pfFiles" multiple hidden><span>📂 اضغط لاختيار الملفات أو اسحبها هنا</span><small>الصور تُضغط تلقائيًا. للفيديو الطويل يُفضّل رفعه على يوتيوب/Drive وإضافة رابطه.</small></label>
+        <div class="step-label">📎 الشواهد: صور، PDF، Word، PowerPoint، Excel (حتى ٢٠ ميجابايت للملف — بدون فيديو)</div>
+        <label class="pf-drop" id="pfDrop"><input type="file" id="pfFiles" multiple hidden accept="image/*,.pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.txt"><span>📂 اضغط لاختيار الملفات أو اسحبها هنا</span><small>الصور تُضغط تلقائيًا. ملفات الفيديو غير مقبولة.</small></label>
         <div id="pfUploads" class="pf-uploads"></div>
         <div id="pfMsg" class="note" hidden></div>
         <button class="btn" id="pfSave">📤 إرسال للتقييم</button>
@@ -6726,7 +6726,7 @@ ${points?("نقاط يجب تضمينها صراحة: "+points+"."):""}
   function pfFileIcon(f){ return /^image\//.test(f.type)?"🖼️":/^video\//.test(f.type)?"🎬":/pdf/.test(f.type)?"📕":/word|document/.test(f.type)?"📘":/sheet|excel/.test(f.type)?"📗":/presentation|powerpoint/.test(f.type)?"📙":"📎"; }
   function pfEvidenceHTML(e){
     const imgs = (e.files||[]).filter(f=>/^image\/(png|jpe?g|gif|webp|bmp)/i.test(f.type));
-    const vids = (e.files||[]).filter(f=>/^video\//.test(f.type));
+    const vids = [];
     const others = (e.files||[]).filter(f=>!imgs.includes(f) && !vids.includes(f));
     return `${imgs.length||vids.length?`<div class="pf-gallery">${imgs.map(f=>`<a href="/api/files/${encodeURIComponent(f.id)}" target="_blank" rel="noopener"><img loading="lazy" src="/api/files/${encodeURIComponent(f.id)}" alt="${escapeHTML(f.name)}"></a>`).join("")}${vids.map(f=>`<video controls preload="metadata" src="/api/files/${encodeURIComponent(f.id)}"></video>`).join("")}</div>`:""}
       ${others.length||(e.links||[]).length?`<div class="pf-chips">${others.map(f=>`<a class="pf-chip" href="/api/files/${encodeURIComponent(f.id)}?download=1">${pfFileIcon(f)} <span style="direction:rtl;">${escapeHTML(f.name)}</span> <small>${fmtSize(f.size)}</small></a>`).join("")}${(e.links||[]).map(u=>`<a class="pf-chip" href="${escapeHTML(u)}" target="_blank" rel="noopener noreferrer">🔗 <span>${escapeHTML(u)}</span></a>`).join("")}</div>`:""}`;
@@ -6735,7 +6735,7 @@ ${points?("نقاط يجب تضمينها صراحة: "+points+"."):""}
     if(reload || !pfLoaded){ document.getElementById("pfList").innerHTML = `<p class="empty-hint">جارٍ التحميل...</p>`; await schoolDataReady; await pfLoad(); }
     const admin = pfIsAdmin();
     document.getElementById("pfTitle").textContent = admin ? "🏅 مبادرات وإنجازات المعلمين" : "🏅 مبادراتي وإنجازاتي";
-    document.getElementById("pfSub").textContent = admin ? "أعمال المعلمين ومبادراتهم خلال العام مع شواهدها — راجعها وقيّمها، أو اطلب استكمالها، تمهيدًا لإدخالها في منصة إجادة." : "وثّق أعمالك ومبادراتك خلال العام الدراسي مع شواهدها (روابط، صور، فيديو، ملفات) لتصل للمدير ومساعدته وتُقيَّم في منصة إجادة.";
+    document.getElementById("pfSub").textContent = admin ? "أعمال المعلمين ومبادراتهم خلال العام مع شواهدها — راجعها وقيّمها، أو اطلب استكمالها، تمهيدًا لإدخالها في منصة إجادة." : "وثّق أعمالك ومبادراتك خلال العام الدراسي مع شواهدها (روابط، صور، ملفات) لتصل للمدير ومساعدته وتُقيَّم في منصة إجادة.";
     document.getElementById("pfFormCard").hidden = admin;
     document.getElementById("pfAdminBar").hidden = !admin;
     document.getElementById("pfListTitle").textContent = admin ? "أعمال المعلمين" : "أعمالي";
@@ -6825,9 +6825,10 @@ ${points?("نقاط يجب تضمينها صراحة: "+points+"."):""}
     const files = Array.from(fileList||[]);
     for(const f0 of files){
       if(pfDraft.files.length >= 20){ pfMsg("الحد الأقصى ٢٠ ملفًا للعمل الواحد.", true); break; }
+      if(/^video\//i.test(f0.type) || /\.(mp4|mov|avi|mkv|wmv|webm|m4v|3gp|flv)$/i.test(f0.name)){ pfMsg(`«${f0.name}» ملف فيديو — الفيديو غير مقبول.`, true); continue; }
       const rec = {name:f0.name, type:f0.type, size:f0.size, pct:0};
       pfDraft.files.push(rec); pfRenderDraft();
-      if(f0.size > 20*1024*1024 && !/^image\//.test(f0.type)){ rec.err = "أكبر من ٢٠ م.ب — ارفعه على Drive/يوتيوب وأضف رابطه"; pfRenderDraft(); continue; }
+      if(f0.size > 20*1024*1024 && !/^image\//.test(f0.type)){ rec.err = "أكبر من ٢٠ م.ب — ارفعه على Drive وأضف رابطه"; pfRenderDraft(); continue; }
       const f = await pfCompress(f0); rec.size = f.size; rec.type = f.type;
       await pfUpload(f, rec);
     }

@@ -260,6 +260,7 @@ async function handleFiles(db, request, user, url) {
     const fid = "f" + randHex(12);
     const name = clip(decodeURIComponent(url.searchParams.get("name") || "ملف"), 200);
     const type = clip(request.headers.get("content-type") || "application/octet-stream", 120);
+    if (/^video\//i.test(type) || /\.(mp4|mov|avi|mkv|wmv|webm|m4v|3gp|flv)$/i.test(name)) return json({ error: "video_not_allowed" }, 415);
     const chunks = Math.ceil(buf.byteLength / CHUNK);
     const stmts = [];
     for (let i = 0; i < chunks; i++) stmts.push(db.prepare("INSERT INTO file_chunks (id, idx, data) VALUES (?, ?, ?)").bind(fid, i, buf.slice(i * CHUNK, (i + 1) * CHUNK)));
@@ -277,7 +278,7 @@ async function handleFiles(db, request, user, url) {
     let o = 0; for (const p of parts) { out.set(p, o); o += p.length; }
     // Only passive media and PDF may open in the browser; anything else (html, svg, scripts…)
     // is forced to download so an uploaded file can never run code on this site.
-    const safeInline = /^(image\/(png|jpe?g|gif|webp|bmp)|video\/|audio\/|application\/pdf)/i.test(meta.type);
+    const safeInline = /^(image\/(png|jpe?g|gif|webp|bmp)|application\/pdf)/i.test(meta.type);
     const dl = url.searchParams.get("download") === "1" || !safeInline;
     return new Response(out, { headers: { "content-type": safeInline ? meta.type : "application/octet-stream", "cache-control": "private, no-store",
       "content-disposition": `${dl ? "attachment" : "inline"}; filename*=UTF-8''${encodeURIComponent(meta.name)}`, "x-content-type-options": "nosniff" } });
