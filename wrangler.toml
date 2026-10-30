@@ -14,3 +14,7 @@ database_id = "cc412eba-4001-4ad0-9378-721357eae398"
 
 [observability]
 enabled = true
+
+# Cloudflare Workers AI (free daily allowance) — powers the AI features (cards, games, document generator)
+[ai]
+binding = "AI"

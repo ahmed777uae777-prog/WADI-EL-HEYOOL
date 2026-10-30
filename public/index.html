@@ -59,7 +59,30 @@
     setTimeout(function(){ URL.revokeObjectURL(a.href); a.remove(); }, 1500);
     return Promise.resolve();
   }};
+  // AI: same call shape as claude.ai's sample() — sample(prompt, {modelTier, onText}) -> {text},
+  // and sample.json(prompt, opts) -> parsed JSON — served by Cloudflare Workers AI via /api/ai.
+  function aiCall(prompt, opts, asJson){
+    opts = opts || {};
+    return fetch("/api/ai", {method:"POST", credentials:"same-origin", headers:{"content-type":"application/json"},
+      body: JSON.stringify({prompt: String(prompt||""), tier: opts.modelTier==="quick" ? "quick" : "default", json: !!asJson})})
+      .then(function(r){ return r.json().catch(function(){ return {}; }).then(function(d){
+        if(!r.ok || !d.text){ var e = new Error(d.error||"upstream_error"); e.code = d.error || "upstream_error"; throw e; }
+        if(typeof opts.onText === "function"){ try{ opts.onText({text:d.text}); }catch(_){} }
+        return d.text; }); });
+  }
+  var sample = function(prompt, opts){ return aiCall(prompt, opts, false).then(function(t){ return {text:t}; }); };
+  sample.json = function(prompt, opts){
+    return aiCall(prompt, opts, true).then(function(t){
+      var s = String(t).replace(/```(?:json)?/gi, "").trim();
+      var a = s.indexOf("["), o = s.indexOf("{");
+      var start = (a>-1 && (o<0 || a<o)) ? a : o;
+      var end = start===a ? s.lastIndexOf("]") : s.lastIndexOf("}");
+      try{ return JSON.parse(start>-1 && end>start ? s.slice(start, end+1) : s); }
+      catch(_){ var e = new Error("invalid_json"); e.code = "invalid_json"; throw e; }
+    });
+  };
   window.claude = { use: function(n){
+    if (n === "sample") return Promise.resolve(sample);
     if (n === "db") return Promise.resolve({doc:doc});
     if (n === "downloads") return Promise.resolve(downloads);
     var e = new Error("not_declared"); e.code = "not_declared"; return Promise.reject(e);

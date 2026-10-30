@@ -24,6 +24,7 @@ async function ensureSchema(db) {
     db.prepare("CREATE TABLE IF NOT EXISTS sessions (token TEXT PRIMARY KEY, data TEXT NOT NULL, expires INTEGER NOT NULL)"),
     db.prepare("CREATE TABLE IF NOT EXISTS sys (k TEXT PRIMARY KEY, v TEXT NOT NULL)"),
     db.prepare("CREATE TABLE IF NOT EXISTS login_fail (k TEXT PRIMARY KEY, n INTEGER NOT NULL, until INTEGER NOT NULL)"),
+    db.prepare("CREATE TABLE IF NOT EXISTS ai_usage (k TEXT PRIMARY KEY, n INTEGER NOT NULL, until INTEGER NOT NULL)"),
     db.prepare("CREATE TABLE IF NOT EXISTS portfolio (id TEXT PRIMARY KEY, teacher_id TEXT NOT NULL, data TEXT NOT NULL, created INTEGER NOT NULL, updated INTEGER NOT NULL)"),
     db.prepare("CREATE TABLE IF NOT EXISTS file_meta (id TEXT PRIMARY KEY, owner TEXT NOT NULL, name TEXT NOT NULL, type TEXT NOT NULL, size INTEGER NOT NULL, chunks INTEGER NOT NULL, created INTEGER NOT NULL)"),
     db.prepare("CREATE TABLE IF NOT EXISTS file_chunks (id TEXT NOT NULL, idx INTEGER NOT NULL, data BLOB NOT NULL, PRIMARY KEY (id, idx))"),
@@ -387,6 +388,44 @@ async function handlePortfolio(db, request, user, url) {
   return json({ error: "method_not_allowed" }, 405);
 }
 
+
+/* ---------------- AI (Cloudflare Workers AI) ----------------
+   Replaces the claude.ai-only "sample" capability. Signed-in users only, with a per-user hourly cap. */
+const AI_MODEL = "@cf/meta/llama-3.3-70b-instruct-fp8-fast";
+const AI_FALLBACK = "@cf/meta/llama-3.1-8b-instruct-fast";
+const AI_PER_HOUR = 40;
+async function handleAI(db, env, request, user) {
+  if (request.method === "GET") return json({ available: !!env.AI });
+  if (!user) return json({ error: "session_expired" }, 401);
+  if (!env.AI) return json({ error: "capability_disabled" }, 503);
+  const key = "ai:" + (user.teacherId || user.role), now = Date.now();
+  const u = await db.prepare("SELECT n, until FROM ai_usage WHERE k = ?").bind(key).first();
+  const n = u && u.until > now ? u.n + 1 : 1;
+  if (n > AI_PER_HOUR) return json({ error: "rate_limited" }, 429);
+  await db.prepare("INSERT INTO ai_usage (k, n, until) VALUES (?1, ?2, ?3) ON CONFLICT(k) DO UPDATE SET n = ?2, until = ?3")
+    .bind(key, n, u && u.until > now ? u.until : now + 3600e3).run();
+  const body = await request.json().catch(() => ({}));
+  const prompt = clip(body.prompt, 24000);
+  if (!prompt.trim()) return json({ error: "empty_completion" }, 400);
+  const tier = body.tier === "quick" ? "quick" : "default";
+  const system = (body.json
+    ? "You are a helpful assistant for teachers in an Omani school. Reply with valid JSON only — no prose, no code fences."
+    : "You are a helpful assistant for teachers and school administrators in Oman. Answer in clear Modern Standard Arabic unless asked otherwise. Follow the requested output format exactly.");
+  try {
+    const input = { messages: [{ role: "system", content: system }, { role: "user", content: prompt }],
+      max_tokens: tier === "quick" ? 900 : 4000, temperature: body.json ? 0.4 : 0.7 };
+    let out;
+    try { out = await env.AI.run(AI_MODEL, input); }
+    catch (e1) { out = await env.AI.run(AI_FALLBACK, { ...input, max_tokens: Math.min(input.max_tokens, 3000) }); }
+    const text = (out && (out.response ?? out.result?.response)) || "";
+    if (!String(text).trim()) return json({ error: "empty_completion" }, 502);
+    return json({ text: typeof text === "string" ? text : JSON.stringify(text) });
+  } catch (err) {
+    const m = String(err && err.message || err);
+    return json({ error: /limit|quota|429|neurons/i.test(m) ? "rate_limited" : "upstream_error" }, 502);
+  }
+}
+
 /* ---------------- optional site-wide Basic Auth ---------------- */
 function basicAuthorized(request, env) {
   const h = request.headers.get("authorization") || "";
@@ -441,6 +480,7 @@ export default {
             return json({ list: out });
           }
           case "/api/portfolio": return handlePortfolio(db, request, await currentUser(db, request), url);
+          case "/api/ai": return handleAI(db, env, request, request.method === "GET" ? null : await currentUser(db, request));
           default:
             if (url.pathname === "/api/files" || url.pathname.startsWith("/api/files/")) return handleFiles(db, request, await currentUser(db, request), url);
             return json({ error: "not_found" }, 404);
