@@ -1386,6 +1386,23 @@
     </div>
   </section>
 
+  <!-- DATABASE SPECIALIST: incoming student absences (the only screen this account sees) -->
+  <section class="view" id="view-absinbox">
+    <div class="card">
+      <div class="view-head"><h2>📥 الغياب الوارد</h2><p>غياب الطلاب الذي يرسله المعلمون — يصل للمدير ولأخصائي قواعد البيانات. علّم كل غياب بعد إدخاله في النظام.</p></div>
+      <div class="stats-row" id="aiStats"></div>
+      <div class="toolbar">
+        <div class="grp"><button class="btn ghost sm" id="aiPrev" aria-label="اليوم السابق">→</button><input type="date" id="aiDate" style="width:auto;"><button class="btn ghost sm" id="aiNext" aria-label="اليوم التالي">←</button></div>
+        <label class="acc-check" style="margin:0;"><input type="checkbox" id="aiAllDates"> كل التواريخ</label>
+        <div class="grp"><select id="aiStatus" style="min-width:150px;"><option value="todo">لم يُدخل بعد</option><option value="done">تم إدخاله</option><option value="all">الكل</option></select></div>
+        <div class="grp"><select id="aiGrade" style="min-width:140px;"></select></div>
+        <button class="btn ghost sm" id="aiRefresh">🔄 تحديث</button>
+        <button class="btn ghost sm" id="aiExport">📊 تنزيل Excel</button>
+      </div>
+      <div class="tbl-wrap"><table class="datatable" id="aiTable"></table></div>
+    </div>
+  </section>
+
   <!-- TEACHER: absence wizard -->
   <section class="view" id="view-teacherabsence">
     <div class="card">
@@ -1637,10 +1654,12 @@
     {id:"adminai", icon:"✨", title:"الذكاء الاصطناعي", desc:"مولّد المستندات والمراسلات الإدارية"},
     {id:"adminteachers", icon:"👥", title:"سجل ومعلمو المدرسة", desc:"سجل الكادر التعليمي الكامل، وإدارة حسابات الدخول"},
     {id:"lrc", icon:"🏛️", title:"مركز مصادر التعلم", desc:"جدول حجوزات القاعة وأجهزة العرض"},
+    {id:"absinbox", icon:"📥", title:"الغياب الوارد", desc:"غياب الطلاب كما يصل لأخصائي قواعد البيانات، وحالة إدخاله"},
     {id:"adminaccounts", icon:"🗄️", title:"قاعدة بيانات المعلمين", desc:"إنشاء حسابات المعلمين وتعديلها وتعطيلها وحذفها من مكان واحد", accent:true}
   ];
 
   const ICON_PATHS = {
+    absinbox: '<path d="M4 13h4l1.5 2.5h5L16 13h4"/><path d="M5.5 6h13L20 13v5a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 4 18v-5z"/><path d="M12 3v6M9.5 6.5 12 9l2.5-2.5"/>',
     lrc: '<path d="M3 9.5 12 4l9 5.5"/><path d="M5 10v8M9.5 10v8M14.5 10v8M19 10v8"/><path d="M3 20.5h18"/>',
     adminaccounts: '<ellipse cx="12" cy="5.5" rx="7" ry="2.6"/><path d="M5 5.5v6.5c0 1.4 3.1 2.6 7 2.6s7-1.2 7-2.6V5.5"/><path d="M5 12v6.5c0 1.4 3.1 2.6 7 2.6s7-1.2 7-2.6V12"/>',
     subjects: '<rect x="4" y="5" width="16" height="14" rx="1.5"/><line x1="12" y1="5" x2="12" y2="19"/><line x1="7" y1="9" x2="9.5" y2="9"/><line x1="14.5" y1="9" x2="17" y2="9"/>',
@@ -1751,6 +1770,7 @@
   function tileHTML(it){
     let badge = 0;
     if(it.id==="adminabsencehub") badge = absences.filter(a=>a.status==="بانتظار الاعتماد").length + subs.filter(s=>subStatusCode(s)==="PENDING").length + studentAbsences.filter(a=>a.status==="بانتظار اعتماد المدير" || a.status==="يحتاج إعادة اعتماد").length;
+    else if(it.id==="absinbox") badge = studentAbsences.filter(a=>!a.recordedAt && a.status!=="مرفوض").length;
     else if(it.id==="lrc" && isLrcManager()) badge = lrcBookings.filter(b=>b.status==="pending").length;
     else if(it.id==="teachersubs" && currentUser) badge = subs.filter(s=>s.subTeacher===currentUser.name && s.seen===false).length;
     return `<button class="tile${it.accent?" accent":""}" data-goto="${it.id}"${it.presetTab?` data-preset-tab="${escapeHTML(it.presetTab)}"`:""}>
@@ -1765,7 +1785,7 @@
     if(currentUser && !lrcLoaded && !window.__lrcLoading){ window.__lrcLoading = true; refreshLrcQuiet().finally(()=>{ window.__lrcLoading = false; }); }
     let items = [];
     if(currentUser && currentUser.role==="admin") items = ADMIN_TILES;
-    else if(currentUser && currentUser.role==="teacher") items = TEACHER_SCHOOL_TILES.concat(TEACHER_TOOL_TILES);
+    else if(currentUser && currentUser.role==="teacher") items = isDataSpecialist() ? [{id:"absinbox", icon:"📥", title:"الغياب الوارد", desc:"غياب الطلاب المرسل من المعلمين", accent:true}] : TEACHER_SCHOOL_TILES.concat(TEACHER_TOOL_TILES);
     document.getElementById("dashboardGrid").innerHTML = items.map(tileHTML).join("");
     const note = document.getElementById("schoolNameNote");
     if(note) note.textContent = (schoolInfo && schoolInfo.name ? schoolInfo.name : "");
@@ -1819,6 +1839,14 @@
     if(!db || !currentUser) return;
     refreshLrcQuiet();
     try{
+      if(currentUser.role==="teacher" && isDataSpecialist()){
+        const before = new Set(studentAbsences.map(a=>a.id));
+        await refreshStudentAbsencesFromRemote();
+        const fresh = studentAbsences.filter(a=>!before.has(a.id));
+        if(fresh.length) toast(`📥 ${fresh.length===1?"غياب جديد وصل":fresh.length+" حالات غياب جديدة وصلت"}`);
+        if(document.getElementById("view-absinbox")?.classList.contains("active")) renderAbsInbox(false);
+        return;
+      }
       if(currentUser.role==="teacher"){
         const snap = await withTimeout(db.doc("school/substitutes").get(), 10000);
         if(snap && snap.exists && Array.isArray(snap.data().list)){
@@ -1881,6 +1909,8 @@
       toast("هذه الصفحة مخصصة لحساب المعلم فقط");
       id = currentUser ? "dashboard" : "identify";
     }
+    // The database specialist account only ever sees the incoming-absences screen.
+    if(currentUser && currentUser.role==="teacher" && isDataSpecialist() && id!=="absinbox" && id!=="identify") id = "absinbox";
     document.querySelectorAll("section.view").forEach(s=>s.classList.remove("active"));
     const target = document.getElementById("view-"+id);
     if(target) target.classList.add("active");
@@ -1888,7 +1918,8 @@
     if(id==="dashboard") renderDashboardTiles();
     if(id==="adminaccounts" && currentUser && currentUser.role==="admin") renderAdminAccounts();
     if(id==="lrc" && currentUser) renderLrc(true);
-    document.getElementById("crumbWrap").hidden = (id==="dashboard" || id==="identify");
+    if(id==="absinbox" && currentUser) renderAbsInbox(true);
+    document.getElementById("crumbWrap").hidden = (id==="dashboard" || id==="identify" || (id==="absinbox" && currentUser && currentUser.role==="teacher"));
     window.scrollTo({top:0, behavior:"smooth"});
   }
   document.addEventListener("click", (e)=>{
@@ -3128,6 +3159,7 @@ ${points?("نقاط يجب تضمينها صراحة: "+points+"."):""}
   function homeView(){
     if(!currentUser) return "identify";
     if(currentUser.role==="admin" && isAdminPath()) return "adminaccounts";
+    if(currentUser.role==="teacher" && isDataSpecialist()) return "absinbox";
     return "dashboard";
   }
   function entryRoleFromUrl(){
@@ -6497,6 +6529,84 @@ ${points?("نقاط يجب تضمينها صراحة: "+points+"."):""}
     logAction(b.status==="approved"?"موافقة على حجز مصادر التعلم":b.status==="rejected"?"رفض حجز مصادر التعلم":"إلغاء حجز مصادر التعلم", {teacher:b.teacherName, date:b.date, period:b.period});
     toast(b.status==="approved"?`تمت الموافقة على حجز ${b.teacherName}`:b.status==="rejected"?`تم رفض حجز ${b.teacherName}`:"تم إلغاء الحجز");
     renderLrc(false); renderDashboardTiles();
+  });
+
+  /* ---------------- الغياب الوارد (أخصائي قواعد البيانات) ---------------- */
+  function isDataSpecialist(){
+    const t = meTeacher();
+    return !!((t && (t.absenceViewer || /قواعد البيانات/.test(t.title||""))) || (currentUser && currentUser.role==="teacher" && /قواعد البيانات/.test(currentUser.title||"")));
+  }
+  function aiFiltered(){
+    const all = document.getElementById("aiAllDates").checked;
+    const day = document.getElementById("aiDate").value || todayISO();
+    const st = document.getElementById("aiStatus").value, g = document.getElementById("aiGrade").value;
+    return studentAbsences
+      .filter(a=> all || a.date===day)
+      .filter(a=> st==="all" || (st==="done" ? !!a.recordedAt : !a.recordedAt))
+      .filter(a=> !g || a.gradeId===g)
+      .sort((a,b)=> (b.date||"").localeCompare(a.date||"") || (gradeById(a.gradeId)?.order||0)-(gradeById(b.gradeId)?.order||0) || String(a.period).localeCompare(String(b.period)) || (a.studentName||"").localeCompare(b.studentName||"","ar"));
+  }
+  function aiApprovalPill(a){
+    const s = a.status||"";
+    if(/اعتمد|معتمد/.test(s) && !/بانتظار/.test(s)) return `<span class="pill ok">معتمد من المدير</span>`;
+    if(/مرفوض/.test(s)) return `<span class="pill bad">مرفوض</span>`;
+    return `<span class="pill wait">بانتظار المدير</span>`;
+  }
+  async function renderAbsInbox(reload){
+    const dEl = document.getElementById("aiDate"); if(!dEl.value) dEl.value = todayISO();
+    const gSel = document.getElementById("aiGrade");
+    if(reload){ await schoolDataReady; await refreshStudentAbsencesFromRemote(); }
+    if(gSel.options.length !== grades.length+1){ const cur=gSel.value; gSel.innerHTML = `<option value="">كل الصفوف</option>` + grades.slice().sort((a,b)=>a.order-b.order).map(g=>`<option value="${escapeHTML(g.id)}">${escapeHTML(g.name)}</option>`).join(""); gSel.value = cur; }
+    const day = dEl.value, all = document.getElementById("aiAllDates").checked;
+    const dayList = studentAbsences.filter(a=> all || a.date===day);
+    const todo = dayList.filter(a=>!a.recordedAt).length;
+    document.getElementById("aiStats").innerHTML = `
+      <div class="stat-tile"><div class="stat-ic">${iconSVG("absinbox")}</div><div class="num">${dayList.length}</div><div class="lbl">${all?"كل حالات الغياب":"غياب هذا اليوم"}</div></div>
+      <div class="stat-tile"><div class="stat-ic">${iconSVG("absinbox")}</div><div class="num" style="color:${todo?'var(--warning)':'inherit'};">${todo}</div><div class="lbl">لم يُدخل في النظام بعد</div></div>
+      <div class="stat-tile"><div class="stat-ic">${iconSVG("absinbox")}</div><div class="num">${dayList.length-todo}</div><div class="lbl">تم إدخاله</div></div>`;
+    const rows = aiFiltered();
+    const canMark = !!(currentUser && (isDataSpecialist() || currentUser.role==="admin"));
+    document.getElementById("aiTable").innerHTML = `<thead><tr><th>الطالب</th><th>الصف / الشعبة</th><th>التاريخ</th><th>الحصة</th><th>النوع</th><th>السبب / ملاحظات</th><th>أرسله</th><th>اعتماد المدير</th><th>الإدخال في النظام</th></tr></thead><tbody>${
+      rows.map(a=>`<tr data-aid="${escapeHTML(a.id)}">
+        <td style="font-weight:700;">${escapeHTML(a.studentName||"")}</td>
+        <td>${escapeHTML(gradeNameOf(a.gradeId))} / ${escapeHTML(sectionShort(a.sectionId))}</td>
+        <td style="white-space:nowrap;">${escapeHTML(a.date||"")}</td>
+        <td>${escapeHTML(String(a.period||"—"))}</td>
+        <td>${escapeHTML(a.type||"")}</td>
+        <td>${escapeHTML([a.reason,a.notes].filter(Boolean).join(" — ")||"—")}</td>
+        <td>${escapeHTML(a.createdBy||"")}</td>
+        <td>${aiApprovalPill(a)}</td>
+        <td>${a.recordedAt ? `<span class="pill ok">✓ تم الإدخال</span><br><span style="font-size:11px; color:var(--text-muted);">${escapeHTML(a.recordedBy||"")}</span>${canMark?` <button class="btn ghost sm" data-ai="undo" title="إلغاء العلامة">↩︎</button>`:""}`
+          : canMark ? `<button class="btn sm" data-ai="mark">✓ تم الإدخال</button>` : `<span class="pill wait">لم يُدخل</span>`}</td>
+      </tr>`).join("") || `<tr><td colspan="9" style="text-align:center; color:var(--text-muted); padding:22px;">لا توجد حالات غياب مطابقة</td></tr>`}</tbody>`;
+  }
+  ["aiStatus","aiGrade","aiAllDates","aiDate"].forEach(id=>document.getElementById(id).addEventListener("change", ()=>renderAbsInbox(false)));
+  function aiShift(delta){ const el=document.getElementById("aiDate"); const d=new Date((el.value||todayISO())+"T12:00:00"); do{ d.setDate(d.getDate()+delta); }while(d.getDay()===5||d.getDay()===6); el.value=d.toISOString().slice(0,10); document.getElementById("aiAllDates").checked=false; renderAbsInbox(false); }
+  document.getElementById("aiPrev").addEventListener("click", ()=>aiShift(-1));
+  document.getElementById("aiNext").addEventListener("click", ()=>aiShift(1));
+  document.getElementById("aiRefresh").addEventListener("click", ()=>renderAbsInbox(true));
+  document.getElementById("aiTable").addEventListener("click", async e=>{
+    const b = e.target.closest("[data-ai]"); if(!b) return;
+    const id = b.closest("tr").dataset.aid;
+    b.disabled = true;
+    await refreshStudentAbsencesFromRemote();
+    const a = studentAbsences.find(x=>x.id===id); if(!a){ renderAbsInbox(false); return; }
+    const prev = {recordedAt:a.recordedAt, recordedBy:a.recordedBy};
+    if(b.dataset.ai==="mark"){ a.recordedAt = new Date().toISOString(); a.recordedBy = currentUser.name; }
+    else { a.recordedAt = null; a.recordedBy = null; }
+    const ok = await saveStudentAbsences();
+    if(!ok){ Object.assign(a, prev); toast("⚠️ تعذّر الحفظ — حاول مرة أخرى"); }
+    else logAction(a.recordedAt ? "إدخال غياب طالب في النظام" : "إلغاء علامة إدخال غياب", {student:a.studentName, date:a.date});
+    renderAbsInbox(false);
+  });
+  document.getElementById("aiExport").addEventListener("click", ()=>{
+    const rows = aiFiltered();
+    if(!rows.length){ toast("لا توجد بيانات للتنزيل"); return; }
+    if(typeof XLSX==="undefined"){ toast("تعذّر تحميل مكتبة Excel — تحقق من الاتصال"); return; }
+    const data = rows.map(a=>({"الطالب":a.studentName, "الصف":gradeNameOf(a.gradeId), "الشعبة":sectionShort(a.sectionId), "التاريخ":a.date, "الحصة":a.period||"", "النوع":a.type||"", "السبب":a.reason||"", "ملاحظات":a.notes||"", "أرسله":a.createdBy||"", "اعتماد المدير":a.status||"", "الإدخال في النظام":a.recordedAt?"تم":"لم يُدخل", "أدخله":a.recordedBy||""}));
+    const ws = XLSX.utils.json_to_sheet(data); ws["!cols"]=[{wch:30},{wch:16},{wch:8},{wch:12},{wch:8},{wch:18},{wch:24},{wch:20},{wch:24},{wch:18},{wch:14},{wch:20}];
+    const wb = XLSX.utils.book_new(); wb.Workbook={Views:[{RTL:true}]}; XLSX.utils.book_append_sheet(wb, ws, "الغياب الوارد");
+    XLSX.writeFile(wb, `الغياب-الوارد-${document.getElementById("aiAllDates").checked?"الكل":document.getElementById("aiDate").value}.xlsx`);
   });
 
   function generatePassword(len){
