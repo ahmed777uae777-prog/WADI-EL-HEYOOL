@@ -2941,15 +2941,24 @@ ${points?("نقاط يجب تضمينها صراحة: "+points+"."):""}
   function sectionById(id){ return sections.find(x=>x.id===id) || null; }
   function subjectName(id){ const s = subjectById(id); return s ? s.name : "-"; }
   function gradeNameOf(id){ const g = gradeById(id); return g ? g.name : "-"; }
+  // From grade 7 to 12 the school separates boys and girls: section 1 = بنين, section 2 = بنات.
+  function sectionGender(sec){
+    if(!sec || sec.kind==="elective") return "";
+    const g = gradeById(sec.gradeId); if(!g || (g.order||0) < 7) return "";
+    const n = String(sec.name).trim().replace(/[٠-٩]/g, d=>"٠١٢٣٤٥٦٧٨٩".indexOf(d));
+    return n==="1" ? "بنين" : n==="2" ? "بنات" : "";
+  }
   function sectionShort(id){
     const sec = sectionById(id); if(!sec) return "-";
-    return sec.kind==="elective" ? `${subjectName(sec.subjectId)} — ${sec.name}` : `شعبة ${sec.name}`;
+    const gd = sectionGender(sec);
+    return sec.kind==="elective" ? `${subjectName(sec.subjectId)} — ${sec.name}` : `شعبة ${sec.name}${gd?` (${gd})`:""}`;
   }
   function sectionFullLabel(id){
     const sec = sectionById(id); if(!sec) return "-";
+    const gd = sectionGender(sec);
     return sec.kind==="elective"
       ? `${gradeNameOf(sec.gradeId)} — ${subjectName(sec.subjectId)} — ${sec.name}`
-      : `${gradeNameOf(sec.gradeId)} — شعبة ${sec.name}`;
+      : `${gradeNameOf(sec.gradeId)} — شعبة ${sec.name}${gd?` (${gd})`:""}`;
   }
   function sectionsOfGrade(gradeId){ return sections.filter(s=>s.gradeId===gradeId); }
   function gradesSorted(){ return grades.slice().sort((a,b)=>(a.order||0)-(b.order||0)); }
@@ -5255,7 +5264,7 @@ ${points?("نقاط يجب تضمينها صراحة: "+points+"."):""}
               <option value="ignore" ${dec.action==="ignore"?"selected":""}>🚫 تجاهل كل الصفوف بهذه الشعبة</option>
             </select>
             ${dec.action==="map" ? `<select data-mapto="${key}" style="margin-inline-start:6px;">
-              ${otherSecs.map(s=>`<option value="${s.id}" ${dec.mapToId===s.id?"selected":""}>شعبة ${escapeHTML(s.name)}</option>`).join("") || `<option value="">لا توجد شُعب أخرى لهذا الصف</option>`}
+              ${otherSecs.map(s=>`<option value="${s.id}" ${dec.mapToId===s.id?"selected":""}>${escapeHTML(sectionShort(s.id))}</option>`).join("") || `<option value="">لا توجد شُعب أخرى لهذا الصف</option>`}
             </select>` : ""}
           </div>`;
         }).join("")}
@@ -7635,7 +7644,10 @@ ${points?("نقاط يجب تضمينها صراحة: "+points+"."):""}
     const secs = sectionsOfGrade(gradeId);
     const norm = String(label||"").trim();
     if(!norm) return null;
-    return secs.find(s=> sectionShort(s.id)===norm || s.name===norm || norm.includes(s.name)) || null;
+    const g = /بنين|ذكور|أولاد|اولاد/.test(norm) ? "بنين" : /بنات|إناث|اناث/.test(norm) ? "بنات" : "";
+    if(g){ const byG = secs.find(s=> sectionGender(s)===g); if(byG) return byG; }
+    const digits = norm.replace(/[٠-٩]/g, d=>"٠١٢٣٤٥٦٧٨٩".indexOf(d));
+    return secs.find(s=> sectionShort(s.id)===norm || s.name===norm || s.name===digits || norm.includes(s.name)) || null;
   }
 
   /* ===== سجل الطلاب (school-wide roster) — Task: بناء نموذج بيانات الطلاب ===== */
