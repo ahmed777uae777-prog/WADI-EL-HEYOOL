@@ -1271,6 +1271,7 @@
           <option value="all">كل الحسابات</option><option value="ok">مفعّلة</option><option value="pending">بدون كلمة مرور</option><option value="off">معطّلة</option>
         </select></div>
         <button class="btn ghost sm" id="accExportBtn">⬇️ تنزيل (Excel)</button>
+        <button class="btn accent sm" id="accBulkBtn">⚡ إنشاء حسابات سهلة لكل من ليس له كلمة مرور</button>
       </div>
       <div class="card acc-form" id="accForm" hidden>
         <h3 id="accFormTitle" style="font-size:16px; margin-bottom:14px;">معلم جديد</h3>
@@ -6023,10 +6024,36 @@ ${points?("نقاط يجب تضمينها صراحة: "+points+"."):""}
     updateUserChip();
     renderAdminAccounts();
   });
+  // Bulk: every account without a password gets an easy number username (1001, 1002, ...) and a
+  // 4-digit password, then the list downloads as Excel so the admin can hand them out.
+  function easyPin(){
+    const a = new Uint32Array(1); (window.crypto||{}).getRandomValues ? crypto.getRandomValues(a) : (a[0]=Math.floor(Math.random()*1e9));
+    return String(1000 + (a[0] % 9000));
+  }
+  document.getElementById("accBulkBtn").addEventListener("click", async ()=>{
+    await schoolDataReady;
+    const targets = teachers.filter(t=>!t.code && t.active!==false)
+      .sort((a,b)=> ((b.isAdmin?2:b.title?1:0)-(a.isAdmin?2:a.title?1:0)) || (a.subject||"").localeCompare(b.subject||"","ar") || (a.name||"").localeCompare(b.name||"","ar"));
+    if(!targets.length){ toast("كل الحسابات لديها كلمات مرور بالفعل"); return; }
+    if(!window.confirm(`سيتم إنشاء ${targets.length} حسابًا:\n• اسم المستخدم: رقم من 4 خانات (1001، 1002، ...)\n• كلمة المرور: 4 أرقام\nثم يُنزَّل ملف Excel بالقائمة. الحسابات التي لها كلمة مرور لن تتغير.`)) return;
+    const snapshot = JSON.stringify(teachers);
+    const taken = new Set(teachers.filter(t=>t.code).map(t=>(t.username||"").toLowerCase()));
+    if(schoolInfo.adminUsername) taken.add(schoolInfo.adminUsername.toLowerCase());
+    let n = 1001;
+    targets.forEach(t=>{ while(taken.has(String(n))) n++; t.username = String(n); taken.add(String(n)); n++; t.code = easyPin(); accShown.add(t.id); });
+    const btn = document.getElementById("accBulkBtn"); btn.disabled = true;
+    const ok = await saveTeachers(); btn.disabled = false;
+    if(!ok){ teachers = JSON.parse(snapshot); toast("⚠️ تعذّر الحفظ — تحقق من الاتصال وحاول مرة أخرى"); renderAdminAccounts(); return; }
+    logAction("إنشاء حسابات دخول جماعية", {count: targets.length});
+    renderAdminAccounts();
+    toast(`✅ تم إنشاء ${targets.length} حسابًا — جارٍ تنزيل القائمة`);
+    document.getElementById("accExportBtn").click();
+  });
   document.getElementById("accExportBtn").addEventListener("click", ()=>{
     if(typeof XLSX==="undefined"){ toast("تعذّر تحميل مكتبة Excel"); return; }
-    const data = teachers.map(t=>({"الاسم":t.name, "المادة":t.subject, "اسم المستخدم":t.username||"", "كلمة المرور":t.code||"", "الحالة": accStatus(t)==="ok"?"مفعّل":accStatus(t)==="off"?"معطّل":"بدون كلمة مرور"}));
-    const ws = XLSX.utils.json_to_sheet(data); ws["!cols"]=[{wch:28},{wch:20},{wch:18},{wch:16},{wch:14}];
+    const ordered = teachers.slice().sort((a,b)=> ((b.isAdmin?2:b.title?1:0)-(a.isAdmin?2:a.title?1:0)) || (a.subject||"").localeCompare(b.subject||"","ar") || (a.name||"").localeCompare(b.name||"","ar"));
+    const data = ordered.map(t=>({"الاسم":t.name, "المسمى / المادة":t.title||t.subject, "اسم المستخدم":t.username||"", "كلمة المرور":t.code||"", "الحالة": accStatus(t)==="ok"?"مفعّل":accStatus(t)==="off"?"معطّل":"بدون كلمة مرور"}));
+    const ws = XLSX.utils.json_to_sheet(data); ws["!cols"]=[{wch:30},{wch:24},{wch:16},{wch:14},{wch:16}];
     const wb = XLSX.utils.book_new(); wb.Workbook = {Views:[{RTL:true}]}; XLSX.utils.book_append_sheet(wb, ws, "المعلمون");
     XLSX.writeFile(wb, "قاعدة-بيانات-المعلمين.xlsx");
     toast("⚠️ الملف يحتوي كلمات مرور — احفظه في مكان آمن");
