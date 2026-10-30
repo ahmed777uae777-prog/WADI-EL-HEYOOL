@@ -34,6 +34,7 @@
    when the page is NOT running inside claude.ai. db.doc(path).get()/set() map to /api/doc (D1). */
 (function(){
   if (window.claude && window.claude.use) return;
+  window.__serverAuth = true; // hosted on Cloudflare: login + data access are enforced by the Worker
   var API = "/api/doc";
   function doc(p){
     return {
@@ -1487,6 +1488,28 @@
     // dbReady settles as soon as db's own handshake settles rather than waiting for the
     // slowest of the three capabilities.
     const hasClaude = !!(window.claude && window.claude.use);
+    if(window.__serverAuth){
+      // The server decides who is signed in. Without a valid session no school data is
+      // requested at all — only the school name and whether an admin account exists.
+      let me = null;
+      try{ me = (await (await fetch("/api/me", {cache:"no-store", credentials:"same-origin"})).json()).user; }catch(e){ me = null; }
+      if(!me){
+        currentUser = null;
+        try{ localStorage.removeItem("tp_user"); sessionStorage.removeItem("tp_user"); }catch(e){}
+        try{
+          const pub = await (await fetch("/api/public", {cache:"no-store"})).json();
+          if(pub.name) schoolInfo.name = pub.name;
+          schoolInfo.adminUsername = pub.hasAdmin ? "•" : "";
+        }catch(e){}
+        teachers = []; renderBrand(); renderLoginScreen(); updateUserChip(); showView("identify");
+        resolveDbReady(); resolveSchoolDataReady();
+        try{ downloads = await withTimeout(window.claude.use("downloads"), 8000); }catch(e){ downloads = null; }
+        return;
+      }
+      currentUser = me;
+      try{ (localStorage.getItem("tp_user") ? localStorage : sessionStorage).setItem("tp_user", JSON.stringify(me)); }catch(e){}
+      updateUserChip();
+    }
     (async ()=>{
       try{ db = hasClaude ? await withTimeout(window.claude.use("db"), 8000) : null; }catch(e){ db = null; }
       resolveDbReady();
@@ -2984,7 +3007,7 @@ ${points?("نقاط يجب تضمينها صراحة: "+points+"."):""}
     let needsResave = false;
     teachers.forEach(t=>{
       if(t.username===undefined){ t.username = t.id; needsResave = true; }
-      if(t.code===undefined){ t.code = ""; needsResave = true; }
+      if(t.code===undefined && t.hasCode===undefined){ t.code = ""; needsResave = true; }
     });
     if(needsResave) saveTeachers();
     // migrate older substitute records that predate subject/grade/history tracking
@@ -3038,7 +3061,7 @@ ${points?("نقاط يجب تضمينها صراحة: "+points+"."):""}
       resolveSchoolDataReady();
     }
   }
-  async function saveTeachers(){ if(!db) return false; try{ await withTimeout(db.doc("school/teachers").set({list:teachers}), 15000); return true; }catch(e){ return false; } }
+  async function saveTeachers(){ if(!db) return false; try{ await withTimeout(db.doc("school/teachers").set({list:teachers}), 15000); teachers.forEach(t=>{ if(t.code) t.hasCode = true; }); return true; }catch(e){ return false; } }
   async function saveAbsences(){ if(!db) return false; try{ await withTimeout(db.doc("school/absences").set({list:absences}), 15000); return true; }catch(e){ return false; } }
   async function saveSubs(){ if(!db) return false; try{ await withTimeout(db.doc("school/substitutes").set({list:subs}), 15000); return true; }catch(e){ return false; } }
   async function saveStudentsRoster(){ if(!db) return false; try{ await withTimeout(db.doc("school/students").set({list:schoolStudents}), 15000); return true; }catch(e){ return false; } }
@@ -3067,7 +3090,7 @@ ${points?("نقاط يجب تضمينها صراحة: "+points+"."):""}
       idMap[n.id] = newId;
       if(o){
         usedOld.add(o.id);
-        if(o.code){ n.username = o.username; n.code = o.code; }
+        if(o.code || o.hasCode){ n.username = o.username; n.code = o.code||""; if(o.hasCode) n.hasCode = true; }
         if(o.active===false) n.active = false;
         n.substituteCount = o.substituteCount||0;
       }
@@ -3075,7 +3098,7 @@ ${points?("نقاط يجب تضمينها صراحة: "+points+"."):""}
       return n;
     });
     const freshUsers = new Set(merged.map(t=>(t.username||"").toLowerCase()));
-    old.forEach(o=>{ if(!usedOld.has(o.id) && o.code && !freshUsers.has((o.username||"").toLowerCase())) merged.push(o); });
+    old.forEach(o=>{ if(!usedOld.has(o.id) && (o.code || o.hasCode) && !freshUsers.has((o.username||"").toLowerCase())) merged.push(o); });
     model.scheduleEntries.forEach(e=>{ e.teacherId = idMap[e.teacherId] || e.teacherId; });
     teachers = merged;
     subjects = model.subjects; grades = model.grades; sections = model.sections; scheduleEntries = model.scheduleEntries;
@@ -3367,6 +3390,7 @@ ${points?("نقاط يجب تضمينها صراحة: "+points+"."):""}
   });
   const switchBtn = document.getElementById("switchUserBtn");
   if(switchBtn) switchBtn.addEventListener("click", ()=>{
+    if(window.__serverAuth){ fetch("/api/logout", {method:"POST", credentials:"same-origin"}).finally(()=>{ try{ localStorage.removeItem("tp_user"); sessionStorage.removeItem("tp_user"); }catch(e){} location.href = location.pathname; }); return; }
     currentUser = null;
     stopLivePolling();
     try{ localStorage.removeItem("tp_user"); sessionStorage.removeItem("tp_user"); }catch(e){}
@@ -3391,7 +3415,10 @@ ${points?("نقاط يجب تضمينها صراحة: "+points+"."):""}
     schoolInfo.adminCode = p1;
     await schoolDataReady;
     let ok = false;
-    if(db){ try{ await db.doc("school/info").set(schoolInfo); ok = true; }catch(e){ ok = false; } }
+    if(window.__serverAuth){
+      try{ const r = await fetch("/api/setup", {method:"POST", credentials:"same-origin", headers:{"content-type":"application/json"}, body:JSON.stringify({username:u, password:p1})}); ok = r.ok; }catch(e){ ok = false; }
+      if(ok) schoolInfo.adminCode = "";
+    } else if(db){ try{ await db.doc("school/info").set(schoolInfo); ok = true; }catch(e){ ok = false; } }
     setupBtn.disabled = false; setupBtn.textContent = "إنشاء حساب المدير";
     if(!ok){
       schoolInfo.adminUsername = ""; schoolInfo.adminCode = "";
@@ -3425,6 +3452,28 @@ ${points?("نقاط يجب تضمينها صراحة: "+points+"."):""}
     loginBtn.disabled = true; loginBtn.textContent = "...جارٍ التحقق";
     setTimeout(()=>{
       loginBtn.disabled = false; loginBtn.textContent = origText;
+      if(window.__serverAuth){
+        loginBtn.disabled = true; loginBtn.textContent = "...جارٍ التحقق";
+        fetch("/api/login", {method:"POST", credentials:"same-origin", headers:{"content-type":"application/json"}, body:JSON.stringify({username:u, password:p, mode:loginMode||"any", remember})})
+          .then(r=>r.json().then(d=>({status:r.status, d})))
+          .then(({d})=>{
+            if(d && d.ok && d.user){
+              try{ (remember===false ? sessionStorage : localStorage).setItem("tp_user", JSON.stringify(d.user)); }catch(e){}
+              if(okEl){ okEl.textContent = "✅ تم تسجيل الدخول — جارٍ تحميل المنصة..."; okEl.style.display = "block"; }
+              location.reload();
+              return;
+            }
+            loginBtn.disabled = false; loginBtn.textContent = origText;
+            const code = d && d.error;
+            errEl.textContent = code==="locked" ? "محاولات كثيرة خاطئة — انتظر ١٥ دقيقة ثم حاول مرة أخرى."
+              : code==="disabled" ? "هذا الحساب معطّل حاليًا — راجع إدارة المدرسة."
+              : code==="not_activated" ? "لم يتم تفعيل هذا الحساب بعد من قِبل الإدارة."
+              : loginMode==="admin" ? "اسم المستخدم أو كلمة المرور غير صحيحة لحساب المدير." : "اسم المستخدم أو كلمة المرور غير صحيحة.";
+            errEl.style.display = "block";
+          })
+          .catch(()=>{ loginBtn.disabled = false; loginBtn.textContent = origText; errEl.textContent = "تعذّر الاتصال بالخادم — تحقق من الإنترنت وحاول مرة أخرى."; errEl.style.display = "block"; });
+        return;
+      }
       const uLower = u.toLowerCase();
       let matched = null;
       if(loginMode!=="teacher" && uLower === (schoolInfo.adminUsername||"").toLowerCase() && p === schoolInfo.adminCode){
@@ -5866,11 +5915,11 @@ ${points?("نقاط يجب تضمينها صراحة: "+points+"."):""}
         </td>
         <td>
           <div style="display:flex; gap:6px; align-items:center;">
-            <input type="text" class="loginCodeInput" value="${escapeHTML(t.code||"")}" placeholder="بلا كلمة مرور بعد" style="min-width:150px;">
+            <input type="text" class="loginCodeInput" value="${escapeHTML(t.code||"")}" placeholder="${t.hasCode?"🔒 محفوظة مشفّرة — اكتب جديدة لتغييرها":"بلا كلمة مرور بعد"}" style="min-width:150px;">
             <button class="btn ghost sm" data-genpass="${escapeHTML(t.id)}" title="توليد كلمة مرور قوية" style="padding:6px 9px;">🎲</button>
           </div>
         </td>
-        <td>${t.code ? `<span class="pill ok">مفعّل</span>` : `<span class="pill wait">غير مفعّل</span>`}</td>
+        <td>${(t.code||t.hasCode) ? `<span class="pill ok">مفعّل</span>` : `<span class="pill wait">غير مفعّل</span>`}</td>
         <td><button class="btn ghost sm" data-savelogin="${escapeHTML(t.id)}">حفظ</button></td>
       </tr>`).join("");
     document.getElementById("admLoginsTable").innerHTML = `
@@ -5942,7 +5991,8 @@ ${points?("نقاط يجب تضمينها صراحة: "+points+"."):""}
   /* ---------------- ADMIN: unified teachers database (/admin) ---------------- */
   let accEditingId = null;      // null = creating a new teacher
   const accShown = new Set();   // teacher ids whose password is revealed in the table
-  function accStatus(t){ return t.active===false ? "off" : (t.code ? "ok" : "pending"); }
+  const hasPass = t => !!(t.code || t.hasCode);
+  function accStatus(t){ return t.active===false ? "off" : (hasPass(t) ? "ok" : "pending"); }
   async function renderAdminAccounts(){
     const tbl = document.getElementById("accTable"); if(!tbl) return;
     if(!teachers.length) tbl.innerHTML = `<tbody><tr><td style="text-align:center; padding:22px; color:var(--text-muted);">جارٍ تحميل البيانات...</td></tr></tbody>`;
@@ -5980,7 +6030,7 @@ ${points?("نقاط يجب تضمينها صراحة: "+points+"."):""}
       return st==="ok" ? `<span class="pill ok">مفعّل</span>` : st==="off" ? `<span class="pill bad">معطّل</span>` : `<span class="pill wait">بدون كلمة مرور</span>`; };
     const body = rows.map(t=>{
       const shown = accShown.has(t.id);
-      const pass = t.code ? (shown ? escapeHTML(t.code) : "••••••••") : `<span style="color:var(--text-muted);">—</span>`;
+      const pass = t.code ? (shown ? escapeHTML(t.code) : "••••••••") : t.hasCode ? `<span style="color:var(--text-muted); font-size:12px;">🔒 مشفّرة</span>` : `<span style="color:var(--text-muted);">—</span>`;
       return `<tr data-tid="${escapeHTML(t.id)}">
         <td><span class="subj-badge"><span class="subj-ic">${iconSVG(subjectIconKey(t.subject))}</span><span><span style="font-weight:700;">${escapeHTML(t.name)}</span>${t.title?`<br><span style="font-size:11.5px; color:var(--accent); font-weight:700;">${escapeHTML(t.title)}</span>`:""}</span></span></td>
         <td>${escapeHTML(t.subject||"")}</td>
@@ -6004,7 +6054,7 @@ ${points?("نقاط يجب تضمينها صراحة: "+points+"."):""}
     document.getElementById("accSubject").value = t ? (t.subject||"") : "";
     document.getElementById("accUser").value = t ? (t.username||"") : "";
     document.getElementById("accPass").value = "";
-    document.getElementById("accPass").placeholder = t && t.code ? "اتركها فارغة للإبقاء على الحالية" : "اضغط 🎲 للتوليد";
+    document.getElementById("accPass").placeholder = t && hasPass(t) ? "اتركها فارغة للإبقاء على الحالية" : "اضغط 🎲 للتوليد";
     document.getElementById("accActive").checked = t ? t.active!==false : true;
     document.getElementById("accIsAdmin").checked = !!(t && t.isAdmin);
     document.getElementById("accAdminWrap").hidden = !(currentUser && currentUser.main);
@@ -6129,12 +6179,12 @@ ${points?("نقاط يجب تضمينها صراحة: "+points+"."):""}
   }
   document.getElementById("accBulkBtn").addEventListener("click", async ()=>{
     await schoolDataReady;
-    const targets = teachers.filter(t=>!t.code && t.active!==false)
+    const targets = teachers.filter(t=>!hasPass(t) && t.active!==false)
       .sort((a,b)=> ((b.isAdmin?2:b.title?1:0)-(a.isAdmin?2:a.title?1:0)) || (a.subject||"").localeCompare(b.subject||"","ar") || (a.name||"").localeCompare(b.name||"","ar"));
     if(!targets.length){ toast("كل الحسابات لديها كلمات مرور بالفعل"); return; }
     if(!window.confirm(`سيتم إنشاء ${targets.length} حسابًا:\n• اسم المستخدم: رقم من 4 خانات (1001، 1002، ...)\n• كلمة المرور: 4 أرقام\nثم يُنزَّل ملف Excel بالقائمة. الحسابات التي لها كلمة مرور لن تتغير.`)) return;
     const snapshot = JSON.stringify(teachers);
-    const taken = new Set(teachers.filter(t=>t.code).map(t=>(t.username||"").toLowerCase()));
+    const taken = new Set(teachers.filter(t=>hasPass(t)).map(t=>(t.username||"").toLowerCase()));
     if(schoolInfo.adminUsername) taken.add(schoolInfo.adminUsername.toLowerCase());
     let n = 1001;
     targets.forEach(t=>{ while(taken.has(String(n))) n++; t.username = String(n); taken.add(String(n)); n++; t.code = easyPin(); accShown.add(t.id); });
@@ -6149,7 +6199,7 @@ ${points?("نقاط يجب تضمينها صراحة: "+points+"."):""}
   document.getElementById("accExportBtn").addEventListener("click", ()=>{
     if(typeof XLSX==="undefined"){ toast("تعذّر تحميل مكتبة Excel"); return; }
     const ordered = teachers.slice().sort((a,b)=> ((b.isAdmin?2:b.title?1:0)-(a.isAdmin?2:a.title?1:0)) || (a.subject||"").localeCompare(b.subject||"","ar") || (a.name||"").localeCompare(b.name||"","ar"));
-    const data = ordered.map(t=>({"الاسم":t.name, "المسمى / المادة":t.title||t.subject, "اسم المستخدم":t.username||"", "كلمة المرور":t.code||"", "الحالة": accStatus(t)==="ok"?"مفعّل":accStatus(t)==="off"?"معطّل":"بدون كلمة مرور"}));
+    const data = ordered.map(t=>({"الاسم":t.name, "المسمى / المادة":t.title||t.subject, "اسم المستخدم":t.username||"", "كلمة المرور":t.code||(t.hasCode?"(محفوظة مشفّرة — أنشئ جديدة لعرضها)":""), "الحالة": accStatus(t)==="ok"?"مفعّل":accStatus(t)==="off"?"معطّل":"بدون كلمة مرور"}));
     const ws = XLSX.utils.json_to_sheet(data); ws["!cols"]=[{wch:30},{wch:24},{wch:16},{wch:14},{wch:16}];
     const wb = XLSX.utils.book_new(); wb.Workbook = {Views:[{RTL:true}]}; XLSX.utils.book_append_sheet(wb, ws, "المعلمون");
     XLSX.writeFile(wb, "قاعدة-بيانات-المعلمين.xlsx");
