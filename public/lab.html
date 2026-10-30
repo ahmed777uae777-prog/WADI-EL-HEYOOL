@@ -98,7 +98,7 @@ h1,h2,h3{font-family:Cairo,sans-serif;margin:0}
 <body>
 <header class="top">
   <div style="font-size:28px">🥽</div>
-  <div><h1>المختبر الافتراضي</h1><small>تجارب ثلاثية الأبعاد وواقع معزز لكل المواد</small></div>
+  <div><h1>المختبر الافتراضي</h1><small>تجارب ثلاثية الأبعاد وواقع معزز لجميع المواد الدراسية</small></div>
   <div class="sp"></div>
   <button class="tbtn" id="backHome" hidden>⬅ كل التجارب</button>
 </header>
@@ -113,9 +113,7 @@ h1,h2,h3{font-family:Cairo,sans-serif;margin:0}
     <div class="card ai-card">
       <h2>✨ أي درس بالذكاء الاصطناعي</h2>
       <div class="row">
-        <select id="aiSubject">
-          <option>الرياضيات</option><option>العلوم</option><option>الفيزياء</option><option>الكيمياء</option><option>الأحياء</option><option>التربية الإسلامية</option><option>تقنية المعلومات</option><option>الدراسات الاجتماعية</option><option>اللغة العربية</option><option>اللغة الإنجليزية</option><option>المهارات الحياتية</option><option>الفنون</option>
-        </select>
+        <select id="aiSubject"><option>الرياضيات</option><option>العلوم</option><option>الفيزياء</option><option>الكيمياء</option><option>الأحياء</option><option>العلوم البيئية</option><option>التربية الإسلامية</option><option>اللغة العربية</option><option>اللغة الإنجليزية</option><option>الدراسات الاجتماعية</option><option>الجغرافيا الاقتصادية</option><option>الجغرافيا والتقنيات الحديثة</option><option>الهوية والمواطنة</option><option>تقنية المعلومات</option><option>المهارات الحياتية</option><option>التربية البدنية والصحية</option><option>الرياضة المدرسية</option><option>الفنون التشكيلية</option><option>الفنون البصرية</option><option>الفنون الموسيقية</option><option>المهارات الموسيقية</option><option>خدمة التوجيه المهني</option></select>
         <select id="aiGrade"><option>الصف الأول</option><option>الصف الثاني</option><option>الصف الثالث</option><option>الصف الرابع</option><option selected>الصف الخامس</option><option>الصف السادس</option><option>الصف السابع</option><option>الصف الثامن</option><option>الصف التاسع</option><option>الصف العاشر</option><option>الصف الحادي عشر</option><option>الصف الثاني عشر</option></select>
         <input class="full" id="aiTopic" placeholder="مثال: البراكين، أجزاء الزهرة، الوضوء، الهرم الغذائي…">
         <button class="btn full" id="aiGo">✨ ابنِ المشهد ثلاثي الأبعاد</button>
@@ -246,7 +244,7 @@ function clickable(obj, fn){ obj.userData.onClick = fn; E.clickables.push(obj); 
 function onUpdate(fn){ E.updaters.push(fn); }
 function tweenVal(from, to, sec, fn, done){ let t = 0; const u = (dt)=>{ t = Math.min(1, t + dt/sec); fn(lerp(from, to, ease(t))); if(t>=1){ E.updaters.splice(E.updaters.indexOf(u),1); done && done(); } }; E.updaters.push(u); return u; }
 function clearScene(){
-  E.updaters.length = 0; E.clickables.length = 0; E.tween = null; stopSpin();
+  (E.onClear||[]).splice(0).forEach(f=>{ try{ f(); }catch(e){} }); E.updaters.length = 0; E.clickables.length = 0; E.tween = null; stopSpin();
   E.root.traverse(o=>{ if(o.geometry) o.geometry.dispose(); if(o.material){ (Array.isArray(o.material)?o.material:[o.material]).forEach(m=>{ if(m.map) m.map.dispose(); m.dispose(); }); } });
   E.root.clear(); E.root.position.set(0,0,0); E.root.rotation.set(0,0,0); E.root.scale.set(1,1,1);
   E.floor.visible = !E.ar; E.grid.visible = !E.ar; E.scene.fog = null; E.hemi.intensity = .85; E.sun.intensity = .85;
@@ -295,7 +293,9 @@ const UI = {
 /* =====================================================================
    Built-in experiences
    ===================================================================== */
-const SUBJ = { math:{n:"الرياضيات", c:"#E3EFEE"}, sci:{n:"العلوم", c:"#E7F3E4"}, isl:{n:"التربية الإسلامية", c:"#FFF1D6"}, it:{n:"تقنية المعلومات", c:"#E6ECF8"}, soc:{n:"الدراسات الاجتماعية", c:"#F3E6E1"} };
+const SUBJ = { math:{n:"الرياضيات", c:"#E3EFEE"}, sci:{n:"العلوم", c:"#E7F3E4"}, phy:{n:"الفيزياء", c:"#E3ECF7"}, chem:{n:"الكيمياء", c:"#F1E6F7"}, bio:{n:"الأحياء", c:"#E5F4E3"}, env:{n:"العلوم البيئية", c:"#E0F2F1"},
+  isl:{n:"التربية الإسلامية", c:"#FFF1D6"}, ar:{n:"اللغة العربية", c:"#FCE8D8"}, en:{n:"اللغة الإنجليزية", c:"#E3E8F8"}, soc:{n:"الدراسات الاجتماعية", c:"#F3E6E1"}, geo:{n:"الجغرافيا", c:"#EFE7D6"}, cit:{n:"الهوية والمواطنة", c:"#FDE3E3"},
+  it:{n:"تقنية المعلومات", c:"#E6ECF8"}, life:{n:"المهارات الحياتية", c:"#FFF4D6"}, pe:{n:"التربية البدنية والصحية", c:"#E2F3EA"}, art:{n:"الفنون التشكيلية والبصرية", c:"#FBE3EF"}, mus:{n:"الفنون والمهارات الموسيقية", c:"#EDE3F8"} };
 const XP = [];
 function def(o){ XP.push(o); }
 
@@ -661,7 +661,7 @@ def({id:"hajj", s:"isl", icon:"🕋", t:"مناسك الحج خطوة بخطوة
  }});
 
 /* ---------- 6) Globe + Qibla ---------- */
-def({id:"globe", s:"soc", s2:"isl", icon:"🌍", t:"الكرة الأرضية واتجاه القبلة", g:"الصف 4–12", d:"خطوط الطول ودوائر العرض، موقع سلطنة عُمان، الليل والنهار، واتجاه القبلة من البريمي إلى مكة المكرمة.", tags:"الكرة الأرضية خطوط الطول دوائر العرض خط الاستواء جرينتش القبلة اتجاه القبلة عمان مكة الليل والنهار دوران الأرض خريطة",
+def({id:"globe", s:"soc", s2:"isl", ss:["geo"], icon:"🌍", t:"الكرة الأرضية واتجاه القبلة", g:"الصف 4–12", d:"خطوط الطول ودوائر العرض، موقع سلطنة عُمان، الليل والنهار، واتجاه القبلة من البريمي إلى مكة المكرمة.", tags:"الكرة الأرضية خطوط الطول دوائر العرض خط الاستواء جرينتش القبلة اتجاه القبلة عمان مكة الليل والنهار دوران الأرض خريطة",
  build(){
   setHome([0,1.6,7.5],[0,1.6,0]);
   const Rg = 2; const g = new THREE.Group(); g.position.y = 1.7; E.root.add(g);
@@ -704,7 +704,7 @@ def({id:"globe", s:"soc", s2:"isl", icon:"🌍", t:"الكرة الأرضية و
  }});
 
 /* ---------- 7) Solutions & solubility ---------- */
-def({id:"solutions", s:"sci", icon:"🧪", t:"مختبر المحاليل والذوبان", g:"الصف 4–10", d:"أضف الملح أو السكر أو كبريتات النحاس للماء، غيّر الحرارة والحجم، وراقب التركيز والتشبع ومنحنى الذوبانية.", tags:"محلول محاليل ذوبان ذائبية ذوبانية مذيب مذاب تركيز مشبع غير مشبع ملح سكر كبريتات النحاس خليط درجة الحرارة",
+def({id:"solutions", s:"sci", ss:["chem"], icon:"🧪", t:"مختبر المحاليل والذوبان", g:"الصف 4–10", d:"أضف الملح أو السكر أو كبريتات النحاس للماء، غيّر الحرارة والحجم، وراقب التركيز والتشبع ومنحنى الذوبانية.", tags:"محلول محاليل ذوبان ذائبية ذوبانية مذيب مذاب تركيز مشبع غير مشبع ملح سكر كبريتات النحاس خليط درجة الحرارة",
  build(){
   setHome([0,3.2,7.5],[0,1.6,0]);
   const SOL = { salt:{n:"ملح الطعام", c:"#FFFFFF", tint:null, s:t=>35.7+0.04*t+0.0006*t*t}, sugar:{n:"السكر", c:"#FFF8E7", tint:null, s:t=>179+1.6*t+0.03*t*t},
@@ -787,7 +787,7 @@ def({id:"solutions", s:"sci", icon:"🧪", t:"مختبر المحاليل وال
  }});
 
 /* ---------- 8) Acids, bases & indicator ---------- */
-def({id:"acids", s:"sci", icon:"⚗️", t:"الأحماض والقواعد والكاشف", g:"الصف 5–10", d:"اختبر الليمون والخل والصابون والمنظّف بالكاشف العام، واقرأ الرقم الهيدروجيني، وشاهد تفاعل الخل مع بيكربونات الصوديوم.", tags:"حمض أحماض قاعدة قواعد قلوي كاشف الرقم الهيدروجيني pH متعادل ليمون خل صابون تفاعل كيميائي بيكربونات ثاني أكسيد الكربون",
+def({id:"acids", s:"chem", ss:["sci"], icon:"⚗️", t:"الأحماض والقواعد والكاشف", g:"الصف 5–10", d:"اختبر الليمون والخل والصابون والمنظّف بالكاشف العام، واقرأ الرقم الهيدروجيني، وشاهد تفاعل الخل مع بيكربونات الصوديوم.", tags:"حمض أحماض قاعدة قواعد قلوي كاشف الرقم الهيدروجيني pH متعادل ليمون خل صابون تفاعل كيميائي بيكربونات ثاني أكسيد الكربون",
  build(){
   setHome([0,3.4,8.5],[0,1.2,0]);
   const SUBS = [["عصير الليمون",2],["الخل",3],["المشروب الغازي",4],["الحليب",6.5],["الماء النقي",7],["صودا الخبز",9],["الصابون",10],["المنظّف (الأمونيا)",11.5]];
@@ -840,7 +840,7 @@ def({id:"acids", s:"sci", icon:"⚗️", t:"الأحماض والقواعد وا
  }});
 
 /* ---------- 9) States of matter ---------- */
-def({id:"states", s:"sci", icon:"🧊", t:"حالات المادة والجزيئات", g:"الصف 3–8", d:"سخّن المادة وبرّدها وشاهد حركة الجزيئات في الحالة الصلبة والسائلة والغازية، والانصهار والغليان.", tags:"حالات المادة صلب سائل غاز انصهار تجمد غليان تبخر تكاثف جزيئات حرارة",
+def({id:"states", s:"sci", ss:["phy","chem"], icon:"🧊", t:"حالات المادة والجزيئات", g:"الصف 3–8", d:"سخّن المادة وبرّدها وشاهد حركة الجزيئات في الحالة الصلبة والسائلة والغازية، والانصهار والغليان.", tags:"حالات المادة صلب سائل غاز انصهار تجمد غليان تبخر تكاثف جزيئات حرارة",
  build(){
   setHome([0,3,8],[0,1.6,0]);
   const W=3.2, Hh=3.2, Dd=2.2; const box = new THREE.Mesh(new THREE.BoxGeometry(W,Hh,Dd), new THREE.MeshPhysicalMaterial({color:0xffffff, transparent:true, opacity:.12, side:THREE.BackSide, depthWrite:false})); box.position.y = Hh/2+.05; E.root.add(box);
@@ -887,7 +887,7 @@ def({id:"states", s:"sci", icon:"🧊", t:"حالات المادة والجزي�
  }});
 
 /* ---------- 10) Solar system ---------- */
-def({id:"solar", s:"sci", icon:"🪐", t:"المجموعة الشمسية", g:"الصف 3–9", d:"الشمس والكواكب الثمانية تدور في مداراتها. انقر أي كوكب لتعرف معلوماته.", tags:"المجموعة الشمسية الشمس الكواكب عطارد كوكب_الزهرة كوكب_الأرض المريخ المشتري زحل أورانوس نبتون القمر مدار الفضاء",
+def({id:"solar", s:"sci", ss:["geo","phy"], icon:"🪐", t:"المجموعة الشمسية", g:"الصف 3–9", d:"الشمس والكواكب الثمانية تدور في مداراتها. انقر أي كوكب لتعرف معلوماته.", tags:"المجموعة الشمسية الشمس الكواكب عطارد كوكب_الزهرة كوكب_الأرض المريخ المشتري زحل أورانوس نبتون القمر مدار الفضاء",
  build(){
   setHome([0,10,18],[0,0,0]); if(!E.ar){ E.grid.visible=false; E.floor.visible=false; }
   const sunM = new THREE.MeshBasicMaterial({color:0xFDB813}); const sun = mesh(new THREE.SphereGeometry(1.4,48,32), sunM, E.root); sun.position.y = 1.5; sun.castShadow=false;
@@ -925,7 +925,7 @@ def({id:"solar", s:"sci", icon:"🪐", t:"المجموعة الشمسية", g:"�
  }});
 
 /* ---------- 11) Atom builder ---------- */
-def({id:"atom", s:"sci", icon:"⚛️", t:"تركيب الذرة", g:"الصف 7–12", d:"اختر العنصر من 1 إلى 20: البروتونات والنيوترونات في النواة والإلكترونات في المستويات، والتوزيع الإلكتروني.", tags:"ذرة الذرة نواة بروتون نيوترون إلكترون مستويات الطاقة التوزيع الإلكتروني العدد الذري العدد الكتلي عنصر الجدول الدوري",
+def({id:"atom", s:"chem", ss:["sci","phy"], icon:"⚛️", t:"تركيب الذرة", g:"الصف 7–12", d:"اختر العنصر من 1 إلى 20: البروتونات والنيوترونات في النواة والإلكترونات في المستويات، والتوزيع الإلكتروني.", tags:"ذرة الذرة نواة بروتون نيوترون إلكترون مستويات الطاقة التوزيع الإلكتروني العدد الذري العدد الكتلي عنصر الجدول الدوري",
  build(){
   setHome([0,3.4,8.5],[0,2,0]);
   const EL = [["هيدروجين","H",1],["هيليوم","He",4],["ليثيوم","Li",7],["بيريليوم","Be",9],["بورون","B",11],["كربون","C",12],["نيتروجين","N",14],["أكسجين","O",16],["فلور","F",19],["نيون","Ne",20],["صوديوم","Na",23],["مغنيسيوم","Mg",24],["ألومنيوم","Al",27],["سيليكون","Si",28],["فوسفور","P",31],["كبريت","S",32],["كلور","Cl",35],["أرجون","Ar",40],["بوتاسيوم","K",39],["كالسيوم","Ca",40]];
@@ -958,7 +958,7 @@ def({id:"atom", s:"sci", icon:"⚛️", t:"تركيب الذرة", g:"الصف 7
  }});
 
 /* ---------- 12) Electric circuit ---------- */
-def({id:"circuit", s:"sci", icon:"💡", t:"الدارة الكهربائية", g:"الصف 4–9", d:"بطارية ومفتاح ومصابيح: افتح وأغلق الدارة، وقارن التوصيل على التوالي والتوازي، وشاهد حركة الإلكترونات.", tags:"دارة كهربائية الكهرباء بطارية مصباح مفتاح توالي توازي تيار إلكترونات موصل عازل",
+def({id:"circuit", s:"phy", ss:["sci"], icon:"💡", t:"الدارة الكهربائية", g:"الصف 4–9", d:"بطارية ومفتاح ومصابيح: افتح وأغلق الدارة، وقارن التوصيل على التوالي والتوازي، وشاهد حركة الإلكترونات.", tags:"دارة كهربائية الكهرباء بطارية مصباح مفتاح توالي توازي تيار إلكترونات موصل عازل",
  build(){
   setHome([0,6,7],[0,.5,0]);
   let closed = true, mode = "series", volts = 1;
@@ -1053,6 +1053,455 @@ def({id:"computer", s:"it", icon:"🖥️", t:"مكونات الحاسوب من 
  }});
 
 /* =====================================================================
+   More subjects: Arabic, English, Biology, Health/PE, Environment,
+   Physics, Life skills, Citizenship, Arts, Music, Geography
+   ===================================================================== */
+function sayNow(text, lang){ if(!window.speechSynthesis) return; speechSynthesis.cancel(); const u = new SpeechSynthesisUtterance(text); u.lang = lang||"ar-SA"; const v = speechSynthesis.getVoices().find(v=>v.lang && v.lang.toLowerCase().startsWith((lang||"ar").slice(0,2))); if(v) u.voice = v; u.rate = .9; speechSynthesis.speak(u); }
+function canvasTex(w, h, draw){ const c = document.createElement("canvas"); c.width = w; c.height = h; draw(c.getContext("2d"), w, h); const t = new THREE.CanvasTexture(c); t.encoding = THREE.sRGBEncoding; t.anisotropy = 4; return t; }
+const EMOJI_FONT = '"Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif';
+function cardTex(emoji, word, sub, bg){ return canvasTex(512, 640, (x,w,h)=>{
+  x.fillStyle = bg || "#FFFFFF"; x.fillRect(0,0,w,h); x.strokeStyle = "#0B5457"; x.lineWidth = 16; x.strokeRect(8,8,w-16,h-16);
+  x.textAlign = "center"; x.textBaseline = "middle"; x.font = `250px ${EMOJI_FONT}`; x.fillText(emoji, w/2, 250);
+  x.fillStyle = "#14302F"; x.font = "800 74px Cairo, Tahoma, sans-serif"; x.direction = /[A-Za-z]/.test(word) ? "ltr" : "rtl"; x.fillText(word, w/2, 480);
+  if(sub){ x.fillStyle = "#9A6B1F"; x.font = "700 46px Cairo, Tahoma, sans-serif"; x.direction = /[A-Za-z]/.test(sub) ? "ltr" : "rtl"; x.fillText(sub, w/2, 570); } }); }
+function cardMesh(tex, parent){ const back = M("#0B5457"); const m = mesh(new THREE.BoxGeometry(1.2,1.5,.06), [back,back,back,back,new THREE.MeshStandardMaterial({map:tex, roughness:.6}), new THREE.MeshStandardMaterial({color:0xE2B864})], parent); return m; }
+
+/* ---------- 14) Arabic letters ---------- */
+def({id:"arletters", s:"ar", icon:"🔤", t:"الحروف العربية المجسّمة", g:"الصف 1–4", d:"مكعبات الحروف: شكل الحرف في أول الكلمة ووسطها وآخرها، والحركات، وكلمة وصورة لكل حرف مع النطق.", tags:"حروف الحروف الهجائية حرف ألف باء أشكال الحرف الحركات فتحة ضمة كسرة سكون تنوين قراءة كتابة",
+ build(){
+  setHome([0,2.6,8],[0,1.8,0]);
+  const L = [["أ","ألف","أرنب","🐰"],["ب","باء","بطة","🦆"],["ت","تاء","تفاحة","🍎"],["ث","ثاء","ثعلب","🦊"],["ج","جيم","جمل","🐫"],["ح","حاء","حصان","🐴"],["خ","خاء","خروف","🐑"],["د","دال","دب","🐻"],["ذ","ذال","ذرة","🌽"],["ر","راء","ريشة","🪶"],["ز","زاي","زرافة","🦒"],["س","سين","سمكة","🐟"],["ش","شين","شمس","☀️"],["ص","صاد","صقر","🦅"],["ض","ضاد","ضفدع","🐸"],["ط","طاء","طائرة","✈️"],["ظ","ظاء","ظرف","✉️"],["ع","عين","عنب","🍇"],["غ","غين","غيمة","☁️"],["ف","فاء","فيل","🐘"],["ق","قاف","قمر","🌙"],["ك","كاف","كتاب","📖"],["ل","لام","ليمون","🍋"],["م","ميم","موز","🍌"],["ن","نون","نحلة","🐝"],["هـ","هاء","هدية","🎁"],["و","واو","وردة","🌹"],["ي","ياء","يد","✋"]];
+  const NONJ = "أادذرزو";
+  let idx = 1, group = new THREE.Group(); E.root.add(group);
+  const faceTex = (txt, bg, fg, size)=>canvasTex(256,256,(x,w,h)=>{ x.fillStyle=bg; x.fillRect(0,0,w,h); x.strokeStyle="rgba(0,0,0,.18)"; x.lineWidth=10; x.strokeRect(5,5,w-10,h-10); x.fillStyle=fg; x.font=`800 ${size||150}px Cairo, "Amiri", Tahoma`; x.textAlign="center"; x.textBaseline="middle"; x.direction="rtl"; x.fillText(txt, w/2, h/2+12); });
+  const COLS = ["#E53935","#1E88E5","#43A047","#FB8C00","#8E24AA","#00897B"];
+  function forms(l){ const b = l==="هـ" ? "ه" : (l==="أ" ? "ا" : l); const j = !NONJ.includes(l);
+    return [["منفصل", b], ["أول الكلمة", j ? b+"ـ" : b], ["وسط الكلمة", j ? "ـ"+b+"ـ" : "ـ"+b], ["آخر الكلمة", "ـ"+b]]; }
+  function show(){
+    group.traverse(o=>{ if(o.material){ (Array.isArray(o.material)?o.material:[o.material]).forEach(m=>{ m.map&&m.map.dispose(); m.dispose(); }); } if(o.geometry) o.geometry.dispose(); }); group.clear();
+    const [l, name, word, emo] = L[idx]; const col = COLS[idx % COLS.length];
+    const big = mesh(new THREE.BoxGeometry(1.7,1.7,1.7), Array.from({length:6},()=>new THREE.MeshStandardMaterial({map:faceTex(l, col, "#fff", 170)})), group); big.position.set(0,2.2,0); big.userData.spin = true;
+    clickable(big, ()=>sayNow(`حرف ال${name.replace(/^ال/,"")}. ${word}`));
+    forms(l).forEach(([lbl, f], i)=>{ const c = mesh(new THREE.BoxGeometry(.9,.9,.9), new THREE.MeshStandardMaterial({map:faceTex(f, "#FFF7E4", col, 120)}), group); c.position.set(2.7 - i*1.8, .5, 1.4); label(lbl, [2.7 - i*1.8, 1.25, 1.4], {size:.2, parent:group}); });
+    const hk = [["فتحة", l==="أ"?"أَ":(l==="هـ"?"هَ":l+"َ")],["ضمة", l==="أ"?"أُ":(l==="هـ"?"هُ":l+"ُ")],["كسرة", l==="أ"?"إِ":(l==="هـ"?"هِ":l+"ِ")],["سكون", l==="أ"?"أْ":(l==="هـ"?"هْ":l+"ْ")]];
+    hk.forEach(([n,t],i)=>{ const c = mesh(new THREE.BoxGeometry(.8,.8,.2), new THREE.MeshStandardMaterial({map:faceTex(t,"#FFFFFF",col,130)}), group); c.position.set(-3.7, .6 + i*.95, -.6); c.rotation.y = .35;
+      label(n, [-4.6, .6 + i*.95, -.6], {size:.17, parent:group}); clickable(c, ()=>sayNow(t)); });
+    const card = cardMesh(cardTex(emo, word, "حرف ال"+name.replace(/^ال/,"")), group); card.position.set(3.8, 2.4, -.5); card.rotation.y = -.35; card.userData.float = true;
+    clickable(card, ()=>sayNow(word));
+    info.innerHTML = `<div class="big" style="font-size:40px">${l}</div>حرف <b>${name}</b> · مثال: <b>${emo} ${word}</b><br>أشكاله: ${forms(l).map(f=>`<b style="font-size:20px">${f[1]}</b>`).join(" · ")}<br><small>انقر على أي مكعب أو حركة لسماع النطق.</small>`;
+    grid.querySelectorAll(".pill").forEach((b,i)=>b.classList.toggle("on", i===idx));
+  }
+  onUpdate((dt,t)=>{ group.children.forEach(c=>{ if(c.userData.spin) c.rotation.y += dt*.6; if(c.userData.float) c.position.y = 2.4 + Math.sin(t*1.5)*.12; }); });
+  UI.reset(this.t, this.g);
+  const s = UI.sec("اختر الحرف");
+  const grid = UI.buttons(s, L.map((q,i)=>({t:`<span style="font-size:18px">${q[0]}</span>`, on:()=>{ idx=i; show(); sayNow("حرف ال"+q[1].replace(/^ال/,"")); }})));
+  UI.buttons(s, [{t:"→ السابق", on:()=>{ idx=(idx+L.length-1)%L.length; show(); }},{t:"التالي ←", on:()=>{ idx=(idx+1)%L.length; show(); }},{t:"🔊 انطق", on:()=>{ const q=L[idx]; sayNow(`حرف ال${q[1].replace(/^ال/,"")}. ${q[2]}`); }}]);
+  const info = UI.info(); show();
+  UI.steps([
+    {t:"الحروف الهجائية", d:"في اللغة العربية ثمانية وعشرون حرفًا. اختر حرفًا لتراه مجسّمًا وتسمع نطقه.", run:()=>{ idx=1; show(); }},
+    {t:"أشكال الحرف", d:"يتغير شكل الحرف حسب موقعه: في أول الكلمة، أو وسطها، أو آخرها، أو منفصلًا.", run:()=>camTo([0,2,7],[0,.8,1.4])},
+    {t:"الحروف التي لا تتصل بما بعدها", d:"ستة حروف لا تتصل بما بعدها: ا، د، ذ، ر، ز، و. جرّب حرف الدال ولاحظ أشكاله.", run:()=>{ idx=7; show(); }},
+    {t:"الحركات", d:"الفتحة والضمة والكسرة والسكون تغيّر صوت الحرف. انقر على كل حركة لتسمع الفرق.", run:()=>camTo([-1.5,2.4,6.5],[-3.6,2,-.6])},
+    {t:"كلمة وصورة", d:"لكل حرف كلمة تبدأ به مع صورتها. انقر البطاقة لتسمع الكلمة.", run:()=>camTo([2.5,2.6,6],[3.8,2.3,-.5])}
+  ]);
+ }});
+
+/* ---------- 15) English vocabulary ---------- */
+def({id:"english", s:"en", icon:"🇬🇧", t:"English 3D Vocabulary", g:"الصف 1–8", d:"بطاقات مجسّمة للحروف والمفردات (الحيوانات، الفواكه، الألوان، الأرقام، أدوات الصف، الجسم) مع النطق واختبار استماع.", tags:"English الإنجليزية اللغة الإنجليزية vocabulary مفردات alphabet حروف إنجليزية animals fruits colors numbers",
+ build(){
+  setHome([0,2.4,9],[0,1.6,0]);
+  const CATS = {
+    "Alphabet":["🍎A a|Apple","⚽B b|Ball","🐱C c|Cat","🐶D d|Dog","🥚E e|Egg","🐟F f|Fish","🍇G g|Grapes","🐴H h|Horse","🍦I i|Ice cream","🧃J j|Juice","🪁K k|Kite","🦁L l|Lion","🐒M m|Monkey","👃N n|Nose","🍊O o|Orange","🐧P p|Penguin","👑Q q|Queen","🌈R r|Rainbow","☀️S s|Sun","🐯T t|Tiger","☂️U u|Umbrella","🎻V v|Violin","🍉W w|Watermelon","🦊X x|Fox","🪀Y y|Yo-yo","🦓Z z|Zebra"],
+    "Animals":["🐱|cat|قطة","🐶|dog|كلب","🦁|lion|أسد","🐘|elephant|فيل","🐟|fish|سمكة","🐦|bird|طائر","🐴|horse|حصان","🐄|cow|بقرة","🐫|camel|جمل","🐢|turtle|سلحفاة"],
+    "Fruits":["🍎|apple|تفاحة","🍌|banana|موز","🍊|orange|برتقال","🍇|grapes|عنب","🍓|strawberry|فراولة","🍉|watermelon|بطيخ","🍋|lemon|ليمون","🥭|mango|مانجو","🍐|pear|كمثرى","🥝|kiwi|كيوي"],
+    "Colors":["🔴|red|أحمر","🔵|blue|أزرق","🟢|green|أخضر","🟡|yellow|أصفر","🟠|orange|برتقالي","🟣|purple|بنفسجي","⚫|black|أسود","⚪|white|أبيض","🟤|brown|بني","🩷|pink|وردي"],
+    "Numbers":["1️⃣|one|واحد","2️⃣|two|اثنان","3️⃣|three|ثلاثة","4️⃣|four|أربعة","5️⃣|five|خمسة","6️⃣|six|ستة","7️⃣|seven|سبعة","8️⃣|eight|ثمانية","9️⃣|nine|تسعة","🔟|ten|عشرة"],
+    "Classroom":["📖|book|كتاب","🖊️|pen|قلم","✏️|pencil|قلم رصاص","🎒|bag|حقيبة","📏|ruler|مسطرة","✂️|scissors|مقص","💻|computer|حاسوب","⏰|clock|ساعة","🪑|chair|كرسي","🧑‍🏫|teacher|معلم"],
+    "Body":["👁️|eye|عين","👂|ear|أذن","👃|nose|أنف","👄|mouth|فم","✋|hand|يد","🦶|foot|قدم","🦷|tooth|سن","💪|arm|ذراع","🦵|leg|ساق","🧠|brain|دماغ"]
+  };
+  let cat = "Animals", cards = [], ring = new THREE.Group(), rot = 0, target = 0, quiz = null; E.root.add(ring); ring.position.y = 1.6;
+  function parse(s){ if(cat==="Alphabet"){ const e = [...s][0]; const rest = s.slice(e.length).split("|"); return {e, w:rest[0], ar:rest[1], speak: rest[0][0]+". "+rest[1]}; } const p = s.split("|"); return {e:p[0], w:p[1], ar:p[2], speak:p[1]}; }
+  function build(){
+    ring.traverse(o=>{ if(o.material){ (Array.isArray(o.material)?o.material:[o.material]).forEach(m=>{ m.map&&m.map.dispose(); m.dispose(); }); } if(o.geometry) o.geometry.dispose(); }); ring.clear(); cards = []; rot = target = 0;
+    const items = CATS[cat].map(parse), n = items.length, R = Math.max(3, n*.32);
+    items.forEach((it,i)=>{ const a = i/n*Math.PI*2; const c = cardMesh(cardTex(it.e, it.w, it.ar), ring); c.position.set(Math.sin(a)*R, 0, Math.cos(a)*R); c.rotation.y = a; c.userData = {it, a, i};
+      clickable(c, ()=>pick(c)); cards.push(c); });
+    ring.userData.R = R; info.innerHTML = `<b>${cat}</b>: ${n} cards — click a card to hear it.`;
+  }
+  function focus(i){ const n = cards.length; target = -i/n*Math.PI*2; }
+  function pick(c){ focus(c.userData.i); const it = c.userData.it;
+    if(quiz){ const ok = it.w===quiz.w; c.material[4].emissive = new THREE.Color(ok?0x2E7D4F:0xB23A3A); c.material[4].emissiveIntensity=.35; setTimeout(()=>{ c.material[4].emissiveIntensity=0; }, 900);
+      if(ok){ quiz.score++; toast("✔ Correct! "+it.w); nextQ(); } else { toast("✖ Try again"); sayNow(quiz.w, "en-US"); } return; }
+    sayNow(it.speak, "en-US"); info.innerHTML = `<div class="big" dir="ltr" style="text-align:left">${it.e} ${esc(it.w)}</div>المعنى: <b>${esc(it.ar)}</b>`; }
+  function nextQ(){ const its = cards.map(c=>c.userData.it); if(quiz && quiz.n>=5){ info.innerHTML = `<div class="big">🏆 ${quiz.score} / 5</div>Listening quiz finished.`; quiz=null; return; }
+    const it = its[Math.floor(Math.random()*its.length)]; quiz = Object.assign(quiz||{score:0,n:0}, {w:it.w}); quiz.n++; info.innerHTML = `🎧 Question ${quiz.n}/5: listen and click the right card. <button class="pill" id="rep">🔊 Repeat</button>`; $("rep").onclick=()=>sayNow(quiz.w,"en-US"); setTimeout(()=>sayNow(it.cat==="Alphabet"?it.w[0]:it.w, "en-US"), 400); }
+  onUpdate((dt,t)=>{ rot += (target-rot)*Math.min(1,dt*4); ring.rotation.y = rot; cards.forEach(c=>{ const front = Math.cos(c.userData.a + rot); c.position.y = front>.95 ? .25 + Math.sin(t*2)*.05 : 0; }); });
+  UI.reset(this.t, this.g);
+  const s = UI.sec("Category — الفئة");
+  UI.buttons(s, Object.keys(CATS).map((k,i)=>({t:k, on0:k===cat, on:()=>{ cat=k; quiz=null; build(); }})), {radio:true});
+  UI.buttons(s, [{t:"⟲", on:()=>{ target += Math.PI*2/cards.length; }},{t:"⟳", on:()=>{ target -= Math.PI*2/cards.length; }},{t:"🎧 Listening quiz", on:()=>{ quiz=null; nextQ(); }}]);
+  const info = UI.info(); build();
+  UI.steps([
+    {t:"Welcome!", d:"اختر فئة من الفئات، ثم انقر على أي بطاقة لتسمع نطق الكلمة بالإنجليزية وترى معناها.", run:()=>{ cat="Animals"; build(); }},
+    {t:"The Alphabet", d:"الحروف الإنجليزية الستة والعشرون: لكل حرف شكل كبير وصغير وكلمة تبدأ به.", run:()=>{ cat="Alphabet"; build(); }},
+    {t:"Colors & Numbers", d:"تعلّم الألوان والأرقام، وأدر الحلقة بالأسهم لتعرض البطاقات أمام الصف.", run:()=>{ cat="Colors"; build(); }},
+    {t:"Listening quiz", d:"اختبار استماع: تسمع كلمة، فينقر الطالب على البطاقة الصحيحة. خمسة أسئلة.", run:()=>{ cat="Fruits"; build(); setTimeout(nextQ, 600); }}
+  ]);
+ }});
+
+/* ---------- 16) The cell ---------- */
+def({id:"cell", s:"bio", ss:["sci"], icon:"🦠", t:"الخلية النباتية والحيوانية", g:"الصف 6–12", d:"خلية ثلاثية الأبعاد بعضياتها: النواة، الميتوكوندريا، البلاستيدات الخضراء، الفجوة، الجدار والغشاء… مع المقارنة بين الخليتين.", tags:"خلية الخلية نباتية حيوانية نواة ميتوكوندريا بلاستيدات خضراء فجوة جدار خلوي غشاء بلازمي سيتوبلازم رايبوسوم جهاز جولجي شبكة إندوبلازمية عضيات",
+ build(){
+  setHome([5,4.2,6.5],[0,1.8,0]);
+  let plant = true; const g = new THREE.Group(); g.position.y = 1.9; E.root.add(g); const parts = [];
+  function org(name, desc, obj){ obj.userData.name = name; obj.userData.desc = desc; clickable(obj, ()=>sel(obj)); parts.push(obj); return obj; }
+  function sel(o){ parts.forEach(p=>{ p.traverse(m=>{ if(m.material && m.material.emissive){ m.material.emissive.set(p===o?0xE2B864:0x000000); m.material.emissiveIntensity = p===o?.45:0; } }); });
+    lab.visible = true; lab.userData.set(o.userData.name); const wp = new THREE.Vector3(); o.getWorldPosition(wp); lab.position.set(wp.x, wp.y+.75, wp.z);
+    info.innerHTML = `<div class="big">${o.userData.name}</div>${o.userData.desc}`; speak(o.userData.name+". "+o.userData.desc); }
+  const lab = label("", [0,0,0], {size:.24}); lab.visible = false;
+  function build(){
+    g.traverse(o=>{ if(o.geometry) o.geometry.dispose(); }); g.clear(); parts.length = 0; E.clickables.length = 0; lab.visible = false;
+    if(plant){
+      org("الجدار الخلوي", "طبقة خارجية صلبة من السليلوز تحيط بالخلية النباتية فقط، تمنحها شكلها الثابت وتحميها.", mesh(new THREE.BoxGeometry(4.4,2.8,2.8), M("#7CB342",{transparent:true, opacity:.16, depthWrite:false, side:THREE.DoubleSide}), g));
+      g.add(new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.BoxGeometry(4.4,2.8,2.8)), new THREE.LineBasicMaterial({color:0x558B2F})));
+      org("الغشاء البلازمي", "غشاء رقيق مرن يتحكم فيما يدخل الخلية ويخرج منها.", mesh(new THREE.BoxGeometry(4.2,2.6,2.6), M("#FFCC80",{transparent:true, opacity:.12, depthWrite:false, side:THREE.DoubleSide}), g));
+      org("الفجوة العصارية", "كيس كبير في الخلية النباتية يخزّن الماء والأملاح ويحافظ على امتلاء الخلية.", mesh(new THREE.BoxGeometry(2.2,1.6,1.5), M("#64B5F6",{transparent:true, opacity:.5, depthWrite:false}), g)).position.set(.6,0,0);
+      for(let i=0;i<6;i++){ const c = mesh(new THREE.CapsuleGeometry(.14,.3,6,12), M("#2E7D32"), g); c.position.set(-1.8+ (i%3)*.5, -.9 + Math.floor(i/3)*1.8, (i%2?.8:-.8)); c.rotation.z = i; org("البلاستيدات الخضراء", "تحتوي على الكلوروفيل الأخضر، وفيها تحدث عملية البناء الضوئي لصنع الغذاء من الماء وثاني أكسيد الكربون وضوء الشمس.", c); }
+    } else {
+      const mem = mesh(new THREE.SphereGeometry(1.9, 48, 32), M("#FFAB91",{transparent:true, opacity:.2, depthWrite:false, side:THREE.DoubleSide}), g); mem.scale.set(1.15,.85,1);
+      org("الغشاء البلازمي", "الغلاف الخارجي للخلية الحيوانية، مرن ويتحكم فيما يدخل الخلية ويخرج منها.", mem);
+      org("فجوة صغيرة", "الخلية الحيوانية فيها فجوات صغيرة ومتعددة لتخزين المواد.", mesh(new THREE.SphereGeometry(.3,24,16), M("#64B5F6",{transparent:true, opacity:.55}), g)).position.set(1,.5,.6);
+      org("الجسيم المركزي", "يوجد في الخلية الحيوانية ويساعد في انقسام الخلية.", mesh(new THREE.CylinderGeometry(.08,.08,.4,10), M("#8E24AA"), g)).position.set(-.4,.9,.5);
+    }
+    const nuc = mesh(new THREE.SphereGeometry(.62,32,24), M("#7E57C2",{transparent:true, opacity:.85}), g); nuc.position.set(plant?-1.1:0, plant?.25:0, 0);
+    mesh(new THREE.SphereGeometry(.22,16,12), M("#311B92"), nuc).position.set(.15,.1,.2);
+    org("النواة", "مركز التحكم في الخلية، تحتوي على المادة الوراثية (DNA) وتوجّه جميع أنشطة الخلية.", nuc);
+    for(let i=0;i<4;i++){ const m = mesh(new THREE.CapsuleGeometry(.12,.35,6,12), M("#FF7043"), g); m.position.set((plant?-.3:-1.2)+i*.55, -.75+(i%2)*.4, i%2?.7:-.7); m.rotation.set(i,.5*i,1); org("الميتوكوندريا", "«محطة الطاقة» في الخلية: تُطلق الطاقة من الغذاء بعملية التنفس الخلوي.", m); }
+    const gol = new THREE.Group(); gol.position.set(plant?1.3:1.1, plant?.85:-.6, -.6); g.add(gol); for(let i=0;i<4;i++){ const t = mesh(new THREE.TorusGeometry(.32-i*.03,.04,8,24,Math.PI*1.2), M("#FBC02D"), gol); t.position.y = i*.1; t.rotation.x = Math.PI/2; } org("جهاز جولجي", "يعبّئ البروتينات والمواد ويرسلها إلى داخل الخلية أو خارجها.", gol);
+    const er = new THREE.Group(); er.position.copy(nuc.position).add(new THREE.Vector3(.75,0,0)); g.add(er); for(let i=0;i<3;i++){ const t = mesh(new THREE.TorusGeometry(.85+i*.14,.035,8,32,Math.PI*.8), M("#4DB6AC"), er); t.rotation.z = -Math.PI*.4; t.position.x = -.75; } org("الشبكة الإندوبلازمية", "قنوات تنقل المواد داخل الخلية، وعليها الرايبوسومات.", er);
+    const ribM = M("#37474F"); for(let i=0;i<40;i++){ const r = mesh(new THREE.SphereGeometry(.03,6,4), ribM, g); r.position.set((Math.random()-.5)*(plant?3.6:3.2), (Math.random()-.5)*2, (Math.random()-.5)*2); } 
+    info.innerHTML = plant ? "<b>الخلية النباتية</b>: لها جدار خلوي وبلاستيدات خضراء وفجوة عصارية كبيرة، وشكلها منتظم. انقر أي عضية." : "<b>الخلية الحيوانية</b>: ليس لها جدار خلوي ولا بلاستيدات، وشكلها غير منتظم، وفيها فجوات صغيرة. انقر أي عضية.";
+  }
+  onUpdate(dt=>{ g.rotation.y += dt*.08; });
+  UI.reset(this.t, this.g);
+  const s = UI.sec("نوع الخلية");
+  UI.buttons(s, [{t:"🌿 خلية نباتية", on0:true, on:()=>{ plant=true; build(); }},{t:"🐾 خلية حيوانية", on:()=>{ plant=false; build(); }}], {radio:true});
+  const s2 = UI.sec("العضيات"); UI.buttons(s2, ["النواة","الميتوكوندريا","البلاستيدات الخضراء","الفجوة العصارية","الجدار الخلوي","الغشاء البلازمي","جهاز جولجي","الشبكة الإندوبلازمية"].map(n=>({t:n, on:()=>{ const o = parts.find(p=>p.userData.name===n); if(o) sel(o); else toast("غير موجودة في هذه الخلية"); }})));
+  const info = UI.info(); build();
+  UI.steps([
+    {t:"الخلية", d:"الخلية هي وحدة البناء والوظيفة في الكائنات الحية، ولا تُرى إلا بالمجهر.", run:()=>{ plant=true; build(); }},
+    {t:"النواة", d:"مركز التحكم في الخلية وتحتوي على المادة الوراثية.", run:()=>sel(parts.find(p=>p.userData.name==="النواة"))},
+    {t:"الميتوكوندريا", d:"تنتج الطاقة اللازمة لأنشطة الخلية.", run:()=>sel(parts.find(p=>p.userData.name==="الميتوكوندريا"))},
+    {t:"البلاستيدات الخضراء", d:"توجد في الخلية النباتية فقط، وتصنع الغذاء بعملية البناء الضوئي.", run:()=>sel(parts.find(p=>p.userData.name==="البلاستيدات الخضراء"))},
+    {t:"الخلية الحيوانية", d:"قارن: لا جدار خلوي، ولا بلاستيدات خضراء، وفجوات صغيرة، وشكل غير منتظم.", run:()=>{ plant=false; build(); }}
+  ]);
+ }});
+
+/* ---------- 17) Human skeleton ---------- */
+def({id:"skeleton", s:"pe", ss:["bio","sci"], icon:"🦴", t:"الهيكل العظمي والحركة", g:"الصف 3–10", d:"هيكل عظمي ثلاثي الأبعاد: أسماء العظام ووظائفها، والمفاصل، ومحاكاة المشي والإحماء.", tags:"الهيكل العظمي عظام العظام جمجمة العمود الفقري القفص الصدري الحوض الفخذ مفاصل مفصل جسم الإنسان حركة عضلات تمارين إحماء",
+ build(){
+  setHome([0,2.4,7.5],[0,2.1,0]);
+  const bone = M("#F3EBD9",{roughness:.6}), body = new THREE.Group(); E.root.add(body); const named = []; const joints = [];
+  function B(name, desc, geo, pos, parent, rot){ const m = mesh(geo, bone.clone(), parent||body); m.position.set(...pos); if(rot) m.rotation.set(...rot); m.userData.name=name; m.userData.desc=desc; clickable(m, ()=>pick(m)); named.push(m); return m; }
+  function J(pos, parent, type){ const s = mesh(new THREE.SphereGeometry(.09,16,12), M("#E57373"), parent||body); s.position.set(...pos); s.visible=false; s.userData.type=type; joints.push(s); return s; }
+  const lab = label("", [0,0,0], {size:.22}); lab.visible=false;
+  function pick(m){ named.forEach(n=>{ n.material.emissive.set(n.userData.name===m.userData.name?0x3DB8A8:0); n.material.emissiveIntensity=.5; }); const wp=new THREE.Vector3(); m.getWorldPosition(wp); lab.visible=true; lab.userData.set(m.userData.name); lab.position.set(wp.x+.9, wp.y+.2, wp.z);
+    info.innerHTML = `<div class="big">${m.userData.name}</div>${m.userData.desc}`; speak(m.userData.name+". "+m.userData.desc); }
+  const skull = B("الجمجمة","تحمي الدماغ، وتتكون من عدة عظام ملتحمة، وعظم الفك السفلي هو العظم المتحرك الوحيد فيها.", new THREE.SphereGeometry(.38,32,24), [0,4.05,0]); skull.scale.set(.9,1.05,1);
+  B("الفك السفلي","العظم المتحرك في الجمجمة، يساعد في المضغ والكلام.", new THREE.TorusGeometry(.2,.06,8,20,Math.PI), [0,3.72,.12], body, [Math.PI/2+.3,0,Math.PI]);
+  for(let i=0;i<17;i++) B("العمود الفقري","يتكون من 33 فقرة، يحمي الحبل الشوكي ويحمل الجسم ويسمح بالانحناء.", new THREE.CylinderGeometry(.09,.09,.1,12), [0,3.5-i*.12,-.12]);
+  for(let i=0;i<6;i++){ const r = B("القفص الصدري","12 زوجًا من الأضلاع تحمي القلب والرئتين.", new THREE.TorusGeometry(.42-Math.abs(i-2)*.03,.035,8,32,Math.PI*1.6), [0,3.15-i*.17,0], body, [Math.PI/2,0,Math.PI*1.2]); r.scale.set(1,.75,1); }
+  B("عظم القص","عظم مسطح في وسط الصدر تتصل به الأضلاع.", new THREE.BoxGeometry(.12,.7,.05), [0,2.85,.3]);
+  B("الترقوة","تربط الكتف بالقفص الصدري.", new THREE.CylinderGeometry(.035,.035,.55,8), [.32,3.38,.15], body, [0,0,Math.PI/2.3]); B("الترقوة","تربط الكتف بالقفص الصدري.", new THREE.CylinderGeometry(.035,.035,.55,8), [-.32,3.38,.15], body, [0,0,-Math.PI/2.3]);
+  const pelvis = B("الحوض","يحمل وزن الجزء العلوي من الجسم ويحمي الأعضاء في أسفل البطن.", new THREE.TorusGeometry(.32,.09,10,24), [0,1.55,0], body, [Math.PI/2.4,0,0]);
+  const limbs = {};
+  function arm(side){ const sh = new THREE.Group(); sh.position.set(side*.6,3.35,0); body.add(sh); J([0,0,0], sh, "مفصل الكتف: كروي حقي يسمح بالحركة في كل الاتجاهات");
+    B("عظم العضد","أكبر عظام الذراع، يمتد من الكتف إلى المرفق.", new THREE.CylinderGeometry(.06,.05,.85,10), [0,-.45,0], sh);
+    const el = new THREE.Group(); el.position.y = -.9; sh.add(el); J([0,0,0], el, "مفصل المرفق: مفصل رزّي يتحرك في اتجاه واحد مثل الباب");
+    B("الكعبرة والزند","عظمتا الساعد، تسمحان بتدوير اليد.", new THREE.CylinderGeometry(.045,.04,.75,10), [0,-.4,0], el);
+    B("عظام اليد","27 عظمة صغيرة تسمح بحركات دقيقة.", new THREE.BoxGeometry(.14,.25,.06), [0,-.88,0], el); limbs["arm"+side] = {sh, el}; }
+  function leg(side){ const hip = new THREE.Group(); hip.position.set(side*.22,1.45,0); body.add(hip); J([0,0,0], hip, "مفصل الورك: كروي حقي يسمح بحركة واسعة");
+    B("عظم الفخذ","أطول وأقوى عظمة في جسم الإنسان.", new THREE.CylinderGeometry(.075,.06,1.05,10), [0,-.55,0], hip);
+    const kn = new THREE.Group(); kn.position.y = -1.1; hip.add(kn); J([0,0,0], kn, "مفصل الركبة: مفصل رزّي");
+    B("الرضفة","عظمة صغيرة تحمي مفصل الركبة من الأمام.", new THREE.SphereGeometry(.06,12,8), [0,0,.08], kn);
+    B("الساق والشظية","عظمتا الساق بين الركبة والكاحل.", new THREE.CylinderGeometry(.055,.045,1.0,10), [0,-.52,0], kn);
+    B("عظام القدم","26 عظمة تحمل وزن الجسم وتساعد على التوازن.", new THREE.BoxGeometry(.16,.07,.4), [0,-1.06,.1], kn); limbs["leg"+side] = {hip, kn}; }
+  arm(1); arm(-1); leg(1); leg(-1);
+  let mode = "stand"; let tt = 0;
+  onUpdate((dt)=>{ tt += dt; const s = Math.sin(tt*3);
+    if(mode==="walk"){ limbs.leg1.hip.rotation.x = s*.45; limbs["leg-1"].hip.rotation.x = -s*.45; limbs.leg1.kn.rotation.x = Math.max(0,-s)*.6; limbs["leg-1"].kn.rotation.x = Math.max(0,s)*.6; limbs.arm1.sh.rotation.x = -s*.4; limbs["arm-1"].sh.rotation.x = s*.4; limbs.arm1.el.rotation.x = -.3; limbs["arm-1"].el.rotation.x = -.3; body.position.y = Math.abs(Math.cos(tt*3))*.05; }
+    else if(mode==="warm"){ limbs.arm1.sh.rotation.z = Math.PI*.9*(s*.5+.5); limbs["arm-1"].sh.rotation.z = -Math.PI*.9*(s*.5+.5); limbs.leg1.hip.rotation.z = (s*.5+.5)*.25; limbs["leg-1"].hip.rotation.z = -(s*.5+.5)*.25; body.position.y = (s*.5+.5)*.1; }
+    else if(mode==="squat"){ const k = s*.5+.5; limbs.leg1.hip.rotation.x = -k*1.2; limbs["leg-1"].hip.rotation.x = -k*1.2; limbs.leg1.kn.rotation.x = k*2.0; limbs["leg-1"].kn.rotation.x = k*2.0; body.position.y = -k*.75; limbs.arm1.sh.rotation.x = -k*1.4; limbs["arm-1"].sh.rotation.x = -k*1.4; } });
+  function setMode(m){ mode = m; ["arm1","arm-1"].forEach(k=>{ limbs[k].sh.rotation.set(0,0,0); limbs[k].el.rotation.set(0,0,0); }); ["leg1","leg-1"].forEach(k=>{ limbs[k].hip.rotation.set(0,0,0); limbs[k].kn.rotation.set(0,0,0); }); body.position.y = 0; }
+  UI.reset(this.t, this.g);
+  const s = UI.sec("الحركة"); UI.buttons(s, [{t:"🧍 وقوف", on0:true, on:()=>setMode("stand")},{t:"🚶 مشي", on:()=>setMode("walk")},{t:"🤸 قفز الإحماء", on:()=>setMode("warm")},{t:"🏋️ قرفصاء", on:()=>setMode("squat")}], {radio:true});
+  UI.buttons(s, [{t:"🔴 إظهار المفاصل", on:()=>{ const v = !joints[0].visible; joints.forEach(j=>j.visible=v); info.innerHTML = v ? "المفاصل باللون الأحمر: <b>كروي حقي</b> (الكتف والورك) يتحرك في كل الاتجاهات، و<b>رزّي</b> (المرفق والركبة) يتحرك في اتجاه واحد." : ""; }}]);
+  const info = UI.info(); info.innerHTML = "انقر على أي عظمة لمعرفة اسمها ووظيفتها.";
+  const pickN = n=>pick(named.find(m=>m.userData.name===n));
+  UI.steps([
+    {t:"الجهاز الهيكلي", d:"يتكون هيكل الإنسان البالغ من 206 عظام، تدعم الجسم وتحمي أعضاءه وتساعده على الحركة مع العضلات.", run:()=>setMode("stand")},
+    {t:"الجمجمة", d:"تحمي الدماغ، وهي من أقوى عظام الجسم.", run:()=>pickN("الجمجمة")},
+    {t:"العمود الفقري والقفص الصدري", d:"العمود الفقري يحمي الحبل الشوكي، والقفص الصدري يحمي القلب والرئتين.", run:()=>pickN("القفص الصدري")},
+    {t:"عظم الفخذ", d:"أطول وأقوى عظمة في الجسم، ويتحمل وزن الجسم أثناء المشي والجري.", run:()=>pickN("عظم الفخذ")},
+    {t:"المفاصل", d:"المفصل مكان التقاء عظمتين. الكتف والورك كرويان حقيان، والمرفق والركبة رزّيان.", run:()=>{ joints.forEach(j=>j.visible=true); }},
+    {t:"الحركة والتمارين", d:"تعمل العظام والعضلات والمفاصل معًا. جرّب المشي والإحماء والقرفصاء ولاحظ عمل المفاصل.", run:()=>setMode("walk")}
+  ]);
+ }});
+
+/* ---------- 18) Water cycle ---------- */
+def({id:"watercycle", s:"env", ss:["sci","geo"], icon:"🌧️", t:"دورة الماء في الطبيعة", g:"الصف 3–9", d:"تبخّر ماء البحر بحرارة الشمس، تكاثف السحب، هطول المطر على الجبال، الجريان في الأودية والتسرب إلى المياه الجوفية والأفلاج.", tags:"دورة الماء تبخر تكاثف هطول أمطار سحب جريان مياه جوفية فلج أفلاج بحر بيئة",
+ build(){
+  setHome([0,6,11],[0,1.5,0]);
+  const sea = mesh(new THREE.BoxGeometry(5,.4,6), M("#1E88E5",{transparent:true, opacity:.85, roughness:.2}), E.root); sea.position.set(-3.5,.2,0);
+  const land = mesh(new THREE.BoxGeometry(5.5,.6,6), M("#A1887F"), E.root); land.position.set(1.75,.3,0);
+  const mtn = mesh(new THREE.ConeGeometry(1.8,3,8), M("#8D6E63",{flatShading:true}), E.root); mtn.position.set(3,2.1,-1);
+  const snow = mesh(new THREE.ConeGeometry(.6,1,8), M("#FFFFFF",{flatShading:true}), E.root); snow.position.set(3,3.1,-1);
+  const river = new THREE.CatmullRomCurve3([[2.6,.62,-.2],[1.8,.62,.6],[.5,.62,.3],[-.9,.45,.8]].map(p=>new THREE.Vector3(...p)));
+  mesh(new THREE.TubeGeometry(river, 40, .12, 6), M("#42A5F5"), E.root);
+  const gw = mesh(new THREE.BoxGeometry(4.5,.15,5), M("#4FC3F7",{transparent:true, opacity:.6}), E.root); gw.position.set(1.8,.12,0);
+  for(let i=0;i<6;i++){ const tr = mesh(new THREE.ConeGeometry(.25,.7,8), M("#2E7D32"), E.root); tr.position.set(.4+i*.45,.95,1.8-(i%2)*.4); }
+  const sunM = mesh(new THREE.SphereGeometry(.6,32,24), new THREE.MeshBasicMaterial({color:0xFDB813}), E.root); sunM.position.set(-4.5,5.2,-1);
+  const cloud = new THREE.Group(); E.root.add(cloud); const cm = M("#ECEFF1",{roughness:.9}); [[0,0,0,.6],[.6,.1,0,.5],[-.6,.05,0,.5],[.3,.35,0,.45],[-.25,.3,.1,.4]].forEach(([x,y,z,r])=>mesh(new THREE.SphereGeometry(r,16,12), cm, cloud).position.set(x,y,z));
+  cloud.position.set(-3,4,0); cloud.userData.base = -3;
+  const L = (t,p)=>label(t,p,{size:.26});
+  const labs = {evap:L("التبخّر",[-3.5,2.3,1.5]), cond:L("التكاثف",[-1,5,0]), rain:L("الهطول",[3,5.4,0]), run:L("الجريان السطحي",[.8,1.4,1.4]), inf:L("التسرّب (المياه الجوفية)",[2,-.4,2.6])};
+  const vap = [], drops = [], flow = []; let phase = "all", cloudX = -3, rainOn = false;
+  const vm = new THREE.MeshBasicMaterial({color:0xB3E5FC, transparent:true, opacity:.8}), dm = new THREE.MeshBasicMaterial({color:0x1565C0});
+  for(let i=0;i<40;i++){ const v = new THREE.Mesh(new THREE.SphereGeometry(.05,6,4), vm); v.position.set(-3.5+(Math.random()-.5)*4, .4+Math.random()*3.5, (Math.random()-.5)*4); E.root.add(v); vap.push(v); }
+  for(let i=0;i<70;i++){ const d = new THREE.Mesh(new THREE.CylinderGeometry(.015,.015,.22,4), dm); d.visible=false; E.root.add(d); drops.push(d); }
+  for(let i=0;i<20;i++){ const f = new THREE.Mesh(new THREE.SphereGeometry(.06,6,4), M("#E3F2FD")); f.userData.u = i/20; E.root.add(f); flow.push(f); }
+  onUpdate((dt)=>{
+    const ev = phase==="all"||phase==="evap", rn = phase==="all"||phase==="rain"||phase==="run";
+    vap.forEach(v=>{ v.visible = ev; if(!ev) return; v.position.y += dt*.9; v.position.x += dt*.15; if(v.position.y>3.9){ v.position.y=.45; v.position.x=-3.5+(Math.random()-.5)*4; } });
+    if(phase==="all"||phase==="cond"||phase==="rain"){ cloudX = Math.min(cloudX + dt*.5, 2.6); if(phase==="all" && cloudX>=2.6) cloudX = -3; } 
+    cloud.position.x = cloudX; const grow = 1 + Math.max(0,(cloudX+3)/5.6)*.6; cloud.scale.setScalar(grow); cm.color.set(cloudX>1.5 ? "#90A4AE" : "#ECEFF1");
+    rainOn = rn && cloudX > 1.4;
+    drops.forEach(d=>{ if(!rainOn){ d.visible=false; return; } if(!d.visible || d.position.y < .7){ d.visible = true; d.position.set(cloudX+(Math.random()-.5)*1.6, 3.8+Math.random()*.6, (Math.random()-.5)*1.2); } d.position.y -= dt*4; });
+    flow.forEach(f=>{ f.visible = phase==="all"||phase==="run"; f.userData.u = (f.userData.u + dt*.12) % 1; f.position.copy(river.getPointAt(f.userData.u)); f.position.y += .1; });
+    gw.material.opacity = phase==="inf" ? .6+Math.sin(performance.now()/300)*.25 : .45;
+  });
+  function go(p, cam){ phase = p; if(p==="cond"||p==="evap") cloudX = -3; if(p==="rain"||p==="run") cloudX = 2.2; if(cam) camTo(cam[0], cam[1]); Object.values(labs).forEach(l=>l.visible = p==="all"); const map = {evap:"evap", cond:"cond", rain:"rain", run:"run", inf:"inf"}; if(map[p]) labs[map[p]].visible = true; }
+  UI.reset(this.t, this.g);
+  const s = UI.sec("المراحل"); UI.buttons(s, [{t:"🔁 الدورة كاملة", on0:true, on:()=>go("all")},{t:"☀️ التبخّر", on:()=>go("evap")},{t:"☁️ التكاثف", on:()=>go("cond")},{t:"🌧️ الهطول", on:()=>go("rain")},{t:"🏞️ الجريان", on:()=>go("run")},{t:"💧 التسرّب", on:()=>go("inf")}], {radio:true});
+  const info = UI.info(); info.innerHTML = "الماء ينتقل باستمرار بين البحر والهواء واليابسة في دورة لا تتوقف.";
+  UI.steps([
+    {t:"دورة الماء", d:"ينتقل الماء في الطبيعة باستمرار بين البحار والغلاف الجوي واليابسة، وتحرّك الشمس هذه الدورة.", run:()=>go("all",[[0,6,11],[0,1.5,0]])},
+    {t:"التبخّر", d:"تسخّن الشمس ماء البحار والمحيطات فيتحول إلى بخار ماء يصعد إلى أعلى.", run:()=>go("evap",[[-3,3,7],[-3.5,2,0]])},
+    {t:"التكاثف", d:"يبرد بخار الماء في طبقات الجو العليا فيتكاثف إلى قطرات صغيرة تكوّن السحب.", run:()=>go("cond",[[0,5,8],[0,4,0]])},
+    {t:"الهطول", d:"تكبر قطرات الماء في السحب وتثقل فتسقط أمطارًا أو ثلوجًا، خاصة فوق الجبال.", run:()=>go("rain",[[4,4.5,7],[3,2.5,0]])},
+    {t:"الجريان السطحي", d:"تجري مياه الأمطار في الأودية والأنهار عائدة إلى البحر.", run:()=>go("run",[[1,3,6],[1,.6,.5]])},
+    {t:"التسرّب والمياه الجوفية", d:"يتسرب جزء من الماء في التربة ليكوّن المياه الجوفية التي تغذي الآبار والأفلاج في عُمان.", run:()=>go("inf",[[2,1.5,7],[2,0,0]])}
+  ]);
+ }});
+
+/* ---------- 19) Levers ---------- */
+def({id:"lever", s:"phy", ss:["sci"], icon:"⚖️", t:"الروافع وعزم القوة", g:"الصف 5–11", d:"رافعة تفاعلية: غيّر الكتل والمسافات وراقب الاتزان، وطبّق قانون العزم: ق1 × ف1 = ق2 × ف2.", tags:"رافعة روافع عزم القوة اتزان نقطة الارتكاز مقاومة قوة مسافة آلات بسيطة فيزياء ميزان",
+ build(){
+  setHome([0,4,12.5],[0,1.5,0]);
+  let m1=4, d1=2, m2=2, d2=4, ang=0;
+  const ful = mesh(new THREE.ConeGeometry(.5,1.2,3), M("#6D4C41",{flatShading:true}), E.root); ful.position.y=.6; ful.rotation.y=Math.PI/2;
+  const piv = new THREE.Group(); piv.position.y = 1.25; E.root.add(piv);
+  const beam = mesh(new THREE.BoxGeometry(10.4,.14,.5), M("#BCAAA4"), piv);
+  for(let i=-5;i<=5;i++){ if(!i) continue; const tk = mesh(new THREE.BoxGeometry(.03,.16,.52), new THREE.MeshBasicMaterial({color:0x14302F}), piv); tk.position.x = i; label(String(Math.abs(i)), [i,.42,0], {size:.14, parent:piv, bg:"none"}); }
+  const w1 = mesh(new THREE.BoxGeometry(.6,.6,.6), M("#E53935"), piv), w2 = mesh(new THREE.BoxGeometry(.6,.6,.6), M("#1E88E5"), piv);
+  const l1 = label("", [0,0,0], {size:.22, parent:piv}), l2 = label("", [0,0,0], {size:.22, parent:piv});
+  const st = label("", [0,4,0], {size:.34});
+  function apply(){
+    const s1 = Math.cbrt(m1)*.42, s2 = Math.cbrt(m2)*.42; w1.scale.setScalar(s1/.6*1); w2.scale.setScalar(s2/.6*1);
+    w1.position.set(-d1, .07+s1/2, 0); w2.position.set(d2, .07+s2/2, 0); l1.position.set(-d1, s1+.5, 0); l2.position.set(d2, s2+.5, 0);
+    l1.userData.set(`${m1} كجم`); l2.userData.set(`${m2} كجم`);
+    const t1 = m1*d1, t2 = m2*d2, diff = t2 - t1;
+    const target = clamp(-diff*.05, -.32, .32); tweenVal(ang, target, .6, a=>{ ang=a; piv.rotation.z = a; });
+    const bal = Math.abs(diff) < 1e-6;
+    st.userData.set(bal ? "⚖️ الرافعة متزنة" : (diff>0 ? "↘ تميل نحو اليمين" : "↙ تميل نحو اليسار"));
+    info.innerHTML = `العزم الأيسر = ${m1} × ${d1} = <b>${t1}</b><br>العزم الأيمن = ${m2} × ${d2} = <b>${t2}</b><div class="big" style="color:${bal?"#2E7D4F":"#B23A3A"}">${bal?"متزنة ✔ (العزمان متساويان)":"غير متزنة"}</div><small>شرط الاتزان: ق1 × ف1 = ق2 × ف2</small>`;
+  }
+  UI.reset(this.t, this.g);
+  const s = UI.sec("الجهة اليسرى (المقاومة)");
+  const a1 = UI.slider(s, {label:"الكتلة", min:1, max:10, value:m1, unit:" كجم", onInput:v=>{ m1=v; apply(); }});
+  const b1 = UI.slider(s, {label:"البعد عن نقطة الارتكاز", min:1, max:5, value:d1, unit:" م", onInput:v=>{ d1=v; apply(); }});
+  const s2 = UI.sec("الجهة اليمنى (القوة)");
+  const a2 = UI.slider(s2, {label:"الكتلة", min:1, max:10, value:m2, unit:" كجم", onInput:v=>{ m2=v; apply(); }});
+  const b2 = UI.slider(s2, {label:"البعد عن نقطة الارتكاز", min:1, max:5, value:d2, unit:" م", onInput:v=>{ d2=v; apply(); }});
+  const set = (x1,y1,x2,y2)=>{ m1=x1; d1=y1; m2=x2; d2=y2; a1.set(x1); b1.set(y1); a2.set(x2); b2.set(y2); apply(); };
+  const info = UI.info(); apply();
+  const s3 = UI.sec("أنواع الروافع"); s3.insertAdjacentHTML("beforeend", `<div style="font-size:13.5px;line-height:1.9"><b>النوع الأول</b>: نقطة الارتكاز في الوسط (الميزان، المقص، العتلة).<br><b>النوع الثاني</b>: المقاومة في الوسط (عربة اليد، فتّاحة الزجاجات).<br><b>النوع الثالث</b>: القوة في الوسط (الملقط، الذراع البشري، صنارة الصيد).</div>`);
+  UI.steps([
+    {t:"الرافعة", d:"آلة بسيطة تتكون من ذراع صلب يدور حول نقطة ثابتة تُسمّى نقطة الارتكاز، وتساعدنا على رفع الأثقال بجهد أقل.", run:()=>set(4,2,2,4)},
+    {t:"العزم", d:"العزم = القوة × بعدها عن نقطة الارتكاز. هنا 4 × 2 = 8 و 2 × 4 = 8 فالرافعة متزنة.", run:()=>set(4,2,2,4)},
+    {t:"عدم الاتزان", d:"عند زيادة الكتلة اليمنى يكبر عزمها فتميل الرافعة نحوها.", run:()=>set(4,2,5,4)},
+    {t:"الفائدة الآلية", d:"كتلة صغيرة على بعد كبير توازن كتلة كبيرة على بعد صغير: 2 كجم على بعد 5 م توازن 10 كجم على بعد 1 م.", run:()=>set(10,1,2,5)},
+    {t:"تحدٍّ", d:"اجعل الرافعة متزنة إذا كانت الكتلة اليسرى 6 كجم على بعد 2 م والكتلة اليمنى 3 كجم. أين تضعها؟", run:()=>set(6,2,3,1)}
+  ]);
+ }});
+
+/* ---------- 20) Healthy plate ---------- */
+def({id:"plate", s:"life", ss:["pe"], icon:"🥗", t:"الطبق الصحي والتغذية السليمة", g:"الصف 2–10", d:"طبق صحي ثلاثي الأبعاد بمجموعاته الغذائية وأمثلتها وفوائدها، مع الماء ونصائح الصحة.", tags:"تغذية غذاء صحي الطبق الصحي الهرم الغذائي مجموعات غذائية خضروات فواكه بروتين حبوب ألبان صحة عادات صحية",
+ build(){
+  setHome([0,6,6],[0,0,0]);
+  const G = [["الخضروات","#43A047",.3,"🥦🥕🥒🍅","مصدر الفيتامينات والألياف والمعادن. اجعلها جزءًا كبيرًا من كل وجبة وتنوّع في ألوانها."],["الحبوب","#F9A825",.3,"🍞🍚🌾🥣","مصدر الطاقة (النشويات). اختر الحبوب الكاملة مثل الخبز الأسمر والشوفان."],["البروتين","#8E24AA",.2,"🐟🍗🥚🫘","يبني العضلات ويجدد الخلايا: السمك والدجاج والبيض والبقوليات والمكسرات."],["الفواكه","#E53935",.2,"🍎🍌🍊🍇","مصدر الفيتامينات والسكريات الطبيعية. كُلها كاملة بدل العصير المحلّى."]];
+  const plate = mesh(new THREE.CylinderGeometry(2.6,2.4,.15,64), M("#FAFAFA",{roughness:.3}), E.root); plate.position.y=.08;
+  const secs = []; let a0 = 0;
+  G.forEach(([n,c,f,em,d],i)=>{ const len = f*Math.PI*2; const m = mesh(new THREE.CylinderGeometry(2.25,2.25,.22,48,1,false,a0,len*.985), M(c,{roughness:.7}), E.root); m.position.y=.2; const mid = a0+len/2;
+    const card = new THREE.Sprite(new THREE.SpriteMaterial({map:canvasTex(256,256,(x,w,h)=>{ x.font=`88px ${EMOJI_FONT}`; x.textAlign="center"; x.textBaseline="middle"; const ar=[...em]; x.fillText(ar.slice(0,2).join(""), w/2, 80); x.fillText(ar.slice(2,4).join(""), w/2, 180); }), transparent:true})); card.scale.set(1.1,1.1,1); card.position.set(Math.sin(mid)*1.35, .95, Math.cos(mid)*1.35); E.root.add(card);
+    label(n, [Math.sin(mid)*1.35, 1.75, Math.cos(mid)*1.35], {size:.26});
+    m.userData = {n, d, f, mid}; clickable(m, ()=>pick(m)); secs.push(m); a0 += len; });
+  const cup = mesh(new THREE.CylinderGeometry(.55,.45,1.1,32), M("#1E88E5",{transparent:true, opacity:.55}), E.root); cup.position.set(3.4,.55,-.6); label("الألبان 🥛", [3.4,1.5,-.6], {size:.22});
+  clickable(cup, ()=>{ info.innerHTML = `<div class="big">الألبان</div>الحليب واللبن والجبن: مصدر الكالسيوم لبناء العظام والأسنان. كوب إلى كوبين يوميًا.`; });
+  const water = mesh(new THREE.CylinderGeometry(.4,.35,1.3,32), M("#B3E5FC",{transparent:true, opacity:.7}), E.root); water.position.set(-3.4,.65,-.6); label("الماء 💧", [-3.4,1.6,-.6], {size:.22});
+  clickable(water, ()=>{ info.innerHTML = `<div class="big">الماء</div>اشرب 6–8 أكواب يوميًا، وأكثر عند الحر والرياضة. قلّل المشروبات الغازية والمحلّاة.`; });
+  function pick(m){ secs.forEach(s=>{ s.position.y = s===m ? .45 : .2; }); info.innerHTML = `<div class="big">${m.userData.n} — ${Math.round(m.userData.f*100)}%</div>${m.userData.d}`; speak(m.userData.n+". "+m.userData.d); }
+  onUpdate(dt=>{ E.root.rotation.y += dt*.05; });
+  UI.reset(this.t, this.g);
+  const s = UI.sec("المجموعات"); UI.buttons(s, secs.map(m=>({t:m.userData.n, on:()=>pick(m)})));
+  const info = UI.info(); info.innerHTML = "انقر على أي جزء من الطبق.";
+  const tips = UI.sec("نصائح صحية"); tips.insertAdjacentHTML("beforeend", `<div style="font-size:13.5px;line-height:1.9">✔ تناول الفطور يوميًا · ✔ قلّل السكر والملح والدهون · ✔ ثلاث وجبات رئيسية ووجبتان خفيفتان · ✔ 60 دقيقة نشاط بدني يوميًا · ✔ نم مبكرًا</div>`);
+  UI.steps([
+    {t:"الطبق الصحي", d:"يساعدنا الطبق الصحي على اختيار وجبة متوازنة: نصف الطبق خضروات وفواكه، وربعه حبوب، وربعه بروتين، مع الألبان والماء.", run:()=>camTo([0,6,6],[0,0,0])},
+    {t:"الخضروات والفواكه", d:"تمد الجسم بالفيتامينات والمعادن والألياف، وتقوي المناعة.", run:()=>pick(secs[0])},
+    {t:"الحبوب", d:"مصدر الطاقة للجسم والدماغ، والحبوب الكاملة أفضل.", run:()=>pick(secs[1])},
+    {t:"البروتين", d:"ضروري لبناء العضلات ونمو الجسم.", run:()=>pick(secs[2])},
+    {t:"الماء والألبان", d:"الماء ضروري لكل خلايا الجسم، والألبان تقوي العظام والأسنان.", run:()=>water.userData.onClick()}
+  ]);
+ }});
+
+/* ---------- 21) Oman: map, governorates and flag ---------- */
+def({id:"oman", s:"cit", ss:["soc","geo"], icon:"🇴🇲", t:"سلطنة عُمان: الخريطة والمحافظات والعلم", g:"الصف 3–12", d:"خريطة مجسّمة لسلطنة عُمان بمحافظاتها الإحدى عشرة ومراكزها، والعلم الوطني ودلالات ألوانه.", tags:"عمان سلطنة عمان المحافظات محافظة مسقط ظفار مسندم البريمي الداخلية الباطنة الشرقية الظاهرة الوسطى العلم العماني الهوية المواطنة الوطن خريطة عمان",
+ build(){
+  setHome([0,9,9],[0,0,0]);
+  const k = 1.05, P = (lat,lon)=>[(lon-56.6)*k, -(lat-21.2)*k];
+  const MAIN = [[24.82,56.33],[24.4,56.75],[23.98,57.25],[23.62,58.1],[23.6,58.6],[23.2,58.95],[22.6,59.75],[22.2,59.75],[21.4,59.35],[20.9,58.9],[20.4,58.5],[19.7,57.75],[19.0,57.75],[18.6,57.1],[18.0,56.5],[17.6,55.7],[17.0,54.6],[16.95,54.0],[16.65,53.1],[17.3,52.8],[19.0,52.0],[20.5,53.4],[22.0,55.0],[22.7,55.2],[23.6,55.6],[24.05,55.8],[24.25,55.95],[24.6,55.9],[24.82,56.33]];
+  const MUS = [[26.4,56.35],[26.2,56.48],[25.9,56.45],[25.62,56.27],[25.85,56.1],[26.05,56.08],[26.4,56.35]];
+  const shapeOf = pts=>{ const sh = new THREE.Shape(); pts.forEach(([a,b],i)=>{ const [x,y] = P(a,b); i ? sh.lineTo(x,-y) : sh.moveTo(x,-y); }); return sh; };
+  const land = M("#D7B98E",{roughness:.95});
+  [MAIN, MUS].forEach(pts=>{ const g = new THREE.ExtrudeGeometry(shapeOf(pts), {depth:.35, bevelEnabled:true, bevelSize:.05, bevelThickness:.05, bevelSegments:2}); g.rotateX(-Math.PI/2); mesh(g, land, E.root); });
+  const sea = mesh(new THREE.PlaneGeometry(16,16), M("#4FA3D9",{roughness:.4, transparent:true, opacity:.85}), E.root); sea.rotation.x = -Math.PI/2; sea.position.y = -.02;
+  const GOV = [["مسقط","مسقط",23.59,58.41,"العاصمة ومقر الحكومة، وفيها جامع السلطان قابوس الأكبر ودار الأوبرا السلطانية."],["ظفار","صلالة",17.02,54.09,"تشتهر بموسم الخريف واللبان وجبالها الخضراء."],["مسندم","خصب",26.18,56.25,"في أقصى الشمال على مضيق هرمز، تشتهر بالخيران والجبال المطلة على البحر."],["البريمي","البريمي",24.25,55.79,"محافظة حدودية في الشمال الغربي، ومن معالمها حصن الخندق."],["الداخلية","نزوى",22.93,57.53,"فيها قلعة نزوى والجبل الأخضر وجبل شمس أعلى قمة في عُمان."],["شمال الباطنة","صحار",24.35,56.71,"مدينة صحار التاريخية والميناء والمنطقة الصناعية."],["جنوب الباطنة","الرستاق",23.39,57.42,"تشتهر بقلعة الرستاق وعين الكسفة الحارة."],["شمال الشرقية","إبراء",22.69,58.53,"فيها رمال الشرقية (رمال وهيبة) ووادي بني خالد."],["جنوب الشرقية","صور",22.57,59.53,"تشتهر بصناعة السفن التقليدية (الغنجة) ورأس الحد ومحمية السلاحف."],["الظاهرة","عبري",23.23,56.5,"فيها مواقع بات والخطم والعين الأثرية المسجلة في التراث العالمي."],["الوسطى","هيماء",19.96,56.28,"أكبر المحافظات مساحة وأقلها سكانًا، وفيها ميناء الدقم والمنطقة الاقتصادية."]];
+  const pins = GOV.map(([g,c,lat,lon,d],i)=>{ const [x,z] = P(lat,lon); const pin = mesh(new THREE.ConeGeometry(.12,.4,12), M(g==="مسقط"?"#B23A3A":"#0B5457"), E.root); pin.position.set(x,.68,z); pin.rotation.x = Math.PI;
+    const lb = label(g, [x,1.1,z], {size:.2}); pin.userData = {g,c,d,lb}; clickable(pin, ()=>pickG(pin)); return pin; });
+  function pickG(p){ pins.forEach(q=>{ q.material.emissive.set(q===p?0xE2B864:0); q.material.emissiveIntensity=.6; q.scale.setScalar(q===p?1.6:1); }); info.innerHTML = `<div class="big">محافظة ${p.userData.g}</div>المركز: <b>${p.userData.c}</b><br>${p.userData.d}`; speak("محافظة "+p.userData.g+". "+p.userData.d); camTo([p.position.x+1.5,4,p.position.z+4.5],[p.position.x,.4,p.position.z]); }
+  // flag
+  const flagTex = canvasTex(600,400,(x,w,h)=>{ x.fillStyle="#FFFFFF"; x.fillRect(0,0,w,h/3); x.fillStyle="#DB161B"; x.fillRect(0,h/3,w,h/3); x.fillStyle="#008000"; x.fillRect(0,2*h/3,w,h/3); x.fillStyle="#DB161B"; x.fillRect(0,0,w*.25,h);
+    x.strokeStyle="#FFFFFF"; x.fillStyle="#FFFFFF"; x.lineWidth=7; x.lineCap="round"; const cx=w*.125, cy=h*.17; x.beginPath(); x.moveTo(cx-38,cy-36); x.lineTo(cx+38,cy+36); x.moveTo(cx+38,cy-36); x.lineTo(cx-38,cy+36); x.stroke(); x.beginPath(); x.moveTo(cx,cy-40); x.quadraticCurveTo(cx+14,cy+10,cx-6,cy+42); x.lineWidth=9; x.stroke(); x.fillRect(cx-16,cy-14,32,7); });
+  const fg = new THREE.PlaneGeometry(3,2,30,20); const flag = new THREE.Mesh(fg, new THREE.MeshStandardMaterial({map:flagTex, side:THREE.DoubleSide, roughness:.8})); flag.castShadow=true; const pole = mesh(new THREE.CylinderGeometry(.05,.05,5,12), M("#B0BEC5",{metalness:.7}), E.root);
+  const F = new THREE.Group(); F.position.set(-6.4,0,.6); E.root.add(F); F.add(pole); pole.position.set(0,2.5,0); F.add(flag); flag.position.set(1.52,4,0);
+  const base = fg.attributes.position.array.slice();
+  onUpdate((dt,t)=>{ const p = fg.attributes.position; for(let i=0;i<p.count;i++){ const x = base[i*3]+1.5; p.setZ(i, Math.sin(x*2.2 - t*3.2)*.13*(x/3)); } p.needsUpdate = true; fg.computeVertexNormals(); });
+  clickable(flag, ()=>{ info.innerHTML = `<div class="big">العلم الوطني 🇴🇲</div><b>الأبيض</b>: السلام والازدهار.<br><b>الأحمر</b>: الدفاع عن الوطن ونضال العُمانيين عبر التاريخ.<br><b>الأخضر</b>: الخصب والنماء والجبل الأخضر.<br>وفي أعلى الجزء الأحمر الشعار الوطني: الخنجر العُماني والسيفان المتقاطعان.`; camTo([-3.6,4.2,6.5],[-4.9,3.6,.6]); });
+  label("تقريبية للأغراض التعليمية", [2.6,.3,4.8], {size:.14, bg:"none", color:"#5B6B68"});
+  UI.reset(this.t, this.g);
+  const s = UI.sec("المحافظات (11)"); UI.buttons(s, pins.map(p=>({t:p.userData.g, on:()=>pickG(p)})));
+  UI.buttons(s, [{t:"🇴🇲 العلم الوطني", on:()=>flag.userData.onClick()},{t:"🗺️ الخريطة كاملة", on:()=>camTo([0,9,9],[0,0,0])}]);
+  const info = UI.info(); info.innerHTML = "انقر على أي محافظة لمعرفة مركزها وأبرز معالمها.";
+  UI.steps([
+    {t:"موقع سلطنة عُمان", d:"تقع في جنوب شرق شبه الجزيرة العربية، ويطل ساحلها على بحر عُمان وبحر العرب، وتشرف على مضيق هرمز.", run:()=>camTo([0,9,9],[0,0,0])},
+    {t:"المحافظات", d:"تتكون سلطنة عُمان من إحدى عشرة محافظة لكل منها مركز إداري.", run:()=>camTo([0,11,4],[0,0,0])},
+    {t:"العاصمة مسقط", d:"مسقط عاصمة سلطنة عُمان ومقر الحكومة وأكبر مدنها.", run:()=>pickG(pins[0])},
+    {t:"محافظة البريمي", d:"محافظتنا: تقع في الشمال الغربي على الحدود، ومركزها مدينة البريمي.", run:()=>pickG(pins[3])},
+    {t:"العلم الوطني", d:"للعلم ثلاثة ألوان: الأبيض والأحمر والأخضر، والشعار الوطني في أعلى الجزء الأحمر.", run:()=>flag.userData.onClick()}
+  ]);
+ }});
+
+/* ---------- 22) Colour wheel ---------- */
+def({id:"colors", s:"art", icon:"🎨", t:"دائرة الألوان ومزجها", g:"الصف 1–12", d:"دائرة الألوان المجسّمة: الأساسية والثانوية والمتداخلة، الحارة والباردة، المتكاملة، ومزج لونين.", tags:"ألوان الألوان دائرة الألوان أساسية ثانوية مزج الألوان حارة باردة متكاملة فنون رسم تشكيلية بصرية",
+ build(){
+  setHome([0,5.5,7],[0,.6,0]);
+  const W = [["أحمر","#E53935",1],["أحمر برتقالي","#F4511E",3],["برتقالي","#FB8C00",2],["أصفر برتقالي","#FFB300",3],["أصفر","#FDD835",1],["أصفر مخضر","#C0CA33",3],["أخضر","#43A047",2],["أزرق مخضر","#00897B",3],["أزرق","#1E88E5",1],["أزرق بنفسجي","#3949AB",3],["بنفسجي","#8E24AA",2],["أحمر بنفسجي","#D81B60",3]];
+  const segs = W.map(([n,c,lv],i)=>{ const len = Math.PI*2/12, h = lv===1?.9:lv===2?.6:.35; const m = mesh(new THREE.CylinderGeometry(2.6,2.6,h,24,1,false,i*len - len/2 + Math.PI, len*.97), M(c,{roughness:.45}), E.root);
+    m.position.y = h/2; m.userData = {n,c,lv,i,h}; clickable(m, ()=>info.innerHTML = `<div class="big" style="color:${c}">${n}</div>${lv===1?"لون أساسي: لا يمكن الحصول عليه بمزج ألوان أخرى.":lv===2?"لون ثانوي: ناتج عن مزج لونين أساسيين.":"لون متداخل (ثالثي): ناتج عن مزج لون أساسي مع لون ثانوي مجاور."}<br>اللون المتكامل معه: <b style="color:${W[(i+6)%12][1]}">${W[(i+6)%12][0]}</b>`); return m; });
+  W.forEach(([n],i)=>{ const a = i*Math.PI*2/12 + Math.PI; label(n, [Math.sin(a)*3.3, .4, Math.cos(a)*3.3], {size:.18}); });
+  const hub = mesh(new THREE.CylinderGeometry(.9,.9,1.0,48), M("#FFFFFF"), E.root); hub.position.y=.5;
+  const mixA = mesh(new THREE.SphereGeometry(.38,32,24), M("#E53935"), E.root), mixB = mesh(new THREE.SphereGeometry(.38,32,24), M("#FDD835"), E.root), mixC = mesh(new THREE.SphereGeometry(.5,32,24), M("#FB8C00"), E.root);
+  mixA.visible = mixB.visible = mixC.visible = false;
+  function highlight(fn, text){ segs.forEach(s=>{ const on = fn(s.userData); s.scale.y = on ? 1.5 : .5; s.position.y = s.userData.h*s.scale.y/2; }); info.innerHTML = text; }
+  function mix(a, b, r, name){ mixA.material.color.set(a); mixB.material.color.set(b); mixC.material.color.set(r); mixA.visible = mixB.visible = true; mixC.visible = false; let t = 0;
+    const u = (dt)=>{ t = Math.min(1, t+dt/1.6); mixA.position.set(lerp(-1.4,0,ease(t)), 1.6, 0); mixB.position.set(lerp(1.4,0,ease(t)), 1.6, 0); if(t>=1){ mixA.visible = mixB.visible = false; mixC.visible = true; mixC.position.set(0,1.6,0); E.updaters.splice(E.updaters.indexOf(u),1); } }; E.updaters.push(u);
+    info.innerHTML = `<div class="big">${name}</div>تمّ المزج في مركز الدائرة.`; }
+  UI.reset(this.t, this.g);
+  const s = UI.sec("اعرض"); UI.buttons(s, [
+    {t:"الأساسية", on:()=>highlight(d=>d.lv===1, "<b>الألوان الأساسية</b>: الأحمر والأصفر والأزرق.")},
+    {t:"الثانوية", on:()=>highlight(d=>d.lv===2, "<b>الألوان الثانوية</b>: البرتقالي والأخضر والبنفسجي، كل منها من مزج لونين أساسيين.")},
+    {t:"المتداخلة", on:()=>highlight(d=>d.lv===3, "<b>الألوان المتداخلة</b>: ستة ألوان من مزج لون أساسي مع ثانوي مجاور.")},
+    {t:"🔥 الحارة", on:()=>highlight(d=>d.i<=4 || d.i===11, "<b>الألوان الحارة</b>: الأحمر والبرتقالي والأصفر، توحي بالدفء والحيوية.")},
+    {t:"❄️ الباردة", on:()=>highlight(d=>d.i>=5 && d.i<=10, "<b>الألوان الباردة</b>: الأخضر والأزرق والبنفسجي، توحي بالهدوء.")},
+    {t:"↔️ المتكاملة", on:()=>highlight(d=>d.i===0||d.i===6, "<b>الألوان المتكاملة</b>: متقابلة في الدائرة مثل الأحمر والأخضر، وتعطي تباينًا قويًا.")},
+    {t:"↺ الكل", on:()=>{ segs.forEach(s=>{ s.scale.y=1; s.position.y=s.userData.h/2; }); }}]);
+  const s2 = UI.sec("المزج"); UI.buttons(s2, [{t:"أحمر + أصفر", on:()=>mix("#E53935","#FDD835","#FB8C00","برتقالي")},{t:"أصفر + أزرق", on:()=>mix("#FDD835","#1E88E5","#43A047","أخضر")},{t:"أزرق + أحمر", on:()=>mix("#1E88E5","#E53935","#8E24AA","بنفسجي")},{t:"أحمر + أبيض", on:()=>mix("#E53935","#FFFFFF","#F48FB1","وردي (تفتيح)")},{t:"أزرق + أسود", on:()=>mix("#1E88E5","#212121","#0D2C54","كحلي (تغميق)")}]);
+  const info = UI.info(); info.innerHTML = "انقر على أي لون في الدائرة.";
+  UI.steps([
+    {t:"دائرة الألوان", d:"تنظّم دائرة الألوان اثني عشر لونًا تساعد الفنان على اختيار ألوان متناسقة.", run:()=>{ segs.forEach(s=>{ s.scale.y=1; s.position.y=s.userData.h/2; }); }},
+    {t:"الألوان الأساسية", d:"الأحمر والأصفر والأزرق، ومنها نحصل على بقية الألوان.", run:()=>highlight(d=>d.lv===1, "<b>الألوان الأساسية</b>")},
+    {t:"مزج الألوان", d:"الأحمر مع الأصفر يعطي البرتقالي، والأصفر مع الأزرق يعطي الأخضر، والأزرق مع الأحمر يعطي البنفسجي.", run:()=>mix("#FDD835","#1E88E5","#43A047","أخضر")},
+    {t:"الحارة والباردة", d:"الألوان الحارة توحي بالدفء، والباردة توحي بالهدوء والبرودة.", run:()=>highlight(d=>d.i<=4 || d.i===11, "<b>الألوان الحارة</b>")},
+    {t:"الألوان المتكاملة", d:"اللونان المتقابلان في الدائرة متكاملان ويعطيان تباينًا قويًا في اللوحة.", run:()=>highlight(d=>d.i===0||d.i===6, "<b>المتكاملة</b>: الأحمر والأخضر")}
+  ]);
+ }});
+
+/* ---------- 23) Xylophone ---------- */
+def({id:"music", s:"mus", icon:"🎵", t:"الإكسيليفون التفاعلي والسلم الموسيقي", g:"الصف 1–10", d:"آلة موسيقية مجسّمة تعزف عليها بالنقر أو بالأرقام 1–8: أسماء النغمات، السلم الموسيقي، وعزف لحن.", tags:"موسيقى الموسيقى نغمات سلم موسيقي دو ري مي فا صول لا سي إكسيليفون آلة إيقاع عزف لحن مهارات موسيقية فنون موسيقية",
+ build(){
+  setHome([0,4.2,6.5],[0,.5,0]);
+  const N = [["دو","C",261.63,"#E53935"],["ري","D",293.66,"#FB8C00"],["مي","E",329.63,"#FDD835"],["فا","F",349.23,"#43A047"],["صول","G",392.0,"#00ACC1"],["لا","A",440.0,"#1E88E5"],["سي","B",493.88,"#5E35B1"],["دو","C",523.25,"#D81B60"]];
+  let AC = null; const ac = ()=> AC || (AC = new (window.AudioContext||window.webkitAudioContext)());
+  function tone(f){ const a = ac(), t = a.currentTime, o = a.createOscillator(), o2 = a.createOscillator(), g = a.createGain(); o.type = "sine"; o2.type = "triangle"; o.frequency.value = f; o2.frequency.value = f*4; const g2 = a.createGain(); g2.gain.value = .08;
+    o.connect(g); o2.connect(g2); g2.connect(g); g.connect(a.destination); g.gain.setValueAtTime(.0001,t); g.gain.exponentialRampToValueAtTime(.5,t+.01); g.gain.exponentialRampToValueAtTime(.0001,t+1.4); o.start(t); o2.start(t); o.stop(t+1.5); o2.stop(t+1.5); }
+  const frame = M("#6D4C41"); [-1,1].forEach(z=>{ const r = mesh(new THREE.BoxGeometry(7.4,.18,.16), frame, E.root); r.position.set(0,.3,z*.75); r.rotation.y = z*.06; });
+  const bars = N.map(([n,l,f,c],i)=>{ const len = 2.4 - i*.17; const b = mesh(new THREE.BoxGeometry(.62,.18,len), M(c,{roughness:.35, metalness:.15}), E.root); b.position.set(-3.1+i*.88,.48,0); b.userData = {n,l,f,i};
+    label(n, [b.position.x,.95,len/2+.25], {size:.24}); label(String(i+1), [b.position.x,.7,-len/2-.2], {size:.16, bg:"none"}); clickable(b, ()=>hit(b)); return b; });
+  const mallet = new THREE.Group(); E.root.add(mallet); const stick = mesh(new THREE.CylinderGeometry(.03,.03,1.6,8), M("#8D6E63"), mallet); stick.rotation.x = Math.PI/2.6; stick.position.set(0,.6,.6); mesh(new THREE.SphereGeometry(.13,16,12), M("#C62828"), mallet).position.set(0,0,0); mallet.position.set(0,1.4,0);
+  function hit(b){ tone(b.userData.f); b.position.y = .38; setTimeout(()=>b.position.y=.48, 120); mallet.position.set(b.position.x, .7, .1); setTimeout(()=>mallet.position.y=1.1, 120);
+    info.innerHTML = `<div class="big" style="color:#${b.material.color.getHexString()}">${b.userData.n} (${b.userData.l})</div>التردد ≈ <b>${Math.round(b.userData.f)}</b> هرتز<br><small>كلما قصر القضيب ارتفعت حدّة النغمة.</small>`; }
+  function play(seq, gap){ let i = 0; const go = ()=>{ if(i>=seq.length) return; const k = seq[i++]; if(k>=0) hit(bars[k]); setTimeout(go, (gap||380)*(k<0?1:1)); }; go(); }
+  const keyH = e=>{ const n = +e.key; if(n>=1 && n<=8) hit(bars[n-1]); }; window.addEventListener("keydown", keyH); (E.onClear = E.onClear || []).push(()=>window.removeEventListener("keydown", keyH));
+  UI.reset(this.t, this.g);
+  const s = UI.sec("اعزف"); UI.buttons(s, [{t:"🎼 السلم صعودًا", on:()=>play([0,1,2,3,4,5,6,7])},{t:"🎼 السلم هبوطًا", on:()=>play([7,6,5,4,3,2,1,0])},{t:"⭐ لحن «النجمة الصغيرة»", on:()=>play([0,0,4,4,5,5,4,-1,3,3,2,2,1,1,0], 420)},{t:"🎵 تتابع ثلاثي", on:()=>play([0,2,4,7,4,2,0], 300)}]);
+  const info = UI.info(); info.innerHTML = "انقر على القضبان أو اضغط الأرقام 1–8 من لوحة المفاتيح.";
+  UI.steps([
+    {t:"الإكسيليفون", d:"آلة إيقاعية لحنية تتكون من قضبان بأطوال مختلفة، يُضرب عليها بمطرقة صغيرة.", run:()=>hit(bars[0])},
+    {t:"النغمات السبع", d:"دو، ري، مي، فا، صول، لا، سي، ثم تتكرر دو بحدّة أعلى. اسمعها بالترتيب.", run:()=>play([0,1,2,3,4,5,6,7])},
+    {t:"الطول والحدّة", d:"القضيب الطويل يعطي صوتًا غليظًا، والقضيب القصير يعطي صوتًا حادًا.", run:()=>play([0,7,0,7], 500)},
+    {t:"اعزف لحنًا", d:"جرّب عزف لحن «النجمة الصغيرة» ثم حاول تقليده بنفسك بالأرقام: 1 1 5 5 6 6 5.", run:()=>play([0,0,4,4,5,5,4,-1,3,3,2,2,1,1,0], 420)}
+  ]);
+ }});
+
+/* ---------- 24) Earth layers & volcano ---------- */
+def({id:"volcano", s:"geo", ss:["sci","env"], icon:"🌋", t:"طبقات الأرض والبراكين", g:"الصف 5–12", d:"قطاع في الكرة الأرضية يُظهر القشرة والوشاح واللب، وبركان مقطوع يُظهر غرفة الصهارة ويثور أمامك.", tags:"طبقات الأرض القشرة الوشاح اللب بركان براكين البراكين صهارة حمم ثوران زلازل جيولوجيا تضاريس أشكال سطح الأرض جغرافيا",
+ build(){
+  setHome([5,4,8],[0,1.8,0]);
+  const earth = new THREE.Group(); earth.position.set(-3,2,0); earth.rotation.y = Math.PI + .25; E.root.add(earth);
+  const LAY = [["القشرة الأرضية",2.0,"#8D6E63","الطبقة الخارجية الصلبة التي نعيش عليها، سمكها من 5 إلى 70 كم."],["الوشاح",1.85,"#E64A19","أسمك الطبقات (نحو 2900 كم)، صخوره شبه منصهرة وتتحرك ببطء."],["اللب الخارجي",1.05,"#FFA000","طبقة سائلة من الحديد والنيكل المنصهرين."],["اللب الداخلي",.55,"#FFEB3B","كرة صلبة من الحديد والنيكل، حرارتها تقارب حرارة سطح الشمس."]];
+  const lay = LAY.map(([n,r,c,d],i)=>{ const m = mesh(new THREE.SphereGeometry(r,48,32,0,Math.PI*1.5), M(c,{side:THREE.DoubleSide, roughness:.8, emissive:i>1?c:"#000", emissiveIntensity:i>1?.25:0}), earth); m.userData={n,d}; clickable(m, ()=>pickL(m)); 
+    [Math.PI, Math.PI/2].forEach(a=>{ const rin = LAY[i+1] ? LAY[i+1][1] : 0; const cap = new THREE.Mesh(rin ? new THREE.RingGeometry(rin, r, 48, 1, -Math.PI/2, Math.PI) : new THREE.CircleGeometry(r, 48, -Math.PI/2, Math.PI), M(c,{side:THREE.DoubleSide, emissive:i>1?c:"#000", emissiveIntensity:i>1?.3:0})); cap.rotation.y = a; earth.add(cap); }); return m; });
+  LAY.forEach(([n,r],i)=>{ const rr = (r + (LAY[i+1]?LAY[i+1][1]:0))/2; label(n, [-3 + rr*.75, 2 + rr*.55, rr*.75], {size:.17}); });
+  function pickL(m){ info.innerHTML = `<div class="big">${m.userData.n}</div>${m.userData.d}`; speak(m.userData.n+". "+m.userData.d); }
+  // volcano
+  const V = new THREE.Group(); V.position.set(3,0,0); V.rotation.y = Math.PI/2; E.root.add(V);
+  const cone = mesh(new THREE.CylinderGeometry(.35,2.4,2.6,40,1,true,0,Math.PI*1.5), M("#6D4C41",{side:THREE.DoubleSide, flatShading:true}), V); cone.position.y = 1.3;
+  const cut = new THREE.Shape(); cut.moveTo(0,0); cut.lineTo(2.4,0); cut.lineTo(.35,2.6); cut.lineTo(0,2.6); cut.lineTo(0,0);
+  [0, Math.PI*1.5].forEach(a=>{ const m = mesh(new THREE.ShapeGeometry(cut), M("#5D4037",{side:THREE.DoubleSide}), V); m.rotation.y = a - Math.PI/2; });
+  const chamber = mesh(new THREE.SphereGeometry(.7,24,16), M("#FF5722",{emissive:"#FF3D00", emissiveIntensity:.6}), V); chamber.position.y = -.2; chamber.scale.y = .6;
+  const vent = mesh(new THREE.CylinderGeometry(.12,.16,2.6,12), M("#FF7043",{emissive:"#FF3D00", emissiveIntensity:.7}), V); vent.position.y = 1.2;
+  const ground = mesh(new THREE.BoxGeometry(6,1.2,5), M("#A1887F",{transparent:true, opacity:.45, depthWrite:false}), V); ground.position.y = -.6;
+  const VL = (t,p)=>label(t,p,{size:.18, parent:V}); VL("فوهة البركان",[0,3.1,.4]); VL("المدخنة",[.9,1.6,.9]); VL("غرفة الصهارة",[1.4,-.2,.9]);
+  const parts = []; let erupt = 0; const lavaM = M("#FF6D00",{emissive:"#FF3D00", emissiveIntensity:.8}), ashM = new THREE.MeshStandardMaterial({color:0x616161, transparent:true, opacity:.7});
+  onUpdate((dt)=>{
+    if(erupt>0){ erupt -= dt; for(let i=0;i<3;i++){ const ash = Math.random()<.4; const p = new THREE.Mesh(new THREE.SphereGeometry(ash?.12+Math.random()*.15:.07,8,6), ash?ashM:lavaM); p.position.set(3,2.7,0); p.userData.v = new THREE.Vector3((Math.random()-.5)*(ash?.6:2.2), 2.5+Math.random()*(ash?1:2.5), (Math.random()-.5)*(ash?.6:2.2)); p.userData.ash = ash; p.userData.life = ash?3:2.2; E.root.add(p); parts.push(p); } }
+    for(let i=parts.length-1;i>=0;i--){ const p = parts[i]; p.userData.life -= dt; if(!p.userData.ash) p.userData.v.y -= dt*4.5; else p.scale.multiplyScalar(1+dt*.6); p.position.addScaledVector(p.userData.v, dt); if(p.position.y<0.1 && !p.userData.ash){ p.position.y=.1; p.userData.v.set(p.userData.v.x*.3,0,p.userData.v.z*.3); } if(p.userData.life<=0){ E.root.remove(p); p.geometry.dispose(); parts.splice(i,1); } }
+    chamber.material.emissiveIntensity = .5 + (erupt>0 ? Math.random()*.6 : 0); });
+  UI.reset(this.t, this.g);
+  const s = UI.sec("الأرض"); UI.buttons(s, lay.map(m=>({t:m.userData.n, on:()=>pickL(m)})));
+  const s2 = UI.sec("البركان"); UI.buttons(s2, [{t:"🌋 ثوران البركان", on:()=>{ erupt = 6; camTo([7,4.5,8],[3,2,0]); info.innerHTML = "<div class=\"big\">ثوران!</div>ترتفع الصهارة من الغرفة عبر المدخنة وتخرج من الفوهة حممًا ورمادًا وغازات."; }}]);
+  const info = UI.info(); info.innerHTML = "انقر على أي طبقة من طبقات الأرض.";
+  UI.steps([
+    {t:"باطن الأرض", d:"تتكون الأرض من طبقات: القشرة، والوشاح، واللب الخارجي، واللب الداخلي. تزداد الحرارة كلما اتجهنا نحو المركز.", run:()=>camTo([-1,3,6],[-3,2,0])},
+    {t:"القشرة والوشاح", d:"القشرة رقيقة وصلبة، والوشاح أسمك الطبقات وصخوره شبه منصهرة.", run:()=>pickL(lay[1])},
+    {t:"اللب", d:"اللب الخارجي سائل، واللب الداخلي صلب بسبب الضغط الهائل.", run:()=>pickL(lay[3])},
+    {t:"البركان", d:"فتحة في القشرة تخرج منها الصهارة. أجزاؤه: غرفة الصهارة، والمدخنة، والفوهة، والمخروط.", run:()=>camTo([6,3,6],[3,1.2,0])},
+    {t:"الثوران", d:"عندما يزداد ضغط الصهارة والغازات تندفع إلى السطح حممًا ورمادًا. تتشكل بذلك جبال وجزر جديدة.", run:()=>{ erupt=6; camTo([7,4.5,8],[3,2,0]); }}
+  ]);
+ }});
+
+/* =====================================================================
    AI scene — any lesson → JSON scene DSL → 3D
    ===================================================================== */
 function matchBuiltin(text){ const t = " "+String(text||"").replace(/[^\u0600-\u06FFA-Za-z0-9 ]/g," ")+" "; let best=null, sc=0;
@@ -1141,7 +1590,7 @@ let filter = "all";
 function renderHome(){
   const chips = [["all","الكل"],...Object.entries(SUBJ).map(([k,v])=>[k,v.n])];
   $("chips").innerHTML = chips.map(([k,n])=>`<button class="chip ${filter===k?"on":""}" data-f="${k}">${n}</button>`).join("");
-  $("grid").innerHTML = XP.filter(x=>filter==="all"||x.s===filter||x.s2===filter).map(x=>`<div class="xp" data-x="${x.id}"><span class="ar">AR</span><div class="ic" style="background:${SUBJ[x.s].c}">${x.icon}</div><h3>${esc(x.t)}</h3><p>${esc(x.d)}</p><div class="meta"><span>${SUBJ[x.s].n}</span><span>${esc(x.g)}</span></div></div>`).join("");
+  $("grid").innerHTML = XP.filter(x=>filter==="all"||x.s===filter||x.s2===filter||(x.ss||[]).includes(filter)).map(x=>`<div class="xp" data-x="${x.id}"><span class="ar">AR</span><div class="ic" style="background:${SUBJ[x.s].c}">${x.icon}</div><h3>${esc(x.t)}</h3><p>${esc(x.d)}</p><div class="meta"><span>${SUBJ[x.s].n}</span><span>${esc(x.g)}</span></div></div>`).join("");
 }
 $("chips").addEventListener("click", e=>{ const c=e.target.closest("[data-f]"); if(c){ filter=c.dataset.f; renderHome(); } });
 $("grid").addEventListener("click", e=>{ const c=e.target.closest("[data-x]"); if(c) openXP(c.dataset.x); });
