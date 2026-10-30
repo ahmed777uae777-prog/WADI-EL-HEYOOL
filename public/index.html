@@ -846,11 +846,45 @@
       <div class="field">
         <label>نوع اللعبة</label>
         <select id="gmType">
-          <option value="auto">اختيار تلقائي مناسب للموضوع</option>
-          <option value="quiz">أسئلة وأجوبة (كويز تفاعلي)</option>
-          <option value="match">مطابقة بالنقر (مصطلح وتعريفه)</option>
-          <option value="catch">لعبة حركة — التقاط الإجابة الصحيحة</option>
-          <option value="word">تخمين كلمة / إكمال حروف ناقصة</option>
+          <option value="auto">🎲 اختيار عشوائي من الأنواع الجاهزة</option>
+          <optgroup label="❓ أسئلة وتحديات">
+            <option value="quiz">كويز اختيار من متعدد</option>
+            <option value="truefalse">صح أم خطأ</option>
+            <option value="fillblank">أكمل الفراغ</option>
+            <option value="timed">سباق الدقيقة (أسئلة ضد الوقت)</option>
+            <option value="lightning">صح أم خطأ السريع (٤٥ ثانية)</option>
+            <option value="levels">المستويات (سهل ← متوسط ← صعب)</option>
+            <option value="millionaire">من سيربح النقاط؟ (سلّم الجوائز + حذف إجابتين)</option>
+            <option value="teams">تحدي الفريقين (للصف كاملًا)</option>
+            <option value="jeopardy">لوحة النقاط (اختر السؤال وقيمته)</option>
+            <option value="wheel">عجلة الأسئلة الدوّارة</option>
+            <option value="treasure">صناديق الكنز</option>
+            <option value="race">سباق السيارات</option>
+          </optgroup>
+          <optgroup label="🏃 ألعاب حركة وسرعة">
+            <option value="catch">التقط النجمة الصحيحة (تسقط من الأعلى)</option>
+            <option value="bubbles">فقاعات الإجابة (تطفو للأعلى)</option>
+            <option value="mole">اضرب الخلد الصحيح</option>
+          </optgroup>
+          <optgroup label="🔗 مطابقة وذاكرة">
+            <option value="match">وصّل المصطلح بتعريفه</option>
+            <option value="dragmatch">اسحب وأفلت التعريف</option>
+            <option value="memory">بطاقات الذاكرة (اقلب وطابق)</option>
+            <option value="flashcards">بطاقات المراجعة السريعة</option>
+          </optgroup>
+          <optgroup label="🔤 كلمات وحروف">
+            <option value="word">خمّن الكلمة (الحروف الناقصة)</option>
+            <option value="scramble">رتّب الحروف</option>
+            <option value="spelling">اكتب الكلمة من التلميح (إملاء)</option>
+            <option value="wordsearch">البحث عن الكلمات</option>
+          </optgroup>
+          <optgroup label="🧩 ترتيب وتصنيف">
+            <option value="order">رتّب الخطوات بالتسلسل الصحيح</option>
+            <option value="sort">صنّف العناصر في مجموعاتها</option>
+          </optgroup>
+          <optgroup label="✨ إبداعي">
+            <option value="ai_free">لعبة حرة يبتكرها الذكاء الاصطناعي بالكامل (تجريبي)</option>
+          </optgroup>
         </select>
       </div>
       <button class="btn" id="gmGenBtn">✨ إنشاء لعبة تفاعلية</button>
@@ -2387,6 +2421,51 @@ ${points?("نقاط يجب تضمينها صراحة: "+points+"."):""}
     if(start > 0) t = t.slice(start);
     return t;
   }
+  /* ---- 25 ready-made game types: the AI writes only the content (JSON), the game engine is built in ---- */
+  const GAME_FIELDS = {questions:["quiz","timed","levels","millionaire","teams","jeopardy","wheel","treasure","race","catch","bubbles","mole"],
+    statements:["truefalse","lightning"], blanks:["fillblank"], pairs:["match","dragmatch","memory","flashcards"], words:["word","scramble","spelling","wordsearch"], order:["order"], groups:["sort"]};
+  const GAME_TYPES = Object.values(GAME_FIELDS).flat();
+  const GAME_SPEC = {
+    questions: `"questions":[{"q":"نص السؤال","options":["خيار1","خيار2","خيار3","خيار4"],"answer":"نسخة حرفية من الخيار الصحيح","explain":"شرح قصير جدًا","level":1}]  — 12 سؤالًا: 4 بمستوى 1 (سهل) و4 بمستوى 2 و4 بمستوى 3 (صعب)، أربعة خيارات لكل سؤال وخيار واحد صحيح`,
+    statements: `"statements":[{"text":"عبارة علمية قصيرة","isTrue":true}] — 12 عبارة، نصفها صحيح ونصفها خاطئ`,
+    blanks: `"blanks":[{"sentence":"جملة تحتوي فراغًا هكذا _____ في مكان الكلمة","answer":"الكلمة الناقصة","options":["الكلمة الناقصة","بديل خاطئ","بديل خاطئ","بديل خاطئ"]}] — 8 جمل`,
+    pairs: `"pairs":[{"a":"مصطلح قصير","b":"تعريفه أو مثاله في أقل من ٨ كلمات"}] — 8 أزواج`,
+    words: `"words":[{"word":"كلمة واحدة بدون مسافات من ٣ إلى ٨ حروف بدون تشكيل","hint":"تلميح يدل عليها"}] — 8 كلمات`,
+    order: `"order":{"title":"ما الذي يُرتّب","items":["العنصر الأول بالترتيب الصحيح","الثاني","الثالث","الرابع","الخامس"]} — من 5 إلى 7 عناصر مرتبة ترتيبًا صحيحًا`,
+    groups: `"groups":{"names":["اسم المجموعة الأولى","اسم المجموعة الثانية"],"items":[{"text":"عنصر","group":"اسم المجموعة الأولى"}]} — مجموعتان أو ثلاث و10 عناصر موزعة`
+  };
+  function buildGameHTML(type, data){
+    const engine = document.getElementById("gameEngineSrc").textContent, css = document.getElementById("gameCssSrc").textContent;
+    const safe = JSON.stringify(data).replace(/</g,"\\u003c");
+    return `<!DOCTYPE html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${escapeHTML(data.title||"لعبة تعليمية")}</title><style>${css}</style></head><body><div id="game"></div><script>window.GAME_DATA=${safe};window.GAME_TYPE=${JSON.stringify(type)};<\/script><script>${engine}<\/script></body></html>`;
+  }
+  async function generateBuiltInGame(subject, grade, topic, type){
+    if(type==="auto") type = GAME_TYPES[Math.floor(Math.random()*GAME_TYPES.length)];
+    const field = Object.keys(GAME_FIELDS).find(f=>GAME_FIELDS[f].includes(type)) || "questions";
+    const fields = field==="blanks" ? ["blanks","questions"] : [field];
+    const btn = document.getElementById("gmGenBtn"), regenBtn = document.getElementById("gmRegenBtn");
+    const loading = document.getElementById("gmLoading"), wrap = document.getElementById("gmGameWrap"), hint = document.getElementById("gmEmptyHint");
+    [btn, regenBtn].forEach(b=>{ b.disabled = true; }); wrap.hidden = true; hint.hidden = true; loading.hidden = false;
+    const prompt = `أنت معلم خبير في سلطنة عُمان. أنشئ محتوى لعبة تعليمية دقيقًا علميًا بالعربية الفصحى المبسطة.
+المادة: ${subject}. الصف: ${grade}. الموضوع أو المهارة: ${topic}.
+كل المحتوى يجب أن يكون عن هذا الموضوع تحديدًا ومناسبًا لمستوى الصف، وصحيحًا علميًا.
+أعد كائن JSON واحدًا فقط بهذه المفاتيح:
+"title": عنوان قصير جذاب للعبة،
+${fields.map(f=>GAME_SPEC[f]).join(",\n")}
+لا تكتب أي شيء خارج JSON.`;
+    try{
+      const data = await sample.json(prompt, {modelTier:"default"});
+      if(!data || typeof data!=="object") throw {code:"invalid_json"};
+      data.subject = subject; data.grade = grade; data.topic = topic;
+      if(!data.title) data.title = `${topic} — ${subject}`;
+      gmLastHTML = buildGameHTML(type, data);
+      document.getElementById("gmFrame").srcdoc = gmLastHTML;
+      wrap.hidden = false;
+      const sel = document.getElementById("gmType"); const opt = [...sel.options].find(o=>o.value===type);
+      toast(`🎮 تم إنشاء لعبة: ${opt?opt.textContent:type}`);
+    }catch(e){ toast(sampleErrorMessage(e)); hint.hidden = false; }
+    finally{ loading.hidden = true; [btn, regenBtn].forEach(b=>{ b.disabled = false; }); }
+  }
   async function generateGame(){
     const subject = document.getElementById("gmSubject").value.trim() || "عام";
     const grade = document.getElementById("gmGrade").value.trim() || "غير محدد";
@@ -2394,6 +2473,7 @@ ${points?("نقاط يجب تضمينها صراحة: "+points+"."):""}
     const type = document.getElementById("gmType").value;
     if(!topic){ toast("اكتب الموضوع أو المهارة المستهدفة"); return; }
     if(!sample){ toast("ميزة الذكاء الاصطناعي غير متاحة في هذا العرض (يحتاج تفعيل من إعدادات Claude)."); return; }
+    if(type!=="ai_free"){ return generateBuiltInGame(subject, grade, topic, type); }
 
     const btn = document.getElementById("gmGenBtn");
     const regenBtn = document.getElementById("gmRegenBtn");
@@ -8662,4 +8742,296 @@ ${points?("نقاط يجب تضمينها صراحة: "+points+"."):""}
 
 
 
+<script type="text/plain" id="gameEngineSrc">/* منصة المعلّم الذكية — محرك الألعاب التعليمية (يعمل دون إنترنت داخل ملف HTML واحد).
+   window.GAME_DATA = {title, subject, grade, topic, questions:[{q,options,answer,explain,level}], pairs:[{a,b}],
+     words:[{word,hint}], statements:[{text,isTrue}], order:{title,items}, groups:{names,items:[{text,group}]},
+     blanks:[{sentence,answer,options}]};   window.GAME_TYPE = "quiz" | ... */
+(function(){
+"use strict";
+var D = window.GAME_DATA || {}, TYPE = window.GAME_TYPE || "quiz";
+var root = document.getElementById("game");
+function $(h){ var t=document.createElement("template"); t.innerHTML=h.trim(); return t.content.firstChild; }
+function esc(s){ return String(s==null?"":s).replace(/[&<>"']/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c];}); }
+function shuffle(a){ a=a.slice(); for(var i=a.length-1;i>0;i--){ var j=Math.floor(Math.random()*(i+1)); var t=a[i]; a[i]=a[j]; a[j]=t; } return a; }
+function norm(s){ return String(s||"").replace(/[ً-ْـ]/g,"").replace(/[أإآ]/g,"ا").replace(/ى/g,"ي").replace(/ة/g,"ه").replace(/\s+/g," ").trim().toLowerCase(); }
+function letters(w){ return Array.from(String(w||"").replace(/\s+/g,"")); }
+var Q = (D.questions||[]).filter(function(x){ return x && x.q && x.options && x.options.length>=2 && x.answer; }).map(function(x){
+  var opts = x.options.map(String); if(opts.indexOf(String(x.answer))<0) opts[0]=String(x.answer); return {q:String(x.q), options:opts.slice(0,4), answer:String(x.answer), explain:x.explain||"", level:+x.level||2}; });
+var P = (D.pairs||[]).filter(function(x){ return x && x.a && x.b; }).map(function(x){ return {a:String(x.a), b:String(x.b)}; });
+var W = (D.words||[]).filter(function(x){ return x && x.word; }).map(function(x){ return {word:String(x.word).trim(), hint:String(x.hint||"")}; });
+var S = (D.statements||[]).filter(function(x){ return x && x.text; }).map(function(x){ return {text:String(x.text), isTrue: x.isTrue===true || x.isTrue==="true" || x.isTrue==="صح"}; });
+var O = D.order && D.order.items && D.order.items.length>=3 ? {title:String(D.order.title||"رتّب العناصر"), items:D.order.items.map(String)} : null;
+var G = D.groups && D.groups.names && D.groups.items ? {names:D.groups.names.map(String).slice(0,4), items:D.groups.items.filter(function(i){ return i && i.text && D.groups.names.indexOf(i.group)>-1; }).map(function(i){ return {text:String(i.text), group:String(i.group)}; })} : null;
+var B = (D.blanks||[]).filter(function(x){ return x && x.sentence && x.answer; }).map(function(x){ var o=(x.options||[]).map(String); if(o.indexOf(String(x.answer))<0) o.unshift(String(x.answer)); return {sentence:String(x.sentence), answer:String(x.answer), options:o.slice(0,4)}; });
+
+var score = 0, total = 0;
+var hdr = $('<div class="hdr"><div class="ttl"></div><div class="stats"><span class="chip" id="sc">⭐ 0</span><span class="chip" id="tm" hidden></span><span class="chip" id="pg" hidden></span></div></div>');
+hdr.querySelector(".ttl").textContent = (D.title || "لعبة تعليمية");
+var stage = $('<div class="stage"></div>');
+root.appendChild(hdr); root.appendChild(stage);
+function setScore(v){ score=v; document.getElementById("sc").textContent="⭐ "+score; }
+function addScore(n){ setScore(score+(n||1)); }
+function setProgress(t){ var e=document.getElementById("pg"); e.hidden=!t; e.textContent=t||""; }
+var timerId=null;
+function startTimer(sec, onEnd){ var e=document.getElementById("tm"); e.hidden=false; var left=sec; e.textContent="⏱️ "+left; clearInterval(timerId);
+  timerId=setInterval(function(){ left--; e.textContent="⏱️ "+left; if(left<=5) e.classList.add("warn"); if(left<=0){ clearInterval(timerId); onEnd(); } },1000); return function(){ clearInterval(timerId); }; }
+function stopTimer(){ clearInterval(timerId); }
+function clear(){ stage.innerHTML=""; }
+function toastIn(msg, ok){ var t=$('<div class="fb '+(ok?"ok":"no")+'"></div>'); t.textContent=msg; stage.appendChild(t); return t; }
+function confetti(){ for(var i=0;i<26;i++){ var c=$('<i class="cf"></i>'); c.style.left=Math.random()*100+"%"; c.style.background=["#E2B864","#3DB8A8","#e76f51","#8ecae6","#90be6d"][i%5]; c.style.animationDelay=(Math.random()*0.6)+"s"; document.body.appendChild(c); setTimeout(function(x){ return function(){ x.remove(); }; }(c),2200); } }
+function finish(extra){
+  stopTimer(); clear();
+  var pct = total ? Math.round(score/total*100) : 0;
+  var stars = total ? (pct>=90?"⭐⭐⭐":pct>=60?"⭐⭐":pct>=30?"⭐":"") : "⭐⭐⭐";
+  var box=$('<div class="end"><div class="big">🎉</div><h2>انتهت اللعبة!</h2><div class="res"></div><div class="stars"></div><div class="extra"></div><button class="btn">🔁 إعادة اللعب</button></div>');
+  box.querySelector(".res").textContent = total ? ("نتيجتك: "+score+" من "+total) : ("نقاطك: "+score);
+  box.querySelector(".stars").textContent = stars;
+  if(extra) box.querySelector(".extra").textContent = extra;
+  box.querySelector("button").onclick=function(){ location.reload(); };
+  stage.appendChild(box); if(!total || pct>=60) confetti();
+}
+function need(arr, n, what){ if(arr && arr.length>=n) return true; clear(); stage.appendChild($('<div class="end"><div class="big">😕</div><h2>المحتوى غير كافٍ لهذه اللعبة</h2><p>تحتاج اللعبة إلى '+n+' '+what+' على الأقل. أعد التوليد أو اختر نوعًا آخر.</p></div>')); return false; }
+function optionButtons(container, opts, onPick){ opts.forEach(function(o){ var b=$('<button class="opt"></button>'); b.textContent=o; b.onclick=function(){ onPick(o,b); }; container.appendChild(b); }); }
+function lockAll(c){ Array.prototype.forEach.call(c.querySelectorAll("button"),function(b){ b.disabled=true; }); }
+function markAnswer(c, ans){ Array.prototype.forEach.call(c.querySelectorAll(".opt"),function(b){ if(b.textContent===ans) b.classList.add("good"); }); }
+
+/* ---------- generic question flow (used by many games) ---------- */
+function questionFlow(list, opt){
+  opt=opt||{}; var i=0; total=list.length;
+  function show(){
+    if(i>=list.length || (opt.stop && opt.stop())) return finish(opt.endText && opt.endText());
+    clear(); setProgress((i+1)+" / "+list.length);
+    var q=list[i]; if(opt.before) opt.before(i);
+    var card=$('<div class="card"><div class="q"></div><div class="opts"></div></div>'); card.querySelector(".q").textContent=q.q;
+    var oc=card.querySelector(".opts"); stage.appendChild(card);
+    var opts = q._opts || shuffle(q.options);
+    optionButtons(oc, opts, function(o,b){
+      lockAll(oc); var ok = o===q.answer;
+      if(ok){ b.classList.add("good"); addScore(opt.points?opt.points(i,q):1); } else { b.classList.add("bad"); markAnswer(oc,q.answer); }
+      if(opt.after) opt.after(ok,i);
+      var f=toastIn(ok?"✅ إجابة صحيحة!":"❌ الإجابة الصحيحة: "+q.answer, ok); if(q.explain){ var e=$('<div class="ex"></div>'); e.textContent="💡 "+q.explain; f.appendChild(e); }
+      var nb=$('<button class="btn">التالي ←</button>'); nb.onclick=function(){ i++; show(); }; stage.appendChild(nb);
+      if(opt.auto){ setTimeout(function(){ if(nb.isConnected){ i++; show(); } }, ok?700:1400); }
+    });
+  }
+  show();
+}
+
+var games = {
+  quiz: function(){ if(!need(Q,3,"أسئلة")) return; questionFlow(shuffle(Q)); },
+  truefalse: function(){ if(!need(S,4,"عبارات")) return; questionFlow(shuffle(S).map(function(s){ return {q:s.text, options:["✔️ صح","✖️ خطأ"], _opts:["✔️ صح","✖️ خطأ"], answer:s.isTrue?"✔️ صح":"✖️ خطأ"}; })); },
+  fillblank: function(){ var list = B.length>=3 ? B.map(function(b){ return {q:b.sentence.replace(/_{2,}|\.{3,}|…/g,"_____"), options:b.options, answer:b.answer}; }) : Q; if(!need(list,3,"جمل")) return; questionFlow(shuffle(list)); },
+  timed: function(){ if(!need(Q,4,"أسئلة")) return; var over=false; startTimer(60,function(){ over=true; finish("انتهى الوقت ⏰"); }); questionFlow(shuffle(Q).concat(shuffle(Q)), {auto:true, stop:function(){ return over; }}); total=0; },
+  lightning: function(){ if(!need(S,4,"عبارات")) return; var over=false; startTimer(45,function(){ over=true; finish("انتهى الوقت ⏰"); });
+    questionFlow(shuffle(S.concat(S)).map(function(s){ return {q:s.text, options:["✔️ صح","✖️ خطأ"], _opts:["✔️ صح","✖️ خطأ"], answer:s.isTrue?"✔️ صح":"✖️ خطأ"}; }), {auto:true, stop:function(){ return over; }}); total=0; },
+  levels: function(){ if(!need(Q,6,"أسئلة")) return; var sorted=Q.slice().sort(function(a,b){ return a.level-b.level; }); var names=["🟢 المستوى الأول: سهل","🟡 المستوى الثاني: متوسط","🔴 المستوى الثالث: صعب"], per=Math.ceil(sorted.length/3), lv=-1;
+    questionFlow(sorted, {before:function(i){ var l=Math.floor(i/per); if(l!==lv){ lv=l; var b=$('<div class="banner"></div>'); b.textContent=names[Math.min(l,2)]; stage.insertBefore(b, stage.firstChild); } }, points:function(i){ return 1+Math.floor(i/per); }});
+    total=sorted.reduce(function(s,_,i){ return s+1+Math.floor(i/per); },0); },
+  millionaire: function(){ if(!need(Q,5,"أسئلة")) return; var list=shuffle(Q).slice(0,10), prizes=[100,200,300,500,1000,2000,4000,8000,16000,32000,64000,125000,250000,500000,1000000].slice(0,list.length), used=false, lost=false, i=0; total=list.length;
+    function show(){ clear(); if(i>=list.length || lost) return finish(lost?"خسرت عند السؤال "+(i+1):"🏆 ربحت "+prizes[list.length-1].toLocaleString("ar")+" نقطة!");
+      var q=list[i]; setProgress("السؤال "+(i+1)+" — الجائزة "+prizes[i].toLocaleString("ar"));
+      var ladder=$('<div class="ladder"></div>'); prizes.slice().reverse().forEach(function(p,k){ var r=$('<div></div>'); r.textContent=p.toLocaleString("ar"); if(prizes.length-1-k===i) r.className="on"; ladder.appendChild(r); });
+      var card=$('<div class="card"><div class="q"></div><div class="opts"></div><button class="btn ghost">50:50</button></div>'); card.querySelector(".q").textContent=q.q; var oc=card.querySelector(".opts");
+      var wrap=$('<div class="mill"></div>'); wrap.appendChild(card); wrap.appendChild(ladder); stage.appendChild(wrap);
+      optionButtons(oc, shuffle(q.options), function(o,b){ lockAll(oc); if(o===q.answer){ b.classList.add("good"); addScore(1); setTimeout(function(){ i++; show(); },900);} else { b.classList.add("bad"); markAnswer(oc,q.answer); lost=true; setTimeout(show,1600);} });
+      var ff=card.querySelector(".ghost"); ff.disabled=used; ff.onclick=function(){ used=true; ff.disabled=true; var wrong=shuffle(Array.prototype.filter.call(oc.children,function(b){ return b.textContent!==q.answer; })).slice(0,2); wrong.forEach(function(b){ b.style.visibility="hidden"; }); };
+    } show(); },
+  teams: function(){ if(!need(Q,4,"أسئلة")) return; var list=shuffle(Q), t=[0,0], turn=0, i=0;
+    function sb(){ return '<div class="teams"><div class="tm '+(turn===0?"on":"")+'">🔵 الفريق الأول<b>'+t[0]+'</b></div><div class="tm '+(turn===1?"on":"")+'">🔴 الفريق الثاني<b>'+t[1]+'</b></div></div>'; }
+    function show(){ clear(); if(i>=list.length){ var w=t[0]===t[1]?"تعادل! 🤝":(t[0]>t[1]?"🔵 فاز الفريق الأول!":"🔴 فاز الفريق الثاني!"); stage.appendChild($(sb())); total=0; setScore(Math.max(t[0],t[1])); return finish(w); }
+      stage.appendChild($(sb())); var q=list[i]; var card=$('<div class="card"><div class="q"></div><div class="opts"></div></div>'); card.querySelector(".q").textContent=(turn===0?"🔵 ":"🔴 ")+q.q; var oc=card.querySelector(".opts"); stage.appendChild(card);
+      optionButtons(oc, shuffle(q.options), function(o,b){ lockAll(oc); if(o===q.answer){ b.classList.add("good"); t[turn]++; } else { b.classList.add("bad"); markAnswer(oc,q.answer); } setTimeout(function(){ i++; turn=1-turn; show(); },1100); });
+    } show(); },
+  jeopardy: function(){ if(!need(Q,6,"أسئلة")) return; var cols=[["سهل",100],["متوسط",200],["صعب",300]], byL=[[],[],[]]; Q.forEach(function(q){ byL[Math.max(0,Math.min(2,q.level-1))].push(q); });
+    var pool=shuffle(Q); byL=byL.map(function(a){ while(a.length<3 && pool.length) { var x=pool.pop(); if(a.indexOf(x)<0) a.push(x); } return a.slice(0,3); });
+    total=byL.reduce(function(s,a,k){ return s+a.length*cols[k][1]; },0); var left=byL.reduce(function(s,a){ return s+a.length; },0);
+    function board(){ clear(); setProgress("المتبقي: "+left); var g=$('<div class="board"></div>'); cols.forEach(function(c){ var h=$('<div class="bh"></div>'); h.textContent=c[0]; g.appendChild(h); });
+      for(var r=0;r<3;r++) cols.forEach(function(c,k){ var q=byL[k][r]; var cell=$('<button class="bc"></button>'); if(!q || q._done){ cell.disabled=true; cell.textContent=q?"✓":"—"; } else { cell.textContent=c[1]; cell.onclick=function(){ ask(q,c[1]); }; } g.appendChild(cell); });
+      stage.appendChild(g); if(!left) finish(); }
+    function ask(q,pts){ clear(); var card=$('<div class="card"><div class="pts"></div><div class="q"></div><div class="opts"></div></div>'); card.querySelector(".pts").textContent=pts+" نقطة"; card.querySelector(".q").textContent=q.q; var oc=card.querySelector(".opts"); stage.appendChild(card);
+      optionButtons(oc, shuffle(q.options), function(o,b){ lockAll(oc); q._done=true; left--; if(o===q.answer){ b.classList.add("good"); addScore(pts);} else { b.classList.add("bad"); markAnswer(oc,q.answer);} setTimeout(board,1100); }); }
+    board(); },
+  wheel: function(){ if(!need(Q,4,"أسئلة")) return; var list=shuffle(Q).slice(0,8), done={}, rot=0; total=list.length;
+    function show(){ clear(); var left=list.filter(function(_,k){ return !done[k]; }).length; setProgress("المتبقي: "+left); if(!left) return finish();
+      var n=list.length, seg=360/n, cols=["#E2B864","#3DB8A8","#e76f51","#8ecae6","#90be6d","#f4a261","#b5838d","#6d6875"];
+      var grad=list.map(function(_,k){ return (done[k]?"#ddd":cols[k%8])+" "+(k*seg)+"deg "+((k+1)*seg)+"deg"; }).join(",");
+      var w=$('<div class="wheelwrap"><div class="pin">▼</div><div class="wheel"></div><button class="btn">🎡 أدِر العجلة</button></div>'); var wh=w.querySelector(".wheel"); wh.style.background="conic-gradient("+grad+")"; wh.style.transform="rotate("+rot+"deg)";
+      list.forEach(function(_,k){ var l=$('<span class="wl"></span>'); l.textContent=k+1; l.style.transform="rotate("+(k*seg+seg/2)+"deg) translateY(-110px) rotate("+(-(k*seg+seg/2))+"deg)"; wh.appendChild(l); });
+      w.querySelector("button").onclick=function(){ var avail=list.map(function(_,k){ return k; }).filter(function(k){ return !done[k]; }); var pick=avail[Math.floor(Math.random()*avail.length)];
+        rot += 1440 + (360 - (pick*seg+seg/2)) - (rot%360); wh.style.transition="transform 2.6s cubic-bezier(.2,.8,.2,1)"; wh.style.transform="rotate("+rot+"deg)"; this.disabled=true; setTimeout(function(){ ask(pick); },2700); };
+      stage.appendChild(w); }
+    function ask(k){ var q=list[k]; clear(); var card=$('<div class="card"><div class="pts"></div><div class="q"></div><div class="opts"></div></div>'); card.querySelector(".pts").textContent="السؤال رقم "+(k+1); card.querySelector(".q").textContent=q.q; var oc=card.querySelector(".opts"); stage.appendChild(card);
+      optionButtons(oc, shuffle(q.options), function(o,b){ lockAll(oc); done[k]=true; if(o===q.answer){ b.classList.add("good"); addScore(1);} else { b.classList.add("bad"); markAnswer(oc,q.answer);} setTimeout(show,1200); }); }
+    show(); },
+  treasure: function(){ if(!need(Q,6,"أسئلة")) return; var list=shuffle(Q).slice(0,9), open={}; total=list.length*10;
+    function grid(){ clear(); var left=list.filter(function(_,k){ return !open[k]; }).length; setProgress("صناديق متبقية: "+left); if(!left) return finish();
+      var g=$('<div class="chests"></div>'); list.forEach(function(q,k){ var c=$('<button class="chest"></button>'); c.textContent=open[k]?(open[k]==="ok"?"💰":"🕸️"):"🎁"; c.disabled=!!open[k]; c.onclick=function(){ ask(k); }; g.appendChild(c); }); stage.appendChild(g); }
+    function ask(k){ var q=list[k]; clear(); var card=$('<div class="card"><div class="q"></div><div class="opts"></div></div>'); card.querySelector(".q").textContent=q.q; var oc=card.querySelector(".opts"); stage.appendChild(card);
+      optionButtons(oc, shuffle(q.options), function(o,b){ lockAll(oc); if(o===q.answer){ open[k]="ok"; b.classList.add("good"); addScore(10); toastIn("💰 وجدت الكنز! +10",true);} else { open[k]="no"; b.classList.add("bad"); markAnswer(oc,q.answer); toastIn("🕸️ الصندوق فارغ",false);} setTimeout(grid,1300); }); }
+    grid(); },
+  race: function(){ if(!need(Q,5,"أسئلة")) return; var list=shuffle(Q), steps=Math.min(8,list.length), me=0, cpu=0, i=0; total=steps;
+    function track(){ var t=$('<div class="race"></div>'); [["🏎️",me,"أنت"],["🚙",cpu,"المنافس"]].forEach(function(r){ var lane=$('<div class="lane"><span class="lbl"></span><div class="road"><span class="car"></span><span class="flag">🏁</span></div></div>'); lane.querySelector(".lbl").textContent=r[2]; var car=lane.querySelector(".car"); car.textContent=r[0]; car.style.insetInlineStart=(r[1]/steps*88)+"%"; t.appendChild(lane); }); return t; }
+    function show(){ clear(); stage.appendChild(track()); if(me>=steps||cpu>=steps||i>=list.length){ setScore(me); return finish(me>=steps?"🏆 وصلت أولًا!":cpu>=steps?"المنافس وصل أولًا — حاول مرة أخرى":"انتهت الأسئلة"); }
+      var q=list[i]; var card=$('<div class="card"><div class="q"></div><div class="opts"></div></div>'); card.querySelector(".q").textContent=q.q; var oc=card.querySelector(".opts"); stage.appendChild(card);
+      optionButtons(oc, shuffle(q.options), function(o,b){ lockAll(oc); if(o===q.answer){ b.classList.add("good"); me++; } else { b.classList.add("bad"); markAnswer(oc,q.answer); cpu++; } if(Math.random()<0.35) cpu++; setScore(me); setTimeout(function(){ i++; show(); },1000); }); }
+    show(); },
+  catch: function(){ if(!need(Q,3,"أسئلة")) return; fallGame("fall"); },
+  bubbles: function(){ if(!need(Q,3,"أسئلة")) return; fallGame("rise"); },
+  mole: function(){ if(!need(Q,3,"أسئلة")) return; var list=shuffle(Q).slice(0,8), i=0, lives=3; total=list.length;
+    function show(){ clear(); if(i>=list.length||lives<=0) return finish(lives<=0?"انتهت المحاولات":""); setProgress("❤️".repeat(lives)+"  "+(i+1)+"/"+list.length);
+      var q=list[i]; var card=$('<div class="card"><div class="q"></div></div>'); card.querySelector(".q").textContent=q.q; stage.appendChild(card);
+      var holes=$('<div class="holes"></div>'); for(var h=0;h<6;h++) holes.appendChild($('<div class="hole"><button class="mole" hidden></button></div>')); stage.appendChild(holes);
+      var moles=holes.querySelectorAll(".mole"), tick=0, iv=setInterval(function(){ Array.prototype.forEach.call(moles,function(m){ m.hidden=true; }); var opts=shuffle(q.options).slice(0,3), spots=shuffle([0,1,2,3,4,5]).slice(0,opts.length);
+        opts.forEach(function(o,k){ var m=moles[spots[k]]; m.textContent="🐹 "+o; m.hidden=false; m.onclick=function(){ clearInterval(iv); if(o===q.answer){ addScore(1); toastIn("✅ أحسنت!",true);} else { lives--; toastIn("❌ الصحيح: "+q.answer,false);} setTimeout(function(){ i++; show(); },900); }; }); if(++tick>8){ clearInterval(iv); lives--; toastIn("⏰ لم تضرب الإجابة! الصحيح: "+q.answer,false); setTimeout(function(){ i++; show(); },1200);} },1300); }
+    show(); },
+  match: function(){ if(!need(P,4,"أزواج")) return; var list=shuffle(P).slice(0,8), sel=null, left=list.length; total=list.length;
+    var w=$('<div class="cols"><div class="col"></div><div class="col"></div></div>'); var A=w.children[0], Bc=w.children[1]; stage.appendChild(w); setProgress("مطابقات متبقية: "+left);
+    list.forEach(function(p,k){ var b=$('<button class="opt"></button>'); b.textContent=p.a; b.dataset.k=k; b.onclick=function(){ Array.prototype.forEach.call(A.children,function(x){ x.classList.remove("sel"); }); sel=k; b.classList.add("sel"); }; A.appendChild(b); });
+    shuffle(list.map(function(p,k){ return [p.b,k]; })).forEach(function(x){ var b=$('<button class="opt"></button>'); b.textContent=x[0]; b.onclick=function(){ if(sel===null) return; var a=A.querySelector('[data-k="'+sel+'"]'); if(x[1]===sel){ a.classList.add("good"); b.classList.add("good"); a.disabled=b.disabled=true; addScore(1); left--; setProgress("مطابقات متبقية: "+left); if(!left) setTimeout(finish,600); } else { b.classList.add("bad"); setTimeout(function(){ b.classList.remove("bad"); },500); } a.classList.remove("sel"); sel=null; }; Bc.appendChild(b); }); },
+  dragmatch: function(){ if(!need(P,4,"أزواج")) return; var list=shuffle(P).slice(0,6), left=list.length, picked=null; total=list.length; setProgress("اسحب كل تعريف إلى مصطلحه (أو اضغطه ثم اضغط المصطلح)");
+    var wrap=$('<div class="dd"><div class="targets"></div><div class="pool"></div></div>'); var T=wrap.children[0], Pl=wrap.children[1]; stage.appendChild(wrap);
+    list.forEach(function(p,k){ var t=$('<div class="target"><b></b><div class="slot">⬇️ ضع التعريف هنا</div></div>'); t.querySelector("b").textContent=p.a; t.dataset.k=k;
+      t.ondragover=function(e){ e.preventDefault(); }; t.ondrop=function(e){ e.preventDefault(); tryPut(+e.dataTransfer.getData("text"), t); }; t.onclick=function(){ if(picked!==null) tryPut(picked, t); }; T.appendChild(t); });
+    shuffle(list.map(function(p,k){ return [p.b,k]; })).forEach(function(x){ var c=$('<div class="chipdd" draggable="true"></div>'); c.textContent=x[0]; c.dataset.k=x[1]; c.ondragstart=function(e){ e.dataTransfer.setData("text",x[1]); }; c.onclick=function(){ Array.prototype.forEach.call(Pl.children,function(z){ z.classList.remove("sel"); }); picked=x[1]; c.classList.add("sel"); }; Pl.appendChild(c); });
+    function tryPut(k,t){ var chip=Pl.querySelector('[data-k="'+k+'"]'); if(!chip) return; if(+t.dataset.k===k){ t.querySelector(".slot").textContent=chip.textContent; t.classList.add("good"); chip.remove(); addScore(1); left--; picked=null; if(!left) setTimeout(finish,600); } else { t.classList.add("bad"); setTimeout(function(){ t.classList.remove("bad"); },500); } } },
+  memory: function(){ if(!need(P,4,"أزواج")) return; var list=shuffle(P).slice(0,6), cards=[], first=null, lock=false, found=0, moves=0; total=list.length;
+    list.forEach(function(p,k){ cards.push({t:p.a,k:k}); cards.push({t:p.b,k:k}); }); cards=shuffle(cards);
+    var g=$('<div class="mem"></div>'); stage.appendChild(g); setProgress("المحاولات: 0");
+    cards.forEach(function(c){ var b=$('<button class="mcard"><span class="f">❓</span><span class="bk"></span></button>'); b.querySelector(".bk").textContent=c.t;
+      b.onclick=function(){ if(lock||b.classList.contains("open")) return; b.classList.add("open"); if(!first){ first={b:b,c:c}; return; } moves++; setProgress("المحاولات: "+moves);
+        if(first.c.k===c.k && first.b!==b){ b.classList.add("good"); first.b.classList.add("good"); found++; addScore(1); first=null; if(found===list.length) setTimeout(function(){ finish("أنهيتها في "+moves+" محاولة"); },700); }
+        else { lock=true; var f=first; first=null; setTimeout(function(){ b.classList.remove("open"); f.b.classList.remove("open"); lock=false; },900); } }; g.appendChild(b); }); },
+  flashcards: function(){ if(!need(P,3,"بطاقات")) return; var list=shuffle(P), i=0, known=0; total=list.length;
+    function show(){ clear(); if(i>=list.length){ setScore(known); return finish("تعرّفت على "+known+" من "+list.length); } setProgress((i+1)+" / "+list.length);
+      var c=$('<div class="flash"><div class="fi"><div class="ff"></div><div class="fbk"></div></div></div>'); c.querySelector(".ff").textContent=list[i].a; c.querySelector(".fbk").textContent=list[i].b; c.onclick=function(){ c.classList.toggle("flip"); }; stage.appendChild(c);
+      stage.appendChild($('<p class="hint">اضغط البطاقة لقلبها</p>')); var row=$('<div class="row2"><button class="btn ghost">🔁 أحتاج مراجعة</button><button class="btn">✅ أعرفها</button></div>');
+      row.children[0].onclick=function(){ list.push(list[i]); i++; show(); }; row.children[1].onclick=function(){ known++; i++; show(); }; stage.appendChild(row); }
+    show(); },
+  word: function(){ if(!need(W,3,"كلمات")) return; var list=shuffle(W).slice(0,8), i=0; total=list.length;
+    var AR="ابتثجحخدذرزسشصضطظعغفقكلمنهوي".split("");
+    function show(){ clear(); if(i>=list.length) return finish(); setProgress((i+1)+" / "+list.length); var w=list[i], L=letters(w.word), shown=L.map(function(ch){ return ch===" "; }), wrong=0;
+      var card=$('<div class="card"><div class="q"></div><div class="slots"></div><div class="lives"></div><div class="kbd"></div></div>'); card.querySelector(".q").textContent="💡 "+(w.hint||"خمّن الكلمة"); stage.appendChild(card);
+      function paint(){ var s=card.querySelector(".slots"); s.innerHTML=""; L.forEach(function(ch,k){ var x=$('<span class="slot1"></span>'); x.textContent=shown[k]?ch:""; s.appendChild(x); }); card.querySelector(".lives").textContent="❤️".repeat(Math.max(0,6-wrong)); }
+      paint(); var keys=shuffle(Array.from(new Set(L.map(function(c){ return norm(c); }).concat(shuffle(AR).slice(0,8)))).filter(function(c){ return c.trim(); }));
+      keys.forEach(function(k){ var b=$('<button class="key"></button>'); b.textContent=k; b.onclick=function(){ b.disabled=true; var hit=false; L.forEach(function(ch,n){ if(norm(ch)===k){ shown[n]=true; hit=true; } }); if(!hit) wrong++; b.classList.add(hit?"good":"bad"); paint();
+        if(shown.every(Boolean)){ addScore(1); toastIn("✅ أحسنت: "+w.word,true); lockAll(card); setTimeout(function(){ i++; show(); },1100); } else if(wrong>=6){ toastIn("❌ الكلمة: "+w.word,false); lockAll(card); setTimeout(function(){ i++; show(); },1500); } }; card.querySelector(".kbd").appendChild(b); }); }
+    show(); },
+  scramble: function(){ if(!need(W,3,"كلمات")) return; var list=shuffle(W).slice(0,8), i=0; total=list.length;
+    function show(){ clear(); if(i>=list.length) return finish(); setProgress((i+1)+" / "+list.length); var w=list[i], L=letters(w.word), built=[];
+      var card=$('<div class="card"><div class="q"></div><div class="built"></div><div class="kbd"></div><div class="row2"><button class="btn ghost">↩️ مسح</button></div></div>'); card.querySelector(".q").textContent="🔤 رتّب الحروف — "+(w.hint||""); stage.appendChild(card);
+      var bl=card.querySelector(".built"), kb=card.querySelector(".kbd"); var order=shuffle(L.map(function(c,k){ return k; })); if(order.join()===L.map(function(c,k){ return k; }).join() && L.length>1) order.reverse();
+      function paint(){ bl.textContent=built.map(function(k){ return L[k]; }).join("") || "…"; }
+      order.forEach(function(k){ var b=$('<button class="key"></button>'); b.textContent=L[k]; b.onclick=function(){ b.disabled=true; built.push(k); paint(); if(built.length===L.length){ var ok=norm(built.map(function(x){ return L[x]; }).join(""))===norm(w.word); if(ok){ addScore(1); toastIn("✅ صحيح: "+w.word,true);} else toastIn("❌ الصحيح: "+w.word,false); lockAll(card); setTimeout(function(){ i++; show(); },1300); } }; kb.appendChild(b); });
+      card.querySelector(".ghost").onclick=function(){ built=[]; paint(); Array.prototype.forEach.call(kb.children,function(b){ b.disabled=false; }); }; paint(); }
+    show(); },
+  spelling: function(){ if(!need(W,3,"كلمات")) return; var list=shuffle(W).slice(0,8), i=0; total=list.length;
+    function show(){ clear(); if(i>=list.length) return finish(); setProgress((i+1)+" / "+list.length); var w=list[i];
+      var card=$('<div class="card"><div class="q"></div><div class="tip"></div><input class="inp" placeholder="اكتب الكلمة هنا"><button class="btn">تحقّق ✓</button></div>'); card.querySelector(".q").textContent="✍️ "+(w.hint||"اكتب الكلمة"); card.querySelector(".tip").textContent="عدد الحروف: "+letters(w.word).length+" — يبدأ بحرف «"+letters(w.word)[0]+"»"; stage.appendChild(card);
+      var inp=card.querySelector(".inp"); inp.focus(); function check(){ var ok=norm(inp.value)===norm(w.word); if(ok){ addScore(1); toastIn("✅ صحيح!",true);} else toastIn("❌ الصحيح: "+w.word,false); lockAll(card); inp.disabled=true; setTimeout(function(){ i++; show(); },1300); }
+      card.querySelector("button").onclick=check; inp.onkeydown=function(e){ if(e.key==="Enter") check(); }; }
+    show(); },
+  wordsearch: function(){ if(!need(W,3,"كلمات")) return; var words=shuffle(W.map(function(w){ return letters(w.word).join(""); }).filter(function(w){ return w.length>=2 && w.length<=9; })).slice(0,6); if(!need(words,3,"كلمات قصيرة")) return;
+    var N=Math.max(8, Math.max.apply(null, words.map(function(w){ return w.length; }))+1), grid=[], placed=[], AR="ابتثجحخدذرزسشصضطظعغفقكلمنهوي";
+    for(var r=0;r<N;r++){ grid.push([]); for(var c=0;c<N;c++) grid[r].push(""); }
+    var dirs=[[0,1],[1,0],[1,1]]; words.forEach(function(w){ var L=Array.from(w); for(var t=0;t<200;t++){ var d=dirs[Math.floor(Math.random()*3)], r0=Math.floor(Math.random()*N), c0=Math.floor(Math.random()*N), ok=true;
+      for(var k=0;k<L.length;k++){ var r=r0+d[0]*k, c=c0+d[1]*k; if(r>=N||c>=N||(grid[r][c] && grid[r][c]!==L[k])){ ok=false; break; } } if(ok){ var cells=[]; for(k=0;k<L.length;k++){ grid[r0+d[0]*k][c0+d[1]*k]=L[k]; cells.push((r0+d[0]*k)+","+(c0+d[1]*k)); } placed.push({w:w,cells:cells}); break; } } });
+    for(r=0;r<N;r++) for(c=0;c<N;c++) if(!grid[r][c]) grid[r][c]=AR[Math.floor(Math.random()*AR.length)];
+    total=placed.length; setProgress("اضغط أول حرف ثم آخر حرف في الكلمة");
+    var list=$('<div class="wlist"></div>'); placed.forEach(function(p){ var s=$('<span></span>'); s.textContent=p.w; s.dataset.w=p.w; list.appendChild(s); }); stage.appendChild(list);
+    var g=$('<div class="ws" dir="rtl"></div>'); g.style.gridTemplateColumns="repeat("+N+",1fr)"; var start=null, found=0;
+    for(r=0;r<N;r++) for(c=0;c<N;c++){ (function(r,c){ var b=$('<button class="wc"></button>'); b.textContent=grid[r][c]; b.dataset.rc=r+","+c; b.onclick=function(){ if(!start){ start=[r,c]; b.classList.add("sel"); return; }
+      var dr=Math.sign(r-start[0]), dc=Math.sign(c-start[1]), len=Math.max(Math.abs(r-start[0]),Math.abs(c-start[1]))+1, cells=[]; for(var k=0;k<len;k++) cells.push((start[0]+dr*k)+","+(start[1]+dc*k));
+      var hit=placed.filter(function(p){ return !p.done && (p.cells.join("|")===cells.join("|") || p.cells.slice().reverse().join("|")===cells.join("|")); })[0];
+      Array.prototype.forEach.call(g.querySelectorAll(".sel"),function(x){ x.classList.remove("sel"); }); start=null;
+      if(hit){ hit.done=true; found++; addScore(1); hit.cells.forEach(function(rc){ g.querySelector('[data-rc="'+rc+'"]').classList.add("good"); }); list.querySelector('[data-w="'+hit.w+'"]').classList.add("done"); if(found===placed.length) setTimeout(finish,700); } }; g.appendChild(b); })(r,c); }
+    stage.appendChild(g); },
+  order: function(){ if(!O) return need([],3,"عناصر للترتيب"); var items=O.items.slice(0,8), picked=[]; total=items.length; setProgress(O.title);
+    var card=$('<div class="card"><div class="q"></div><ol class="ordl"></ol><div class="opts"></div><div class="row2"><button class="btn ghost">↩️ إعادة</button></div></div>'); card.querySelector(".q").textContent="🔢 "+O.title+" — اضغط العناصر بالترتيب الصحيح"; stage.appendChild(card);
+    var ol=card.querySelector(".ordl"), oc=card.querySelector(".opts");
+    function paint(){ ol.innerHTML=""; picked.forEach(function(t){ var li=document.createElement("li"); li.textContent=t; ol.appendChild(li); }); }
+    shuffle(items).forEach(function(t){ var b=$('<button class="opt"></button>'); b.textContent=t; b.onclick=function(){ b.disabled=true; picked.push(t); paint(); if(picked.length===items.length){ var right=0; picked.forEach(function(x,k){ if(x===items[k]) right++; }); setScore(right); lockAll(card);
+      var sol=$('<div class="ex"></div>'); sol.textContent="✅ الترتيب الصحيح: "+items.join(" ← "); stage.appendChild(sol); setTimeout(function(){ finish(); },2200); } }; oc.appendChild(b); });
+    card.querySelector(".ghost").onclick=function(){ picked=[]; paint(); Array.prototype.forEach.call(oc.children,function(b){ b.disabled=false; }); }; },
+  sort: function(){ if(!G || !need(G.items,4,"عناصر للتصنيف")) return; var items=shuffle(G.items).slice(0,12), i=0; total=items.length;
+    function show(){ clear(); if(i>=items.length) return finish(); setProgress((i+1)+" / "+items.length); var it=items[i];
+      var card=$('<div class="card"><div class="q big2"></div><p class="hint">إلى أي مجموعة ينتمي؟</p><div class="opts"></div></div>'); card.querySelector(".q").textContent=it.text; var oc=card.querySelector(".opts"); stage.appendChild(card);
+      optionButtons(oc, G.names, function(o,b){ lockAll(oc); if(o===it.group){ b.classList.add("good"); addScore(1);} else { b.classList.add("bad"); markAnswer(oc,it.group);} setTimeout(function(){ i++; show(); },900); }); }
+    show(); }
+};
+function fallGame(mode){ var list=shuffle(Q).slice(0,8), i=0, lives=3; total=list.length;
+  function show(){ clear(); if(i>=list.length||lives<=0) return finish(lives<=0?"انتهت المحاولات":""); setProgress("❤️".repeat(lives)+"  "+(i+1)+"/"+list.length);
+    var q=list[i]; var card=$('<div class="card"><div class="q"></div></div>'); card.querySelector(".q").textContent=q.q; stage.appendChild(card);
+    var sky=$('<div class="sky '+mode+'"></div>'); stage.appendChild(sky); var done=false;
+    shuffle(q.options).forEach(function(o,k){ var d=$('<button class="drop"></button>'); d.textContent=(mode==="rise"?"🫧 ":"⭐ ")+o; d.style.insetInlineStart=(6+k*(88/q.options.length))+"%"; d.style.animationDuration=(5.5+Math.random()*2.5)+"s"; d.style.animationDelay=(k*0.5)+"s";
+      d.onclick=function(){ if(done) return; done=true; lockAll(sky); if(o===q.answer){ d.classList.add("good"); addScore(1); toastIn("✅ التقطتها!",true);} else { d.classList.add("bad"); lives--; toastIn("❌ الصحيح: "+q.answer,false);} setTimeout(function(){ i++; show(); },1000); };
+      d.addEventListener("animationend",function(){ if(!done && o===q.answer){ done=true; lives--; toastIn("⏰ فاتتك! الصحيح: "+q.answer,false); setTimeout(function(){ i++; show(); },1200); } }); sky.appendChild(d); }); }
+  show(); }
+(games[TYPE] || games.quiz)();
+})();
+</script>
+<script type="text/plain" id="gameCssSrc">*{box-sizing:border-box} html,body{margin:0;min-height:100%}
+body{font-family:"Cairo","IBM Plex Sans Arabic",Tahoma,system-ui,sans-serif;background:linear-gradient(160deg,#FBF7EE 0%,#E3EFEE 100%);color:#14302F;padding:14px;}
+#game{max-width:860px;margin:0 auto}
+.hdr{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;background:linear-gradient(135deg,#06393B,#0E6B66);color:#FFF7E4;padding:12px 16px;border-radius:16px;margin-bottom:14px;box-shadow:0 10px 24px -14px rgba(6,57,59,.6)}
+.ttl{font-weight:800;font-size:18px}.stats{display:flex;gap:6px;flex-wrap:wrap}
+.chip{background:rgba(255,247,228,.16);border:1px solid rgba(231,201,138,.45);padding:4px 12px;border-radius:999px;font-weight:700;font-size:14px}
+.chip.warn{background:#e76f51}
+.stage{display:flex;flex-direction:column;gap:12px;align-items:stretch}
+.card{background:#fff;border-radius:18px;padding:18px;box-shadow:0 8px 22px -14px rgba(6,57,59,.45);border:1px solid #E3DED1}
+.q{font-size:21px;font-weight:800;line-height:1.7;margin-bottom:12px}.q.big2{font-size:28px;text-align:center}
+.pts{display:inline-block;background:#F5ECDA;color:#9A6B1F;font-weight:800;padding:3px 12px;border-radius:999px;margin-bottom:8px}
+.opts{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px}
+.opt,.btn,.key,.bc,.chest,.wc,.mole,.drop,.mcard,.chipdd{font-family:inherit;cursor:pointer;border:0;transition:transform .12s ease,background .2s}
+.opt{background:#F6F1E6;border:2px solid #E3DED1;border-radius:14px;padding:14px;font-size:17px;font-weight:700;color:#14302F;text-align:center}
+.opt:hover:not(:disabled){transform:translateY(-2px);border-color:#3DB8A8}
+.opt.sel{border-color:#0B5457;background:#E3EFEE}
+.good{background:#d8f3dc !important;border-color:#2E7D4F !important;color:#1b4332 !important}
+.bad{background:#fde2e1 !important;border-color:#B23A3A !important;color:#7a1f1f !important}
+.btn{background:#0B5457;color:#fff;border-radius:12px;padding:12px 22px;font-size:16px;font-weight:800;align-self:center}
+.btn.ghost{background:#fff;color:#0B5457;border:2px solid #0B5457}
+.btn:disabled{opacity:.5;cursor:default}
+.fb{padding:12px 14px;border-radius:12px;font-weight:800;font-size:16px}.fb.ok{background:#d8f3dc;color:#1b4332}.fb.no{background:#fde2e1;color:#7a1f1f}
+.ex{font-weight:500;font-size:14.5px;margin-top:6px;color:#14302F;background:#fff;border-radius:10px;padding:8px 10px}
+.banner{text-align:center;font-size:20px;font-weight:800;background:#F5ECDA;border-radius:12px;padding:10px}
+.end{background:#fff;border-radius:22px;padding:30px;text-align:center;box-shadow:0 12px 30px -16px rgba(6,57,59,.5)}
+.end .big{font-size:60px}.end h2{margin:6px 0}.end .res{font-size:22px;font-weight:800;color:#0B5457}.end .stars{font-size:34px;margin:8px 0}.end .extra{margin-bottom:12px;color:#5B6B68;font-weight:700}
+.hint{text-align:center;color:#5B6B68;margin:0}
+.row2{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:10px}
+.mill{display:grid;grid-template-columns:1fr 150px;gap:12px}.ladder{display:flex;flex-direction:column;gap:3px;font-size:13px;font-weight:700}.ladder div{background:#06393B;color:#E2B864;padding:4px 8px;border-radius:6px;text-align:center}.ladder div.on{background:#E2B864;color:#06393B}
+.teams{display:grid;grid-template-columns:1fr 1fr;gap:10px}.tm{background:#fff;border-radius:14px;padding:12px;text-align:center;font-weight:800;border:3px solid transparent}.tm b{display:block;font-size:32px}.tm.on{border-color:#E2B864;box-shadow:0 0 0 4px #F5ECDA}
+.board{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}.bh{background:#06393B;color:#E2B864;font-weight:800;text-align:center;padding:10px;border-radius:12px}
+.bc{background:linear-gradient(135deg,#0B5457,#3DB8A8);color:#fff;font-size:26px;font-weight:800;padding:22px;border-radius:14px}.bc:disabled{background:#ddd;color:#888}
+.wheelwrap{display:flex;flex-direction:column;align-items:center;gap:12px;position:relative}.pin{font-size:30px;color:#B23A3A;margin-bottom:-18px;z-index:2}
+.wheel{width:280px;height:280px;border-radius:50%;border:8px solid #06393B;position:relative;box-shadow:0 10px 30px -10px rgba(0,0,0,.4)}
+.wl{position:absolute;top:50%;left:50%;width:28px;height:28px;margin:-14px;display:grid;place-items:center;font-weight:800;color:#06393B;background:#fff;border-radius:50%}
+.chests{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}.chest{font-size:52px;background:#fff;border-radius:16px;padding:18px;box-shadow:0 6px 16px -10px rgba(0,0,0,.4)}.chest:hover:not(:disabled){transform:scale(1.06)}
+.race{background:#fff;border-radius:16px;padding:12px;display:flex;flex-direction:column;gap:10px}.lane{display:flex;align-items:center;gap:8px}.lbl{width:70px;font-weight:800}
+.road{flex:1;height:44px;background:repeating-linear-gradient(90deg,#555 0 30px,#666 30px 60px);border-radius:10px;position:relative}.car{position:absolute;top:4px;font-size:30px;transition:inset-inline-start .6s ease;transform:scaleX(-1)}.flag{position:absolute;inset-inline-end:4px;top:6px;font-size:26px}
+.sky{position:relative;height:340px;background:linear-gradient(#bde0fe,#E3EFEE);border-radius:16px;overflow:hidden}
+.drop{position:absolute;top:-60px;background:#fff;border:2px solid #0B5457;border-radius:999px;padding:8px 14px;font-weight:800;font-size:15px;animation:fall linear forwards;max-width:46%}
+.sky.rise .drop{top:auto;bottom:-60px;animation-name:rise;border-radius:24px;background:rgba(255,255,255,.85)}
+@keyframes fall{to{transform:translateY(420px)}}@keyframes rise{to{transform:translateY(-420px)}}
+.holes{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}.hole{height:110px;background:radial-gradient(ellipse at bottom,#6b4f2a 40%,#a47c48 41%);border-radius:16px;display:flex;align-items:flex-end;justify-content:center;padding-bottom:10px}
+.mole{background:#fff;border:2px solid #9A6B1F;border-radius:14px;padding:8px 10px;font-weight:800;font-size:15px;animation:pop .25s ease}@keyframes pop{from{transform:translateY(30px);opacity:0}}
+.cols{display:grid;grid-template-columns:1fr 1fr;gap:12px}.col{display:flex;flex-direction:column;gap:8px}
+.dd{display:flex;flex-direction:column;gap:14px}.targets{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px}
+.target{background:#fff;border:2px dashed #3DB8A8;border-radius:14px;padding:10px;cursor:pointer}.target b{display:block;font-size:17px;margin-bottom:6px}.slot{background:#F6F1E6;border-radius:10px;padding:8px;font-size:14px;min-height:38px}
+.pool{display:flex;flex-wrap:wrap;gap:8px;justify-content:center}.chipdd{background:#F5ECDA;border:2px solid #E2B864;border-radius:12px;padding:8px 12px;font-weight:700;cursor:grab}.chipdd.sel{background:#E2B864}
+.mem{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px}.mcard{height:110px;border-radius:14px;background:linear-gradient(135deg,#0B5457,#3DB8A8);color:#fff;font-size:15px;font-weight:800;padding:8px}
+.mcard .bk{display:none}.mcard.open{background:#fff;color:#14302F;border:2px solid #E3DED1}.mcard.open .f{display:none}.mcard.open .bk{display:block}.mcard .f{font-size:34px}
+.flash{perspective:1000px;height:220px;cursor:pointer}.fi{position:relative;width:100%;height:100%;transition:transform .5s;transform-style:preserve-3d}.flash.flip .fi{transform:rotateY(180deg)}
+.ff,.fbk{position:absolute;inset:0;backface-visibility:hidden;border-radius:18px;display:grid;place-items:center;padding:18px;text-align:center;font-size:22px;font-weight:800}
+.ff{background:linear-gradient(135deg,#0B5457,#3DB8A8);color:#fff}.fbk{background:#fff;border:2px solid #E2B864;transform:rotateY(180deg);font-size:18px}
+.slots{display:flex;gap:6px;justify-content:center;flex-wrap:wrap;direction:rtl;margin:10px 0}.slot1{width:40px;height:48px;border-bottom:4px solid #0B5457;font-size:28px;font-weight:800;text-align:center}
+.lives{text-align:center;font-size:20px;margin-bottom:8px}.kbd{display:flex;flex-wrap:wrap;gap:6px;justify-content:center}
+.key{width:46px;height:46px;border-radius:10px;background:#F6F1E6;border:2px solid #E3DED1;font-size:20px;font-weight:800}
+.built{font-size:30px;font-weight:800;text-align:center;min-height:46px;letter-spacing:2px;margin:6px 0 12px;color:#0B5457}
+.tip{color:#5B6B68;margin-bottom:10px}.inp{width:100%;font-family:inherit;font-size:20px;padding:12px;border-radius:12px;border:2px solid #E3DED1;margin-bottom:10px;text-align:center}
+.wlist{display:flex;gap:8px;flex-wrap:wrap;justify-content:center}.wlist span{background:#fff;border:1px solid #E3DED1;padding:5px 12px;border-radius:999px;font-weight:800}.wlist span.done{text-decoration:line-through;background:#d8f3dc}
+.ws{display:grid;gap:3px;background:#fff;padding:10px;border-radius:16px;max-width:560px;margin:0 auto;width:100%}
+.wc{aspect-ratio:1;border-radius:6px;background:#F6F1E6;font-size:clamp(14px,3.6vw,22px);font-weight:800;padding:0}.wc.sel{background:#E2B864}
+.ordl{background:#F6F1E6;border-radius:12px;min-height:40px;padding:8px 30px;margin:0 0 10px;font-weight:700;line-height:1.9}
+.cf{position:fixed;top:-10px;width:10px;height:14px;border-radius:2px;animation:cf 2s ease-in forwards;z-index:9}@keyframes cf{to{transform:translateY(105vh) rotate(540deg)}}
+@media (max-width:600px){.mill{grid-template-columns:1fr}.ladder{display:none}.q{font-size:18px}.wheel{width:230px;height:230px}}
+</script>
 </body></html>
