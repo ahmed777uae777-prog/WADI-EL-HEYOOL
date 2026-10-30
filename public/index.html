@@ -349,6 +349,57 @@
   .btn.accent:hover{filter:brightness(.94);}
   .btn.sm{padding:7px 13px; font-size:12.5px;}
 
+  .rw-head{display:flex;justify-content:space-between;gap:14px;flex-wrap:wrap;align-items:flex-end;margin-bottom:14px}
+  .rw-head h2{margin:0 0 4px;font-family:Cairo,sans-serif;color:var(--primary)}.rw-head p{margin:0;color:var(--text-muted);font-size:14px}
+  .rw-class{display:flex;flex-direction:column;gap:4px;min-width:240px}.rw-class label{font-size:12.5px;font-weight:700;color:var(--text-muted)}
+  .rw-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px}
+  .rw-stat{background:linear-gradient(135deg,#0B5457,#127A74);color:#FFF7E4;border-radius:16px;padding:12px 14px}
+  .rw-stat b{display:block;font-family:Cairo,sans-serif;font-size:24px;line-height:1.2}.rw-stat span{font-size:12.5px;opacity:.85}
+  .rw-stat.gold{background:linear-gradient(135deg,#9A6B1F,#E2B864);color:#2b1d05}
+  .rw-podium{display:grid;grid-template-columns:1fr 1.15fr 1fr;gap:10px;align-items:end;margin-bottom:14px}
+  .rw-pod{background:#fff;border:1px solid #E3DED1;border-radius:18px 18px 10px 10px;text-align:center;padding:12px 8px 0;overflow:hidden}
+  .rw-pod .av{margin:0 auto 6px}.rw-pod .nm{font-weight:800;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .rw-pod .bar{margin-top:8px;color:#fff;font-family:Cairo,sans-serif;font-weight:800;font-size:22px;padding:8px 0}
+  .rw-pod.p1 .bar{background:linear-gradient(#E2B864,#9A6B1F);padding:22px 0}.rw-pod.p2 .bar{background:linear-gradient(#cfd8dc,#78909c);padding:14px 0}.rw-pod.p3 .bar{background:linear-gradient(#e0b48c,#a0643a)}
+  .rw-toolbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:12px}
+  .rw-toolbar input{flex:1;min-width:180px}.rw-toolbar select{width:auto}
+  .rw-selbar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;background:#FFF1D6;border:1px solid #E2B864;border-radius:14px;padding:8px 12px;margin-bottom:12px;position:sticky;top:8px;z-index:5}
+  .rw-selbar #rwSelBehaviors{display:flex;gap:6px;flex-wrap:wrap;flex:1}
+  .rw-manual{background:var(--surface-2,#F6F1E6);border-radius:14px;padding:10px 12px;margin-bottom:12px}
+  .rw-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(168px,1fr));gap:12px}
+  .rw-card{position:relative;background:#fff;border:1px solid #E3DED1;border-radius:18px;padding:14px 10px 12px;text-align:center;cursor:pointer;transition:transform .15s,box-shadow .15s;user-select:none}
+  .rw-card:hover{transform:translateY(-3px);box-shadow:0 12px 24px -16px rgba(6,57,59,.55)}
+  .rw-card.sel{outline:3px solid #E2B864;background:#FFFBF1}
+  .rw-card .nm{font-weight:800;font-size:14.5px;margin-top:6px;min-height:42px;line-height:1.45}
+  .rw-card .pts{font-family:Cairo,sans-serif;font-size:26px;font-weight:800;color:#0B5457;line-height:1.1}.rw-card .pts.neg{color:#B23A3A}
+  .rw-lvl{display:inline-block;font-size:11.5px;font-weight:800;border-radius:999px;padding:2px 10px;margin-top:4px}
+  .rw-prog{height:6px;background:#EEE8DA;border-radius:999px;margin-top:8px;overflow:hidden}.rw-prog i{display:block;height:100%;background:linear-gradient(90deg,#3DB8A8,#0B5457);border-radius:999px}
+  .rw-plus{position:absolute;top:8px;inset-inline-start:8px;width:30px;height:30px;border-radius:50%;border:0;background:#E3EFEE;color:#0B5457;font-weight:800;font-size:17px;cursor:pointer}
+  .rw-plus:hover{background:#0B5457;color:#fff}
+  .rw-rank{position:absolute;top:8px;inset-inline-end:10px;font-size:12px;font-weight:800;color:#9A6B1F}
+  .av{width:54px;height:54px;border-radius:50%;display:grid;place-items:center;margin:0 auto;color:#fff;font-family:Cairo,sans-serif;font-weight:800;font-size:20px;box-shadow:inset 0 -4px 0 rgba(0,0,0,.12)}
+  .rw-pop{position:absolute;top:-6px;left:50%;transform:translateX(-50%);font-family:Cairo,sans-serif;font-weight:800;font-size:22px;pointer-events:none;animation:rwpop 1s ease forwards}
+  @keyframes rwpop{from{opacity:1;transform:translate(-50%,0)}to{opacity:0;transform:translate(-50%,-40px)}}
+  .rw-modal{position:fixed;inset:0;background:rgba(6,30,30,.45);display:grid;place-items:center;z-index:200;padding:14px}
+  .rw-modal[hidden]{display:none}
+  .rw-sheet{background:#FBF7EE;border-radius:22px;max-width:620px;width:100%;max-height:90vh;overflow:auto;padding:18px;box-shadow:0 30px 60px -20px rgba(0,0,0,.5)}
+  .rw-sh-top{display:flex;gap:12px;align-items:center;margin-bottom:12px}.rw-sh-top h3{margin:0;font-family:Cairo,sans-serif;font-size:18px}
+  .rw-sh-top .x{margin-inline-start:auto;border:0;background:#fff;border-radius:50%;width:36px;height:36px;font-size:18px;cursor:pointer}
+  .rw-bh-title{font-weight:800;font-size:13.5px;margin:10px 0 6px;color:#0B5457}.rw-bh-title.neg{color:#B23A3A}
+  .rw-bhs{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:8px}
+  .rw-bh{border:2px solid #E3DED1;background:#fff;border-radius:14px;padding:10px 6px;cursor:pointer;font-family:inherit;font-weight:700;font-size:13.5px;display:flex;flex-direction:column;align-items:center;gap:2px;transition:transform .1s}
+  .rw-bh:hover{transform:translateY(-2px);border-color:#3DB8A8}.rw-bh .ic{font-size:24px}.rw-bh .pv{font-size:12px;font-weight:800;color:#2E7D4F}
+  .rw-bh.neg .pv{color:#B23A3A}.rw-bh.neg:hover{border-color:#B23A3A}
+  .rw-bh.mini{flex-direction:row;padding:6px 10px;font-size:12.5px}.rw-bh.mini .ic{font-size:16px}
+  .rw-hist{background:#fff;border-radius:14px;padding:8px 12px;margin-top:12px;font-size:13px;max-height:180px;overflow:auto}
+  .rw-hist div{display:flex;justify-content:space-between;border-bottom:1px dashed #EEE8DA;padding:4px 0}.rw-hist div:last-child{border:0}
+  .rw-counts{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}.rw-counts span{background:#fff;border:1px solid #E3DED1;border-radius:999px;padding:2px 10px;font-size:12.5px}
+  .rw-bh .pv,.rw-hist b,.rw-pop,.rw-card .pts,.rw-pod .bar{unicode-bidi:isolate;direction:ltr}
+  #rwRoot:fullscreen{overflow:auto;background:#FBF7EE;padding:24px}
+  #rwRoot:fullscreen .rw-grid{grid-template-columns:repeat(auto-fill,minmax(200px,1fr))}
+  #rwRoot:fullscreen .rw-card .nm{font-size:17px}#rwRoot:fullscreen .rw-card .pts{font-size:32px}
+  #rwRoot:fullscreen .rw-manual,#rwRoot:fullscreen .result-actions{display:none}
+  @media(max-width:640px){.rw-stats{grid-template-columns:1fr 1fr}.rw-grid{grid-template-columns:repeat(auto-fill,minmax(140px,1fr))}}
   .lp{white-space:normal;font-size:15.5px;line-height:1.9}
   .lp-title{display:flex;align-items:center;gap:10px;justify-content:center;background:linear-gradient(135deg,#FFF7E4,#E3EFEE);border:2px dashed #E2B864;border-radius:999px;padding:10px 18px;font-family:Cairo,sans-serif;font-weight:800;font-size:20px;color:#0B5457;margin-bottom:14px}
   .lp-sec{background:#fff;border:1px solid #E3DED1;border-radius:16px;padding:12px 16px;margin-bottom:12px}
@@ -795,28 +846,43 @@
 
   <!-- STUDENTS -->
   <section class="view" id="view-students">
-    <div class="card">
-      <div class="view-head">
-        <h2>👨‍🎓 قائمة الطلاب</h2>
-        <p>أضف الطلاب يدويًا، أو الصق قائمة أسماء دفعة واحدة (اسم في كل سطر).</p>
-      </div>
-      <div class="row">
-        <input type="text" id="studentNameInput" placeholder="اسم الطالب">
-        <button class="btn sm" id="addStudentBtn" style="flex:none;">➕ إضافة</button>
-      </div>
-      <details style="margin-top:10px;">
-        <summary style="cursor:pointer; font-size:12.8px; color:var(--text-muted); font-weight:700;">📤 إضافة/استيراد عدة أسماء دفعة واحدة</summary>
-        <div style="margin-top:10px;">
-          <textarea id="bulkStudents" placeholder="ضع اسمًا في كل سطر"></textarea>
-          <button class="btn ghost sm" id="bulkAddBtn" style="margin-top:8px;">استيراد القائمة</button>
+    <div class="card rw" id="rwRoot">
+      <div class="rw-head">
+        <div><h2>🏆 الطلاب والتعزيز</h2><p>نظام نقاط سلوكية: امنح النقاط بلمسة، وتابع المستويات والمتصدرين وسجل كل طالب.</p></div>
+        <div class="rw-class">
+          <label>الصف / الشعبة</label>
+          <select id="rwClass"></select>
         </div>
-      </details>
-      <div id="studentsList" style="margin-top:16px;"></div>
+      </div>
+      <div class="rw-stats" id="rwStats"></div>
+      <div class="rw-podium" id="rwPodium"></div>
+      <div class="rw-toolbar">
+        <input type="search" id="rwSearch" placeholder="🔍 بحث عن طالب…">
+        <select id="rwSort"><option value="pts">ترتيب: الأعلى نقاطًا</option><option value="name">ترتيب: أبجدي</option><option value="low">ترتيب: الأقل نقاطًا</option></select>
+        <button class="btn sm" id="rwAllBtn">👏 تعزيز الصف كله</button>
+        <button class="btn ghost sm" id="rwRandBtn">🎲 طالب عشوائي</button>
+        <button class="btn ghost sm" id="rwBoardBtn">🖥️ عرض على السبورة</button>
+        <button class="btn ghost sm" id="rwSelBtn">☑️ تحديد متعدد</button>
+      </div>
+      <div class="rw-selbar" id="rwSelBar" hidden><span id="rwSelCount">0 محدد</span><div id="rwSelBehaviors"></div><button class="btn ghost sm" id="rwSelDone">إنهاء</button></div>
+      <div class="rw-manual" id="rwManual" hidden>
+        <div class="row">
+          <input type="text" id="studentNameInput" placeholder="اسم الطالب">
+          <button class="btn sm" id="addStudentBtn" style="flex:none;">➕ إضافة</button>
+        </div>
+        <details style="margin-top:8px;"><summary style="cursor:pointer;font-size:13px;color:var(--text-muted);font-weight:700;">📤 إضافة عدة أسماء دفعة واحدة</summary>
+          <div style="margin-top:8px;"><textarea id="bulkStudents" placeholder="ضع اسمًا في كل سطر"></textarea>
+          <button class="btn ghost sm" id="bulkAddBtn" style="margin-top:8px;">استيراد القائمة</button></div></details>
+      </div>
+      <div class="rw-grid" id="studentsList"></div>
       <div class="result-actions">
-        <button class="btn ghost sm" id="exportStudentsBtn">📤 تصدير القائمة (txt)</button>
-        <button class="btn ghost sm" id="resetBadgesBtn">↺ تصفير كل التعزيزات</button>
+        <button class="btn ghost sm" id="exportStudentsBtn">⬇️ تصدير Excel</button>
+        <button class="btn ghost sm" id="rwCertBtn">🏅 شهادات المتصدرين</button>
+        <button class="btn ghost sm" id="rwUndoBtn">↶ تراجع عن آخر نقطة</button>
+        <button class="btn ghost sm" id="resetBadgesBtn">↺ تصفير نقاط الصف</button>
       </div>
     </div>
+    <div class="rw-modal" id="rwModal" hidden><div class="rw-sheet" id="rwSheet"></div></div>
   </section>
 
   <section class="view" id="view-lesson">
@@ -2281,68 +2347,243 @@
     });
   });
 
-  /* ---------------- students & rewards ---------------- */
-  let students = [];
-  const BADGE_TYPES = [
-    {key:"star", icon:"⭐"}, {key:"medal", icon:"🥇"}, {key:"trophy", icon:"🏆"}, {key:"clap", icon:"👏"}, {key:"gem", icon:"💎"}
-  ];
-  function newStudent(name){ return {id: "s"+Date.now()+Math.random().toString(36).slice(2,7), name, badges:{star:0,medal:0,trophy:0,clap:0,gem:0}}; }
-
-  async function loadRoster(){
-    if(!db){ renderStudents(); return; }
-    try{
-      const snap = await db.doc("classroom/roster").get();
-      if(snap.exists && snap.data() && Array.isArray(snap.data().students)) students = cloneList(snap.data().students);
-    }catch(e){}
-    renderStudents();
+  /* ---------------- students & rewards (behaviour points) ---------------- */
+  let students = [];   // teacher's own manual list (also used by cards / wheel)
+  function newStudent(name){ return {id: "s"+Date.now()+Math.random().toString(36).slice(2,7), name, badges:{}}; }
+  const RW_POS = [
+    {k:"part", ic:"🙋", t:"مشاركة فعّالة", p:1}, {k:"ans", ic:"💡", t:"إجابة متميزة", p:2}, {k:"hw", ic:"📚", t:"واجب مكتمل", p:1},
+    {k:"team", ic:"🤝", t:"تعاون", p:1}, {k:"cre", ic:"🎨", t:"إبداع", p:2}, {k:"disc", ic:"✅", t:"انضباط ونظام", p:1},
+    {k:"help", ic:"💛", t:"مساعدة زميل", p:1}, {k:"lead", ic:"👑", t:"قيادة", p:2}];
+  const RW_NEG = [
+    {k:"noise", ic:"🔇", t:"إزعاج", p:-1}, {k:"tools", ic:"🎒", t:"لم يُحضر الأدوات", p:-1},
+    {k:"nohw", ic:"📕", t:"واجب غير مكتمل", p:-1}, {k:"late", ic:"🕒", t:"تأخّر", p:-1}];
+  const RW_ALL = RW_POS.concat(RW_NEG);
+  const RW_LEVELS = [{min:-1e9,n:"مبتدئ",ic:"🌱",c:"#E8F5E9",f:"#2E7D4F"},{min:10,n:"برونزي",ic:"🥉",c:"#F6E3D3",f:"#8a4f22"},{min:25,n:"فضي",ic:"🥈",c:"#ECEFF1",f:"#455a64"},{min:50,n:"ذهبي",ic:"🥇",c:"#FFF1D6",f:"#9A6B1F"},{min:100,n:"ماسي",ic:"💎",c:"#E1F5FE",f:"#01579b"}];
+  const AV_COLORS = ["#0B5457","#127A74","#9A6B1F","#7B4F9D","#B23A3A","#2E7D4F","#1565C0","#AD5A1E","#00838F","#6D4C41"];
+  let rwClassKey = "", rwData = {pts:{}, cnt:{}, log:[]}, rwSelMode = false, rwSel = new Set(), rwSaveT = null;
+  function rwTid(){ return (currentUser && (currentUser.teacherId || (currentUser.role==="admin" ? "admin" : ""))) || "me"; }
+  function rwLevel(p){ let L = RW_LEVELS[0]; RW_LEVELS.forEach(l=>{ if(p>=l.min) L=l; }); return L; }
+  function rwNextMin(p){ const n = RW_LEVELS.find(l=>l.min>p); return n ? n.min : null; }
+  function rwShort(name){ const w = String(name||"").trim().split(/\s+/).filter(x=>x!=="بن" && x!=="بنت"); return w.slice(0,2).join(" ") || name; }
+  function rwInitials(name){ const w = String(name||"").trim().split(/\s+/).filter(x=>x!=="بن" && x!=="بنت"); return (w[0]||"؟").charAt(0) + (w[1] ? " "+w[1].charAt(0) : ""); }
+  function rwColor(id){ let h=0; String(id).split("").forEach(c=>h=(h*31+c.charCodeAt(0))|0); return AV_COLORS[Math.abs(h)%AV_COLORS.length]; }
+  function rwAvatar(st, size){ return `<div class="av" style="background:${rwColor(st.id)};${size?`width:${size}px;height:${size}px;font-size:${Math.round(size/2.7)}px`:""}">${escapeHTML(rwInitials(st.name))}</div>`; }
+  function rwClassOptions(){
+    const opts = [];
+    const bySec = {};
+    (schoolStudents||[]).filter(x=>x.active!==false).forEach(x=>{ (bySec[x.sectionId] = bySec[x.sectionId] || {g:x.gradeId, n:0}).n++; });
+    const secs = Object.keys(bySec).map(id=>({id, g:gradeById(bySec[id].g), n:bySec[id].n})).filter(x=>x.g)
+      .sort((a,b)=>(a.g.order-b.g.order) || String(sectionShort(a.id)).localeCompare(String(sectionShort(b.id)),"ar"));
+    secs.forEach(x=>opts.push({v:"sec:"+x.id, t:`${x.g.name} — ${sectionShort(x.id)} (${x.n})`}));
+    opts.push({v:"mine", t:`📝 قائمتي الخاصة (${students.length})`});
+    return opts;
   }
-  async function saveRoster(){
-    if(!db) return;
-    try{ await db.doc("classroom/roster").set({students}); }catch(e){}
+  function rwStudents(){
+    if(rwClassKey.startsWith("sec:")){ const id = rwClassKey.slice(4); return (schoolStudents||[]).filter(x=>x.sectionId===id && x.active!==false).map(x=>({id:x.id, name:x.name})); }
+    return students.map(x=>({id:x.id, name:x.name}));
   }
-
-  function studentTotal(s){ return Object.values(s.badges).reduce((a,b)=>a+b,0); }
-
-  function renderStudents(){
+  function rwDocPath(){ return "classroom/rw_" + rwTid() + "_" + rwClassKey.replace(/[^\w-]/g,"_"); }
+  async function rwLoad(){
+    rwData = {pts:{}, cnt:{}, log:[]};
+    if(db){ try{ const snap = await db.doc(rwDocPath()).get(); if(snap.exists && snap.data()) rwData = Object.assign({pts:{},cnt:{},log:[]}, snap.data()); }catch(e){} }
+    if(rwClassKey==="mine"){ // carry over the old badge counts once
+      students.forEach(st=>{ const old = st.badges ? Object.values(st.badges).reduce((a,b)=>a+(+b||0),0) : 0; if(old && rwData.pts[st.id]==null){ rwData.pts[st.id]=old; } });
+    }
+    rwRender();
+  }
+  function rwSave(){ clearTimeout(rwSaveT); rwSaveT = setTimeout(async ()=>{ if(!db) return; try{ rwData.log = rwData.log.slice(-400); await db.doc(rwDocPath()).set(rwData); }catch(e){ toast("تعذّر حفظ النقاط — تحقق من الاتصال"); } }, 500); }
+  function rwPts(id){ return +rwData.pts[id] || 0; }
+  function rwChime(up){ try{ const A = window.__rwAC || (window.__rwAC = new (window.AudioContext||window.webkitAudioContext)()); const o=A.createOscillator(), g=A.createGain(); o.connect(g); g.connect(A.destination); o.type="sine";
+      const t=A.currentTime; if(up){ o.frequency.setValueAtTime(660,t); o.frequency.setValueAtTime(880,t+.09); } else { o.frequency.setValueAtTime(330,t); o.frequency.setValueAtTime(247,t+.1); }
+      g.gain.setValueAtTime(.12,t); g.gain.exponentialRampToValueAtTime(.001,t+.3); o.start(t); o.stop(t+.32); }catch(e){} }
+  function rwConfetti(){ const cs=["#E2B864","#3DB8A8","#0B5457","#B23A3A","#7B4F9D"]; for(let i=0;i<40;i++){ const d=document.createElement("div"); d.style.cssText=`position:fixed;top:-10px;left:${Math.random()*100}vw;width:9px;height:13px;border-radius:2px;background:${cs[i%5]};z-index:300;transition:transform 1.8s ease-in,opacity 1.8s;`; document.body.appendChild(d); requestAnimationFrame(()=>{ d.style.transform=`translateY(105vh) rotate(${Math.random()*720}deg)`; d.style.opacity=".2"; }); setTimeout(()=>d.remove(),1900); } }
+  function rwAward(ids, k){
+    const b = RW_ALL.find(x=>x.k===k); if(!b) return;
+    const t = Date.now(); let lvlUp = false;
+    ids.forEach(id=>{
+      const before = rwLevel(rwPts(id));
+      rwData.pts[id] = rwPts(id) + b.p;
+      const c = rwData.cnt[id] || (rwData.cnt[id] = {}); c[k] = (c[k]||0) + 1;
+      rwData.log.push({s:id, k, p:b.p, t});
+      if(b.p>0 && rwLevel(rwPts(id)).min > before.min) lvlUp = true;
+    });
+    rwChime(b.p>0); if(lvlUp){ rwConfetti(); toast("🎉 ترقية مستوى!"); }
+    rwRender();
+    ids.forEach(id=>{ const el = document.querySelector(`.rw-card[data-id="${CSS.escape(id)}"]`); if(el){ const s=document.createElement("div"); s.className="rw-pop"; s.style.color=b.p>0?"#2E7D4F":"#B23A3A"; s.textContent=(b.p>0?"+":"")+b.p+" "+b.ic; el.appendChild(s); setTimeout(()=>s.remove(),1000); } });
+    rwSave();
+  }
+  function rwRender(){
+    const sel = document.getElementById("rwClass"); if(!sel) return;
+    const list = rwStudents();
+    document.getElementById("rwManual").hidden = rwClassKey!=="mine";
+    const total = list.reduce((a,x)=>a+rwPts(x.id),0);
+    const ranked = list.slice().sort((a,b)=>rwPts(b.id)-rwPts(a.id));
+    const today = new Date().toDateString(), todayPts = {};
+    rwData.log.forEach(l=>{ if(new Date(l.t).toDateString()===today) todayPts[l.s]=(todayPts[l.s]||0)+l.p; });
+    const starId = Object.keys(todayPts).filter(id=>list.some(x=>x.id===id)).sort((a,b)=>todayPts[b]-todayPts[a])[0];
+    const star = starId && todayPts[starId]>0 ? list.find(x=>x.id===starId) : null;
+    document.getElementById("rwStats").innerHTML = `
+      <div class="rw-stat"><b>${list.length}</b><span>طالب في القائمة</span></div>
+      <div class="rw-stat"><b>${total}</b><span>مجموع نقاط الصف</span></div>
+      <div class="rw-stat"><b>${list.length ? (total/list.length).toFixed(1) : 0}</b><span>متوسط النقاط</span></div>
+      <div class="rw-stat gold"><b style="font-size:17px;padding:4px 0">${star ? "⭐ "+escapeHTML(rwShort(star.name)) : "—"}</b><span>نجم اليوم</span></div>`;
+    const top = ranked.filter(x=>rwPts(x.id)>0).slice(0,3);
+    const pod = (x,cls,medal)=> x ? `<div class="rw-pod ${cls}">${rwAvatar(x, cls==="p1"?64:52)}<div class="nm">${medal} ${escapeHTML(rwShort(x.name))}</div><div class="bar">${rwPts(x.id)}</div></div>` : `<div></div>`;
+    document.getElementById("rwPodium").innerHTML = top.length ? pod(top[1],"p2","🥈")+pod(top[0],"p1","🥇")+pod(top[2],"p3","🥉") : "";
+    document.getElementById("rwPodium").style.display = top.length ? "" : "none";
+    const q = (document.getElementById("rwSearch").value||"").trim();
+    const sort = document.getElementById("rwSort").value;
+    let shown = list.filter(x=>!q || x.name.includes(q));
+    if(sort==="name") shown.sort((a,b)=>a.name.localeCompare(b.name,"ar"));
+    else if(sort==="low") shown.sort((a,b)=>rwPts(a.id)-rwPts(b.id));
+    else shown = ranked.filter(x=>shown.includes(x));
+    const rankOf = id => ranked.findIndex(x=>x.id===id)+1;
     const wrap = document.getElementById("studentsList");
-    if(!students.length){ wrap.innerHTML = `<div class="empty-hint">لا يوجد طلاب بعد — أضف أول طالب أعلاه.</div>`; return; }
-    wrap.innerHTML = students.map(s=>`
-      <div class="student-row" data-id="${s.id}">
-        <div class="student-name">${escapeHTML(s.name)}</div>
-        <div class="badge-btns">
-          ${BADGE_TYPES.map(b=>`<button data-badge="${b.key}" title="${b.icon}">${b.icon}<span style="font-size:10px;">${s.badges[b.key]||""}</span></button>`).join("")}
-        </div>
-        <div class="stars-total">المجموع: ${studentTotal(s)}</div>
-        <button class="rm-btn" data-rm="1">حذف</button>
-      </div>`).join("");
+    if(!list.length){ wrap.innerHTML = `<div class="empty-hint" style="grid-column:1/-1">${rwClassKey==="mine" ? "لا يوجد طلاب في قائمتك بعد — أضف الأسماء أعلاه." : "لا يوجد طلاب في هذه الشعبة."}</div>`; return; }
+    wrap.innerHTML = shown.map(x=>{
+      const p = rwPts(x.id), L = rwLevel(p), nx = rwNextMin(p);
+      const prog = nx==null ? 100 : Math.max(0, Math.min(100, ((p - Math.max(L.min,0)) / (nx - Math.max(L.min,0)))*100));
+      return `<div class="rw-card ${rwSel.has(x.id)?"sel":""}" data-id="${escapeHTML(x.id)}">
+        ${rwSelMode ? "" : `<button class="rw-plus" data-plus="1" title="+1 مشاركة">+</button>`}
+        <span class="rw-rank">${p>0 ? "#"+rankOf(x.id) : ""}</span>
+        ${rwAvatar(x)}
+        <div class="nm">${escapeHTML(rwShort(x.name))}</div>
+        <div class="pts ${p<0?"neg":""}">${p}</div>
+        <span class="rw-lvl" style="background:${L.c};color:${L.f}">${L.ic} ${L.n}</span>
+        <div class="rw-prog" title="${nx==null?"أعلى مستوى":"المستوى التالي عند "+nx}"><i style="width:${prog}%"></i></div>
+      </div>`; }).join("") || `<div class="empty-hint" style="grid-column:1/-1">لا نتائج للبحث.</div>`;
+    document.getElementById("rwSelCount").textContent = rwSel.size + " محدد";
   }
+  function rwOpen(id){
+    const st = rwStudents().find(x=>x.id===id); if(!st) return;
+    const p = rwPts(id), L = rwLevel(p), cnt = rwData.cnt[id] || {};
+    const hist = rwData.log.filter(l=>l.s===id).slice(-15).reverse();
+    const bh = (b)=>`<button class="rw-bh ${b.p<0?"neg":""}" data-bh="${b.k}"><span class="ic">${b.ic}</span>${b.t}<span class="pv">${b.p>0?"+":""}${b.p}</span></button>`;
+    document.getElementById("rwSheet").innerHTML = `
+      <div class="rw-sh-top">${rwAvatar(st,60)}<div><h3>${escapeHTML(st.name)}</h3>
+        <div style="margin-top:4px"><span class="rw-lvl" style="background:${L.c};color:${L.f}">${L.ic} ${L.n}</span> <b style="font-family:Cairo;font-size:20px;color:#0B5457;margin-inline-start:6px">${p}</b> نقطة</div></div>
+        <button class="x" data-close="1">✕</button></div>
+      <div class="rw-bh-title">⭐ سلوك إيجابي</div><div class="rw-bhs">${RW_POS.map(bh).join("")}</div>
+      <div class="rw-bh-title neg">⚠️ يحتاج تحسين</div><div class="rw-bhs">${RW_NEG.map(bh).join("")}</div>
+      ${Object.keys(cnt).length ? `<div class="rw-counts">${RW_ALL.filter(b=>cnt[b.k]).map(b=>`<span>${b.ic} ${b.t}: <b>${cnt[b.k]}</b></span>`).join("")}</div>` : ""}
+      <div class="rw-hist">${hist.length ? hist.map(l=>{ const b=RW_ALL.find(x=>x.k===l.k)||{ic:"•",t:l.k}; return `<div><span>${b.ic} ${b.t} <b style="color:${l.p>0?"#2E7D4F":"#B23A3A"}">${l.p>0?"+":""}${l.p}</b></span><span style="color:#5B6B68">${new Date(l.t).toLocaleString("ar-OM",{weekday:"short",day:"numeric",month:"numeric",hour:"2-digit",minute:"2-digit"})}</span></div>`; }).join("") : `<span style="color:#5B6B68">لا توجد نقاط مسجلة بعد.</span>`}</div>
+      <div class="result-actions" style="margin-top:12px">
+        <button class="btn ghost sm" data-cert="1">🏅 شهادة تميز</button>
+        ${rwClassKey==="mine" ? `<button class="btn ghost sm" data-rm="1" style="color:var(--danger)">🗑️ حذف من قائمتي</button>` : ""}
+      </div>`;
+    document.getElementById("rwSheet").dataset.id = id;
+    document.getElementById("rwModal").hidden = false;
+  }
+  function rwCertificates(list){
+    if(!list.length){ toast("لا يوجد طلاب بنقاط بعد"); return; }
+    const school = (schoolInfo && schoolInfo.name) || "مدرسة وادي الحيول (1-12)";
+    const cls = rwClassKey.startsWith("sec:") ? (()=>{ const id=rwClassKey.slice(4); const st=(schoolStudents||[]).find(x=>x.sectionId===id); const g=st&&gradeById(st.gradeId); return (g?g.name+" — ":"")+sectionShort(id); })() : "";
+    const teacher = (currentUser && currentUser.name) || "";
+    const date = new Date().toLocaleDateString("ar-OM",{day:"numeric",month:"long",year:"numeric"});
+    const page = st=>{ const L=rwLevel(rwPts(st.id)); return `<section class="c"><div class="in">
+      <div class="top"><span>سلطنة عُمان<br>وزارة التعليم</span><span class="sch">${escapeHTML(school)}</span></div>
+      <h1>شهادة تميّز</h1><p class="l">تتقدم ${escapeHTML(school)} بخالص الشكر والتقدير إلى الطالب/ة</p>
+      <h2>${escapeHTML(st.name)}</h2>
+      <p class="l">${cls?escapeHTML(cls)+" — ":""}لتميّزه/ا وحصوله/ا على <b>${rwPts(st.id)}</b> نقطة في نظام التعزيز السلوكي ووصوله/ا إلى المستوى <b>${L.ic} ${L.n}</b>.<br>متمنين له/ا دوام التفوق والنجاح.</p>
+      <div class="sig"><div>المعلم/ة<br><b>${escapeHTML(teacher)}</b></div><div>التاريخ<br><b>${date}</b></div><div>مدير المدرسة<br><b>أ. محمد المخمري</b></div></div></div></section>`; };
+    const w = window.open("","_blank"); if(!w){ toast("اسمح بالنوافذ المنبثقة للطباعة"); return; }
+    w.document.write(`<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><title>شهادات التميز</title>
+      <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@600;800&family=Amiri:wght@700&display=swap" rel="stylesheet">
+      <style>@page{size:A4 landscape;margin:0}body{margin:0;font-family:Cairo,Tahoma,sans-serif;color:#14302F}
+      .c{width:297mm;height:210mm;box-sizing:border-box;padding:12mm;page-break-after:always;background:#FBF7EE}
+      .in{height:100%;box-sizing:border-box;border:3px solid #0B5457;outline:8px double #E2B864;outline-offset:-14px;border-radius:12px;padding:16mm 22mm;text-align:center;display:flex;flex-direction:column;justify-content:space-between}
+      .top{display:flex;justify-content:space-between;font-size:13px;font-weight:600}.sch{font-weight:800;color:#0B5457}
+      h1{font-family:Amiri,serif;font-size:56px;color:#9A6B1F;margin:0}h2{font-size:40px;color:#0B5457;margin:0;border-bottom:2px dashed #E2B864;display:inline-block;padding:0 30px 6px;align-self:center}
+      .l{font-size:20px;line-height:1.9;margin:0}.sig{display:flex;justify-content:space-between;font-size:15px}</style></head>
+      <body>${list.map(page).join("")}<script>setTimeout(()=>print(),900)<\/script></body></html>`);
+    w.document.close();
+  }
+  async function loadRoster(){
+    if(db){
+      try{
+        let snap = await db.doc("classroom/roster_" + rwTid()).get();
+        if(!(snap.exists && snap.data() && Array.isArray(snap.data().students))) snap = await db.doc("classroom/roster").get();
+        if(snap.exists && snap.data() && Array.isArray(snap.data().students)) students = cloneList(snap.data().students);
+      }catch(e){}
+    }
+    if(document.getElementById("view-students")?.classList.contains("active")) renderStudents();
+  }
+  async function saveRoster(){ if(!db) return; try{ await db.doc("classroom/roster_" + rwTid()).set({students}); }catch(e){} }
+  function studentTotal(s){ return rwClassKey==="mine" ? rwPts(s.id) : 0; }
+  function renderStudents(){
+    const sel = document.getElementById("rwClass"); if(!sel) return;
+    const opts = rwClassOptions();
+    let saved = ""; try{ saved = localStorage.getItem("rw_class") || ""; }catch(e){}
+    const want = rwClassKey || saved;
+    sel.innerHTML = opts.map(o=>`<option value="${escapeHTML(o.v)}">${escapeHTML(o.t)}</option>`).join("");
+    const pick = opts.some(o=>o.v===want) ? want : (opts[0] ? opts[0].v : "mine");
+    sel.value = pick;
+    if(pick !== rwClassKey){ rwClassKey = pick; rwSel.clear(); rwLoad(); } else rwRender();
+  }
+  document.getElementById("rwClass").addEventListener("change", e=>{ rwClassKey = e.target.value; try{ localStorage.setItem("rw_class", rwClassKey); }catch(_){} rwSel.clear(); rwLoad(); });
+  document.getElementById("rwSearch").addEventListener("input", rwRender);
+  document.getElementById("rwSort").addEventListener("change", rwRender);
   document.getElementById("studentsList").addEventListener("click", e=>{
-    const row = e.target.closest(".student-row"); if(!row) return;
-    const s = students.find(x=>x.id===row.dataset.id); if(!s) return;
-    const badgeBtn = e.target.closest("[data-badge]");
-    if(badgeBtn){ s.badges[badgeBtn.dataset.badge] = (s.badges[badgeBtn.dataset.badge]||0)+1; renderStudents(); saveRoster(); return; }
-    if(e.target.closest("[data-rm]")){ students = students.filter(x=>x.id!==s.id); renderStudents(); saveRoster(); return; }
+    const card = e.target.closest(".rw-card"); if(!card) return;
+    const id = card.dataset.id;
+    if(rwSelMode){ rwSel.has(id) ? rwSel.delete(id) : rwSel.add(id); card.classList.toggle("sel"); document.getElementById("rwSelCount").textContent = rwSel.size+" محدد"; return; }
+    if(e.target.closest("[data-plus]")){ rwAward([id], "part"); return; }
+    rwOpen(id);
   });
+  document.getElementById("rwModal").addEventListener("click", e=>{
+    const sheet = document.getElementById("rwSheet"), id = sheet.dataset.id;
+    if(e.target.id==="rwModal" || e.target.closest("[data-close]")){ document.getElementById("rwModal").hidden = true; return; }
+    const b = e.target.closest("[data-bh]"); if(b){ rwAward([id], b.dataset.bh); rwOpen(id); return; }
+    if(e.target.closest("[data-cert]")){ const st = rwStudents().find(x=>x.id===id); if(st) rwCertificates([st]); return; }
+    if(e.target.closest("[data-rm]")){ if(!confirm("حذف الطالب من قائمتك؟")) return; students = students.filter(x=>x.id!==id); delete rwData.pts[id]; delete rwData.cnt[id]; saveRoster(); rwSave(); document.getElementById("rwModal").hidden = true; renderStudents(); }
+  });
+  document.addEventListener("keydown", e=>{ if(e.key==="Escape") { const m=document.getElementById("rwModal"); if(m) m.hidden=true; } });
+  document.getElementById("rwAllBtn").addEventListener("click", ()=>{ const ids = rwStudents().map(x=>x.id); if(!ids.length) return; rwAward(ids, "part"); toast("👏 +1 لكل طلاب الصف"); });
+  document.getElementById("rwSelBtn").addEventListener("click", ()=>{
+    rwSelMode = true; rwSel.clear(); document.getElementById("rwSelBar").hidden = false;
+    document.getElementById("rwSelBehaviors").innerHTML = RW_ALL.map(b=>`<button class="rw-bh mini ${b.p<0?"neg":""}" data-sbh="${b.k}"><span class="ic">${b.ic}</span>${b.t} <span class="pv">${b.p>0?"+":""}${b.p}</span></button>`).join("");
+    rwRender();
+  });
+  document.getElementById("rwSelBehaviors").addEventListener("click", e=>{ const b=e.target.closest("[data-sbh]"); if(!b) return; if(!rwSel.size){ toast("حدد طلابًا أولًا"); return; } rwAward([...rwSel], b.dataset.sbh); });
+  document.getElementById("rwSelDone").addEventListener("click", ()=>{ rwSelMode=false; rwSel.clear(); document.getElementById("rwSelBar").hidden=true; rwRender(); });
+  document.getElementById("rwRandBtn").addEventListener("click", ()=>{
+    const cards = [...document.querySelectorAll("#studentsList .rw-card")]; if(!cards.length) return;
+    let i = 0, n = 14 + Math.floor(Math.random()*cards.length);
+    const tick = ()=>{ cards.forEach(c=>c.classList.remove("sel")); const c = cards[i % cards.length]; c.classList.add("sel"); c.scrollIntoView({block:"nearest",behavior:"smooth"});
+      if(++i < n) setTimeout(tick, 60 + i*12); else { rwChime(true); setTimeout(()=>{ c.classList.remove("sel"); rwOpen(c.dataset.id); }, 500); } };
+    tick();
+  });
+  document.getElementById("rwBoardBtn").addEventListener("click", ()=>{ const r=document.getElementById("rwRoot"); if(document.fullscreenElement) document.exitFullscreen(); else if(r.requestFullscreen) r.requestFullscreen().catch(()=>toast("المتصفح لا يدعم ملء الشاشة")); });
+  document.getElementById("rwUndoBtn").addEventListener("click", ()=>{
+    const last = rwData.log[rwData.log.length-1]; if(!last){ toast("لا يوجد ما يُتراجع عنه"); return; }
+    const batch = rwData.log.filter(l=>l.t===last.t && l.k===last.k);
+    batch.forEach(l=>{ rwData.pts[l.s] = rwPts(l.s) - l.p; const c=rwData.cnt[l.s]; if(c && c[l.k]) c[l.k]--; });
+    rwData.log = rwData.log.filter(l=>!(l.t===last.t && l.k===last.k));
+    rwRender(); rwSave(); toast("↶ تم التراجع"+(batch.length>1?` (${batch.length} طالب)`:""));
+  });
+  document.getElementById("rwCertBtn").addEventListener("click", ()=>{ rwCertificates(rwStudents().filter(x=>rwPts(x.id)>0).sort((a,b)=>rwPts(b.id)-rwPts(a.id)).slice(0,3)); });
   document.getElementById("addStudentBtn").addEventListener("click", ()=>{
     const inp=document.getElementById("studentNameInput"); const name=inp.value.trim();
     if(!name) return;
-    students.push(newStudent(name)); inp.value=""; renderStudents(); saveRoster();
+    students.push(newStudent(name)); inp.value=""; saveRoster(); renderStudents();
   });
   document.getElementById("studentNameInput").addEventListener("keydown", e=>{ if(e.key==="Enter") document.getElementById("addStudentBtn").click(); });
   document.getElementById("bulkAddBtn").addEventListener("click", ()=>{
     const ta=document.getElementById("bulkStudents");
-    const names = ta.value.split("\n").map(s=>s.trim()).filter(Boolean);
-    names.forEach(n=>students.push(newStudent(n)));
-    ta.value=""; renderStudents(); saveRoster();
+    ta.value.split("\n").map(x=>x.trim()).filter(Boolean).forEach(n=>students.push(newStudent(n)));
+    ta.value=""; saveRoster(); renderStudents();
   });
   document.getElementById("exportStudentsBtn").addEventListener("click", ()=>{
-    if(!students.length){ toast("لا يوجد طلاب لتصديرهم"); return; }
-    const text = students.map(s=>`${s.name} — المجموع: ${studentTotal(s)}`).join("\n");
-    downloadText("قائمة_الطلاب.txt", text);
+    const list = rwStudents(); if(!list.length){ toast("لا يوجد طلاب لتصديرهم"); return; }
+    const cell = v => '"' + String(v).replace(/"/g,'""') + '"';
+    const head = ["الترتيب","اسم الطالب","النقاط","المستوى"].concat(RW_ALL.map(b=>b.t));
+    const rows = list.slice().sort((a,b)=>rwPts(b.id)-rwPts(a.id)).map((x,i)=>{ const c=rwData.cnt[x.id]||{}; return [i+1, x.name, rwPts(x.id), rwLevel(rwPts(x.id)).n].concat(RW_ALL.map(b=>c[b.k]||0)); });
+    const csv = "﻿" + [head].concat(rows).map(r=>r.map(cell).join(",")).join("\r\n");
+    const a=document.createElement("a"); a.href=URL.createObjectURL(new Blob([csv],{type:"text/csv;charset=utf-8"})); a.download="نقاط_التعزيز_"+(document.getElementById("rwClass").selectedOptions[0]?.textContent||"").replace(/[\s()—]+/g,"_")+".csv"; a.click(); setTimeout(()=>URL.revokeObjectURL(a.href),2000);
   });
   document.getElementById("resetBadgesBtn").addEventListener("click", ()=>{
-    students.forEach(s=>{ Object.keys(s.badges).forEach(k=>s.badges[k]=0); });
-    renderStudents(); saveRoster();
+    if(!confirm("تصفير كل نقاط هذا الصف وسجله؟ لا يمكن التراجع.")) return;
+    rwData = {pts:{}, cnt:{}, log:[]}; rwRender(); rwSave();
   });
 
   /* ---------------- generic sample() runner ---------------- */
