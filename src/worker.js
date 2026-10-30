@@ -565,11 +565,12 @@ async function handleAR(db, env, request, user) {
   if (!user) return json({ error: "session_expired" }, 401);
   if (!(await bumpUsage(db, "ar:" + (user.teacherId || user.role), AR_PER_HOUR))) return json({ error: "rate_limited" }, 429);
   const b = await request.json().catch(() => ({}));
-  const subject = clip(b.subject, 80), grade = clip(b.grade, 60), topic = clip(b.topic, 300), req = clip(b.request, 1500), code = clip(b.code, 60000), err = clip(b.error, 1500);
+  const subject = clip(b.subject, 80), grade = clip(b.grade, 60), topic = clip(b.topic, 300), req = clip(b.request, 1500), code = clip(b.code, 60000), err = clip(b.error, 1500), source = clip(b.source, 6000);
+  const src = source.trim() ? `\nمصدر المحتوى المعتمد (من الكتاب المدرسي العُماني) — التزم به حرفيًا في المصطلحات والمعلومات والأهداف ولا تخالفه:\n«${source}»\n` : `\nلم يُرفق نص من الكتاب المدرسي: استخدم المعلومات العامة المؤكدة فقط، ولا تخترع تفاصيل، وأضف في مربع المعلومات سطرًا: «للتفاصيل الدقيقة راجع الكتاب المدرسي».\n`;
   let prompt;
-  if (b.mode === "edit") prompt = `Lesson: ${topic} — ${subject} — ${grade}.\nCurrent scene code:\n\`\`\`js\n${code}\n\`\`\`\nThe teacher asks for this change (Arabic): «${req}».\nApply it carefully, keep everything else working and accurate, and return the FULL updated code.`;
-  else if (b.mode === "fix") prompt = `Lesson: ${topic} — ${subject} — ${grade}.\nThis scene code failed with the error: ${err}\n\`\`\`js\n${code}\n\`\`\`\nFix the bug(s) and return the FULL corrected code. Keep the content and accuracy.`;
-  else prompt = `Build a complete, accurate, interactive 3D/AR scene for this lesson.\nSubject: ${subject}\nGrade: ${grade}\nLesson: ${topic}\n${req ? "Teacher notes: " + req + "\n" : ""}Plan the model's real structure and proportions first (silently), then write the code.`;
+  if (b.mode === "edit") prompt = `Lesson: ${topic} — ${subject} — ${grade}.${src}\nCurrent scene code:\n\`\`\`js\n${code}\n\`\`\`\nThe teacher asks for this change (Arabic): «${req}».\nApply it carefully, keep everything else working and accurate, and return the FULL updated code.`;
+  else if (b.mode === "fix") prompt = `Lesson: ${topic} — ${subject} — ${grade}.${src}\nThis scene code failed with the error: ${err}\n\`\`\`js\n${code}\n\`\`\`\nFix the bug(s) and return the FULL corrected code. Keep the content and accuracy.`;
+  else prompt = `Build a complete, accurate, interactive 3D/AR scene for this lesson.\nSubject: ${subject}\nGrade: ${grade}\nLesson: ${topic}\n${src}${req ? "Teacher notes: " + req + "\n" : ""}Plan the model's real structure and proportions first (silently), then write the code.`;
   try {
     const { text, engine } = await callLLM(env, AR_SYSTEM, prompt, 14000);
     const m = String(text).match(/```(?:js|javascript)?\s*([\s\S]*?)```/i);
@@ -580,6 +581,35 @@ async function handleAR(db, env, request, user) {
     const msg = String(e && e.message || e);
     return json({ error: /limit|quota|429|neurons/i.test(msg) ? "rate_limited" : "upstream_error" }, 502);
   }
+}
+
+/* ---------------- public AR models (GLB / USDZ) for phone AR viewers ----------------
+   Scene Viewer (Android) and AR Quick Look (iPhone) fetch the model without cookies,
+   so models are served publicly by an unguessable id and expire after 7 days. */
+const AR_TYPES = { glb: "model/gltf-binary", usdz: "model/vnd.usdz+zip" };
+async function handleArModel(db, request, user, url) {
+  if (request.method === "POST") {
+    if (!user) return json({ error: "session_expired" }, 401);
+    const ext = url.searchParams.get("type"); if (!AR_TYPES[ext]) return json({ error: "bad_type" }, 400);
+    if (!(await bumpUsage(db, "arm:" + (user.teacherId || user.role), 60))) return json({ error: "rate_limited" }, 429);
+    const buf = await request.arrayBuffer();
+    if (!buf.byteLength || buf.byteLength > 15 * 1024 * 1024) return json({ error: "too_large" }, 413);
+    const old = (await db.prepare("SELECT id FROM file_meta WHERE owner LIKE 'armodel:%' AND created < ?").bind(Date.now() - 7 * 864e5).all()).results || [];
+    for (const o of old) await db.batch([db.prepare("DELETE FROM file_chunks WHERE id = ?").bind(o.id), db.prepare("DELETE FROM file_meta WHERE id = ?").bind(o.id)]);
+    const id = [...crypto.getRandomValues(new Uint8Array(16))].map(b => b.toString(16).padStart(2, "0")).join("");
+    const chunks = Math.ceil(buf.byteLength / CHUNK), stmts = [];
+    for (let i = 0; i < chunks; i++) stmts.push(db.prepare("INSERT INTO file_chunks (id, idx, data) VALUES (?, ?, ?)").bind(id, i, buf.slice(i * CHUNK, (i + 1) * CHUNK)));
+    stmts.push(db.prepare("INSERT INTO file_meta (id, owner, name, type, size, chunks, created) VALUES (?, ?, ?, ?, ?, ?, ?)").bind(id, "armodel:" + (user.teacherId || user.role), "model." + ext, AR_TYPES[ext], buf.byteLength, chunks, Date.now()));
+    await db.batch(stmts);
+    return json({ url: `${url.origin}/api/armodel/${id}.${ext}` });
+  }
+  const m = url.pathname.match(/^\/api\/armodel\/([0-9a-f]{32})\.(glb|usdz)$/);
+  if (!m) return json({ error: "not_found" }, 404);
+  const meta = await db.prepare("SELECT * FROM file_meta WHERE id = ?").bind(m[1]).first();
+  if (!meta || !String(meta.owner).startsWith("armodel:") || meta.type !== AR_TYPES[m[2]]) return json({ error: "not_found" }, 404);
+  const rows = (await db.prepare("SELECT data FROM file_chunks WHERE id = ? ORDER BY idx").bind(m[1]).all()).results || [];
+  const parts = rows.map(r => new Uint8Array(r.data)); const out = new Uint8Array(parts.reduce((a, p) => a + p.byteLength, 0)); let o = 0; parts.forEach(p => { out.set(p, o); o += p.byteLength; });
+  return new Response(out, { headers: { "content-type": meta.type, "cache-control": "public, max-age=86400", "access-control-allow-origin": "*", "content-disposition": `inline; filename="model.${m[2]}"` } });
 }
 
 /* ---------------- optional site-wide Basic Auth ---------------- */
@@ -641,6 +671,7 @@ export default {
           case "/api/videos": return handleVideos(db, request, await currentUser(db, request), url);
           case "/api/ai": return handleAI(db, env, request, request.method === "GET" ? null : await currentUser(db, request));
           default:
+            if (url.pathname === "/api/armodel" || url.pathname.startsWith("/api/armodel/")) return handleArModel(db, request, request.method === "GET" ? null : await currentUser(db, request), url);
             if (url.pathname === "/api/files" || url.pathname.startsWith("/api/files/")) return handleFiles(db, request, await currentUser(db, request), url);
             return json({ error: "not_found" }, 404);
         }

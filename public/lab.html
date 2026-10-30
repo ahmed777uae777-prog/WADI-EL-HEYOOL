@@ -92,6 +92,15 @@ h1,h2,h3{font-family:Cairo,sans-serif;margin:0}
 #bFrame{width:100%;height:100%;border:0;background:#FBF7EE}
 .spin.s{display:inline-block;width:16px;height:16px;border-width:3px;margin:0 0 -3px 6px}
 @media(max-width:860px){.builder{grid-template-columns:1fr;grid-template-rows:60vh auto;height:auto}#bFrame{height:60vh;order:1}.bchat{order:2}}
+#guide{position:absolute;left:10px;bottom:46px;width:170px;z-index:6;user-select:none}
+#gCanvas{width:170px;height:210px;display:block;cursor:pointer;filter:drop-shadow(0 8px 12px rgba(0,0,0,.25))}
+.gbubble{display:none;position:absolute;bottom:200px;left:6px;width:min(330px,70vw);background:#fff;border:2px solid var(--primary);border-radius:16px 16px 16px 4px;padding:8px 12px;font-size:14px;line-height:1.8;box-shadow:0 10px 20px -12px rgba(0,0,0,.4)}
+.gctl{display:flex;gap:4px;justify-content:center}.gctl button{border:0;background:rgba(255,255,255,.92);border-radius:999px;width:30px;height:30px;cursor:pointer;font-size:15px}
+#gShow{position:absolute;left:10px;bottom:46px;z-index:6;border:0;border-radius:999px;padding:8px 12px;font-weight:800;background:#fff;cursor:pointer}
+#bPts{background:linear-gradient(135deg,#E2B864,#9A6B1F)!important;color:#2b1d05!important}#bPts.pop{transform:scale(1.15)}
+#arOffer{position:fixed;inset:0;background:rgba(6,30,30,.45);display:grid;place-items:center;z-index:400;padding:16px}
+.aroff{background:#FBF7EE;border-radius:20px;padding:18px;max-width:420px;text-align:center;line-height:1.8}
+@media(max-width:860px){#guide{width:120px}#gCanvas{width:120px;height:148px}.gbubble{bottom:150px}}
 .quiz .q{font-weight:800;margin:6px 0}.quiz .o{display:block;width:100%;text-align:start;margin:4px 0}
 .quiz .o.good{background:#d8f3dc;border-color:var(--ok)}.quiz .o.bad{background:#fde2e1;border-color:var(--danger)}
 #xrOverlay{display:none;position:fixed;inset:0;pointer-events:none}
@@ -126,7 +135,8 @@ h1,h2,h3{font-family:Cairo,sans-serif;margin:0}
         <select id="aiSubject"><option>الرياضيات</option><option>العلوم</option><option>الفيزياء</option><option>الكيمياء</option><option>الأحياء</option><option>العلوم البيئية</option><option>التربية الإسلامية</option><option>اللغة العربية</option><option>اللغة الإنجليزية</option><option>الدراسات الاجتماعية</option><option>الجغرافيا الاقتصادية</option><option>الجغرافيا والتقنيات الحديثة</option><option>الهوية والمواطنة</option><option>تقنية المعلومات</option><option>المهارات الحياتية</option><option>التربية البدنية والصحية</option><option>الرياضة المدرسية</option><option>الفنون التشكيلية</option><option>الفنون البصرية</option><option>الفنون الموسيقية</option><option>المهارات الموسيقية</option><option>خدمة التوجيه المهني</option></select>
         <select id="aiGrade"><option>الصف الأول</option><option>الصف الثاني</option><option>الصف الثالث</option><option>الصف الرابع</option><option selected>الصف الخامس</option><option>الصف السادس</option><option>الصف السابع</option><option>الصف الثامن</option><option>الصف التاسع</option><option>الصف العاشر</option><option>الصف الحادي عشر</option><option>الصف الثاني عشر</option></select>
         <input class="full" id="aiTopic" placeholder="مثال: القلب والدورة الدموية، أجزاء الزهرة، الأشكال الرباعية…">
-        <input class="full" id="aiNotes" placeholder="ملاحظات اختيارية: ما الذي تريد التركيز عليه؟">
+        <input class="full" id="aiNotes" placeholder="الشخصيات والأشياء المطلوبة أو ما تريد التركيز عليه (اختياري)">
+        <textarea class="full" id="aiSource" rows="2" placeholder="📘 الصق نص الدرس أو أهدافه من الكتاب المدرسي (موصى به لضمان الدقة والمطابقة للمنهج)" style="border:1px solid var(--line);border-radius:12px;padding:8px;font-family:inherit"></textarea>
         <button class="btn full" id="aiGo">🛠️ ابنِ المشهد</button><button class="btn ghost full" id="mySaved">📂 مشاهدي المحفوظة والمشتركة</button>
       </div>
     </div>
@@ -147,6 +157,10 @@ h1,h2,h3{font-family:Cairo,sans-serif;margin:0}
       <div class="sp"></div>
       <button id="bReset">🎯 إعادة الكاميرا</button>
       <button id="bQuiz">🎯 اختبار</button>
+      <button id="bGame">🎮 أين هو؟</button>
+      <button id="bPhone">📱 AR في غرفتك</button>
+      <button id="bGlb" title="تنزيل المجسّم بصيغة GLB">⬇️ GLB</button>
+      <button id="bPts">⭐ 0</button>
       <button id="bShot">📸 لقطة</button>
       <button id="bFull">⛶ ملء الشاشة</button>
     </div>
@@ -212,9 +226,7 @@ const E = {}; // engine state
     if(!down || Math.hypot(e.clientX-down[0], e.clientY-down[1]) > 6) return;
     const r = canvas.getBoundingClientRect(); ndc.set(((e.clientX-r.left)/r.width)*2-1, -((e.clientY-r.top)/r.height)*2+1);
     ray.setFromCamera(ndc, camera);
-    const hit = ray.intersectObjects(E.clickables, true)[0]; if(!hit) return;
-    let o = hit.object; while(o && !o.userData.onClick) o = o.parent;
-    if(o) o.userData.onClick(o, hit);
+    for(const hit of ray.intersectObjects(E.clickables, true)){ let o = hit.object; while(o && !o.userData.onClick) o = o.parent; if(o){ o.userData.onClick(o, hit); return; } }
   });
   R.setAnimationLoop((t, frame)=>{
     const dt = Math.min(E.clock.getDelta(), .05), now = E.clock.elapsedTime;
@@ -267,6 +279,7 @@ function clickable(obj, fn){ obj.userData.onClick = fn; E.clickables.push(obj); 
 function onUpdate(fn){ E.updaters.push(fn); }
 function tweenVal(from, to, sec, fn, done){ let t = 0; const u = (dt)=>{ t = Math.min(1, t + dt/sec); fn(lerp(from, to, ease(t))); if(t>=1){ E.updaters.splice(E.updaters.indexOf(u),1); done && done(); } }; E.updaters.push(u); return u; }
 function clearScene(){
+  if(typeof GAME!=='undefined' && GAME.on){ GAME.on=false; GAME.list=null; const g=$("bGame"); if(g){ g.classList.remove("on"); g.textContent="🎮 أين هو؟"; } }
   (E.onClear||[]).splice(0).forEach(f=>{ try{ f(); }catch(e){} }); clearHighlight(); E.updaters.length = 0; E.clickables.length = 0; E.tween = null; stopSpin();
   E.root.traverse(o=>{ if(o.geometry) o.geometry.dispose(); if(o.material){ (Array.isArray(o.material)?o.material:[o.material]).forEach(m=>{ if(m.map) m.map.dispose(); m.dispose(); }); } });
   E.root.clear(); E.root.position.set(0,0,0); E.root.rotation.set(0,0,0); E.root.scale.set(1,1,1);
@@ -277,7 +290,7 @@ function clearScene(){
 const SPEECH = { on:false, voice:null };
 function pickVoice(){ const vs = (window.speechSynthesis && speechSynthesis.getVoices()) || []; SPEECH.voice = vs.find(v=>/^ar/i.test(v.lang)) || null; }
 if(window.speechSynthesis){ pickVoice(); speechSynthesis.onvoiceschanged = pickVoice; }
-function speak(text, onend){ if(!SPEECH.on || !window.speechSynthesis){ return false; } speechSynthesis.cancel(); const u = new SpeechSynthesisUtterance(String(text).replace(/[^؀-ۿ\s0-9.,،؛:٪%°+\-=×÷/()]/g," ")); u.lang = (SPEECH.voice && SPEECH.voice.lang) || "ar-SA"; if(SPEECH.voice) u.voice = SPEECH.voice; u.rate = .95; if(onend){ u.onend = onend; u.onerror = onend; } speechSynthesis.speak(u); return true; }
+function speak(text, onend){ if(!SPEECH.on || !window.speechSynthesis){ return false; } speechSynthesis.cancel(); const u = new SpeechSynthesisUtterance(String(text).replace(/[^؀-ۿ\s0-9.,،؛:٪%°+\-=×÷/()]/g," ")); u.lang = (SPEECH.voice && SPEECH.voice.lang) || "ar-SA"; if(SPEECH.voice) u.voice = SPEECH.voice; u.rate = .95; u.onboundary = ()=>{ if(typeof GUIDE!=='undefined') GUIDE.kick = 1; }; if(onend){ u.onend = onend; u.onerror = onend; } speechSynthesis.speak(u); return true; }
 /* ---------- link the scene to what is being explained: highlight every labelled object the step mentions ---------- */
 const norm = t => " " + String(t||"").replace(/[ً-ْـ]/g,"").replace(/[أإآ]/g,"ا").replace(/ة/g,"ه").replace(/ى/g,"ي").replace(/[^؀-ۿA-Za-z0-9 ]/g," ").replace(/\s+/g," ").trim() + " ";
 const HL = { pointers:[], sprites:[] };
@@ -321,7 +334,8 @@ const UI = {
       box.querySelector(".n").textContent = `${i+1} / ${list.length}`; box.querySelector("h3").textContent = s.t; box.querySelector("p").textContent = s.d;
       box.querySelector('[data-a="next"]').textContent = i===list.length-1 ? "↺ من البداية" : "التالي ←";
       try{ s.run && s.run(); }catch(e){ console.error(e); if(E.onErr) E.onErr(e); }
-      setTimeout(()=>highlightFor(s.t + " " + s.d), 450);
+      setTimeout(()=>highlightFor(s.t + " " + s.d), 450); if(typeof guideSay==='function') guideSay(s.t + ": " + s.d);
+      if(i===list.length-1 && !box.dataset.done){ box.dataset.done = 1; if(typeof award==='function') award(5); }
       clearTimeout(autoT); const spoke = speak(s.t + ". " + s.d, auto ? advance : null);
       if(auto && !spoke) autoT = setTimeout(advance, Math.max(4500, (s.t+s.d).length*75)); };
     box.addEventListener("click", e=>{ const a=e.target.closest("button"); if(!a) return;
@@ -1708,7 +1722,7 @@ UI.quiz = function(list){
     const a = e.target.closest("[data-q]"); if(a){ start(); return; }
     const b = e.target.closest("[data-o]"); if(!b || box.dataset.lock) return;
     const [q, opts, ex] = order[i], ok = b.dataset.o === opts[0]; box.dataset.lock = 1;
-    if(ok){ score++; b.classList.add("good"); } else { wrong.push(order[i]); b.classList.add("bad"); box.querySelectorAll("[data-o]").forEach(x=>{ if(x.dataset.o===opts[0]) x.classList.add("good"); }); }
+    if(ok){ score++; b.classList.add("good"); if(typeof award==='function') award(10); } else { wrong.push(order[i]); b.classList.add("bad"); box.querySelectorAll("[data-o]").forEach(x=>{ if(x.dataset.o===opts[0]) x.classList.add("good"); }); }
     box.querySelector(".qfb").innerHTML = `<div style="margin-top:8px;font-weight:800;color:${ok?"#2E7D4F":"#B23A3A"}">${ok?"✔ إجابة صحيحة":"✖ الإجابة الصحيحة: "+esc(opts[0])}</div>${ex?`<div style="font-size:13.5px">${esc(ex)}</div>`:""}<div class="btns" style="margin-top:8px"><button class="pill on" data-next="1">${i+1<order.length?"السؤال التالي ←":"عرض النتيجة"}</button></div>`;
     box.querySelector("[data-next]").onclick = ()=>{ delete box.dataset.lock; i++; render(); };
   });
@@ -1908,10 +1922,11 @@ async function buildLoop(body, label0){
 function openBuilder(subject, grade, topic, notes){
   showStage(false); $("home").style.display = "none"; $("builder").style.display = "grid"; $("backHome").hidden = false;
   if(!BLD.frame){ BLD.frame = $("bFrame"); BLD.frame.src = "/lab.html?run=1"; }
-  BLD.meta = {subject, grade, topic}; BLD.code = ""; $("bLog").innerHTML = ""; $("bSave").disabled = true; $("bFull").disabled = true;
+  BLD.meta = {subject, grade, topic, source: BLD.source || ""}; BLD.code = ""; $("bLog").innerHTML = ""; $("bSave").disabled = true; $("bFull").disabled = true;
   $("bTitle").textContent = topic;
   bMsg("me", `ابنِ مشهد واقع معزز لدرس <b>${esc(topic)}</b> — ${esc(subject)}، ${esc(grade)}${notes?`<br><small>${esc(notes)}</small>`:""}`);
   const m = matchBuiltin(topic);
+  if(!BLD.meta.source) bMsg("ai", "📘 لم يُرفق نص من الكتاب المدرسي؛ سألتزم بالمعلومات المؤكدة فقط. لأعلى دقة الصق نص الدرس أو أهدافه في المرة القادمة.");
   if(m) bMsg("ai", `💡 توجد محاكاة دقيقة جاهزة لهذا الموضوع: <button class="pill" data-open="${m.id}">${m.icon} ${esc(m.t)}</button><br>سأبني لك مشهدًا جديدًا مخصصًا أيضًا.`);
   buildLoop(Object.assign({}, BLD.meta, {mode:"build", request:notes||""}), "🧠 أخطط للنموذج وأكتب المشهد ثلاثي الأبعاد بدقة… (30–90 ثانية)");
 }
@@ -1947,6 +1962,149 @@ async function loadSaved(id){
 }
 
 /* =====================================================================
+   Talking cartoon guide (Omani teacher characters) — lips, eyes, hands
+   ===================================================================== */
+const GUIDE = { on:true, who:"salem", until:0, kick:0, ready:false };
+function guideInit(){
+  if(GUIDE.ready) return; GUIDE.ready = true;
+  const wrap = document.createElement("div"); wrap.id = "guide";
+  wrap.innerHTML = `<div class="gbubble" id="gBubble"></div><canvas id="gCanvas" width="340" height="420" title="انقر لسماع الشرح"></canvas>
+    <div class="gctl"><button data-g="salem" title="أستاذ سالم">👨‍🏫</button><button data-g="maryam" title="أستاذة مريم">👩‍🏫</button><button data-g="hide" title="إخفاء">✕</button></div>`;
+  $("view").appendChild(wrap);
+  const show = document.createElement("button"); show.id = "gShow"; show.textContent = "🧑‍🏫 المرشد"; show.hidden = true; $("view").appendChild(show);
+  const R2 = new THREE.WebGLRenderer({canvas:$("gCanvas"), alpha:true, antialias:true}); R2.setPixelRatio(Math.min(devicePixelRatio||1,2)); R2.setSize(170,210,false); R2.outputEncoding = THREE.sRGBEncoding;
+  const S2 = new THREE.Scene(); S2.add(new THREE.HemisphereLight(0xffffff, 0xcbbf9f, 1.0)); const dl = new THREE.DirectionalLight(0xffffff,.6); dl.position.set(2,3,4); S2.add(dl);
+  const C2 = new THREE.PerspectiveCamera(30, 170/210, .1, 50); C2.position.set(0,1.25,5.2); C2.lookAt(0,1.05,0);
+  Object.assign(GUIDE, {R2, S2, C2});
+  guideBuild(GUIDE.who);
+  wrap.addEventListener("click", e=>{ const b = e.target.closest("[data-g]");
+    if(b){ e.stopPropagation(); if(b.dataset.g==="hide"){ GUIDE.on = false; wrap.style.display = "none"; show.hidden = false; return; } GUIDE.who = b.dataset.g; guideBuild(GUIDE.who); guideSay(GUIDE.who==="salem" ? "مرحبًا، أنا أستاذ سالم!" : "مرحبًا، أنا أستاذة مريم!"); return; }
+    SPEECH.on = true; const st = document.querySelector(".steps"); if(st){ const t = st.querySelector("h3").textContent + ". " + st.querySelector("p").textContent; guideSay(t); speak(t); } });
+  show.onclick = ()=>{ GUIDE.on = true; wrap.style.display = ""; show.hidden = true; };
+  setTimeout(()=>{ const st = document.querySelector(".steps"); if(st) guideSay(st.querySelector("h3").textContent + ": " + st.querySelector("p").textContent); }, 300);
+  const clk = new THREE.Clock(); let blinkT = 2;
+  (function loop(){ requestAnimationFrame(loop); if(!GUIDE.on || !GUIDE.ch) return; const dt = Math.min(clk.getDelta(), .05), t = clk.elapsedTime, c = GUIDE.ch;
+    const talking = (window.speechSynthesis && speechSynthesis.speaking) || performance.now() < GUIDE.until;
+    GUIDE.kick = Math.max(0, GUIDE.kick - dt*4);
+    const open = talking ? clamp(.25 + .55*Math.abs(Math.sin(t*13)*Math.sin(t*4.7+1)) + GUIDE.kick*.4, 0, 1) : 0;
+    c.mouth.scale.y = lerp(c.mouth.scale.y, .08 + open*1.0, .5); c.smile.visible = open < .1;
+    blinkT -= dt; const bl = blinkT < .12 ? .1 : 1; if(blinkT < 0) blinkT = 2 + Math.random()*3; c.eyes.forEach(e=>e.scale.y = bl);
+    c.head.rotation.z = Math.sin(t*1.3)*.05 + (talking? Math.sin(t*3)*.04 : 0); c.head.rotation.y = Math.sin(t*.7)*.15;
+    c.rArm.rotation.z = talking ? -.9 + Math.sin(t*3.2)*.35 : -.15; c.rArm.rotation.x = talking ? -.5 + Math.sin(t*2.1)*.25 : 0;
+    c.lArm.rotation.z = talking ? .5 + Math.sin(t*2.6+1)*.2 : .15;
+    c.root.position.y = Math.sin(t*2)*.02;
+    GUIDE.R2.render(GUIDE.S2, GUIDE.C2); })();
+}
+function guideBuild(who){
+  const S2 = GUIDE.S2; if(GUIDE.ch){ S2.remove(GUIDE.ch.root); }
+  const root = new THREE.Group(); S2.add(root);
+  const mk = (geo, col, parent, o)=>{ const m = new THREE.Mesh(geo, new THREE.MeshStandardMaterial(Object.assign({color:new THREE.Color(col), roughness:.6}, o||{}))); (parent||root).add(m); return m; };
+  const skin = "#E8B98A", male = who==="salem";
+  const robe = mk(new THREE.CylinderGeometry(.42,.62,1.25,32), male ? "#F7F5EF" : "#253B5A"); robe.position.y = .62;
+  const chest = mk(new THREE.SphereGeometry(.44,32,20,0,Math.PI*2,0,Math.PI/2), male ? "#F7F5EF" : "#253B5A"); chest.position.y = 1.22;
+  if(male){ const fur = mk(new THREE.CylinderGeometry(.02,.02,.42,8), "#C9A227", null, {metalness:.5}); fur.position.set(0,1.05,.43); const tas = mk(new THREE.SphereGeometry(.05,12,10), "#C9A227", null, {metalness:.5}); tas.position.set(0,.82,.45); }
+  const head = new THREE.Group(); head.position.y = 1.72; root.add(head);
+  mk(new THREE.SphereGeometry(.5,40,30), skin, head);
+  if(male){ const k = mk(new THREE.CylinderGeometry(.47,.5,.3,40), "#FFFFFF", head, {map:canvasTex(256,64,(x,w,h)=>{ x.fillStyle="#fff"; x.fillRect(0,0,w,h); x.strokeStyle="#0B5457"; x.lineWidth=3; for(let i=0;i<w;i+=16){ x.beginPath(); x.arc(i+8,h/2,6,0,7); x.stroke(); x.beginPath(); x.moveTo(i,10); x.lineTo(i+16,10); x.stroke(); } })}); k.position.y = .3; const top = mk(new THREE.SphereGeometry(.47,40,12,0,Math.PI*2,0,Math.PI/2), "#FFFFFF", head); top.position.y = .45; top.scale.y = .25; }
+  else { const hij = mk(new THREE.SphereGeometry(.56,40,30,0,Math.PI*2,0,Math.PI*.58), "#0E7C7B", head); hij.position.y = .02; hij.rotation.x = -.18; const dr = mk(new THREE.CylinderGeometry(.5,.66,.55,32,1,true), "#0E7C7B", head, {side:THREE.DoubleSide}); dr.position.y = -.5; const face = mk(new THREE.CircleGeometry(.36,32), skin, head); face.position.set(0,-.02,.44); }
+  const eyes = [-.17,.17].map(x=>{ const e = new THREE.Group(); e.position.set(x,.08,.43); head.add(e); mk(new THREE.SphereGeometry(.11,24,16), "#FFFFFF", e); const p = mk(new THREE.SphereGeometry(.06,16,12), "#2B1B10", e); p.position.z = .07; const h = mk(new THREE.SphereGeometry(.02,8,6), "#FFFFFF", e, {emissive:"#fff"}); h.position.set(.025,.03,.12); return e; });
+  [-.17,.17].forEach((x,i)=>{ const br = mk(new THREE.BoxGeometry(.17,.035,.03), "#3B2A1E", head); br.position.set(x,.26,.45); br.rotation.z = i? -.12 : .12; });
+  const nose = mk(new THREE.SphereGeometry(.055,16,12), "#D9A274", head); nose.position.set(0,-.04,.5);
+  [-.3,.3].forEach(x=>{ const ch = mk(new THREE.SphereGeometry(.07,16,12), "#F2A7A0", head, {transparent:true, opacity:.6}); ch.position.set(x,-.1,.4); ch.scale.z = .3; });
+  const mouth = mk(new THREE.SphereGeometry(.11,24,16), "#7A1F2B", head); mouth.position.set(0,-.22,.44); mouth.scale.set(1,.08,.4);
+  const smile = mk(new THREE.TorusGeometry(.09,.018,8,20,Math.PI), "#7A1F2B", head); smile.position.set(0,-.18,.47); smile.rotation.z = Math.PI;
+  if(male){ const beard = mk(new THREE.SphereGeometry(.4,32,16,0,Math.PI*2,Math.PI*.62,Math.PI*.38), "#3B2A1E", head); beard.position.y = -.02; beard.scale.set(1,1,1.02); }
+  const arm = (x)=>{ const g = new THREE.Group(); g.position.set(x,1.4,0); root.add(g); const a = mk(new THREE.CapsuleGeometry(.11,.55,6,12), male ? "#F7F5EF" : "#253B5A", g); a.position.y = -.38; const h = mk(new THREE.SphereGeometry(.1,16,12), skin, g); h.position.y = -.78; return g; };
+  const rArm = arm(-.5), lArm = arm(.5);
+  GUIDE.ch = {root, head, eyes, mouth, smile, rArm, lArm};
+}
+function guideSay(text){ if(!GUIDE.ready || !GUIDE.on) return; const b = $("gBubble"); const t = String(text||"").trim(); if(!t){ b.style.display="none"; return; }
+  b.textContent = t.length > 240 ? t.slice(0,237)+"…" : t; b.style.display = "block"; GUIDE.until = performance.now() + Math.max(2500, t.length*65);
+  clearTimeout(GUIDE.hideT); GUIDE.hideT = setTimeout(()=>{ if(!(window.speechSynthesis && speechSynthesis.speaking)) b.style.display = "none"; else GUIDE.hideT = setTimeout(()=>b.style.display="none", 6000); }, Math.max(4000, t.length*80)); }
+
+/* =====================================================================
+   Points & badges (per device) — earned in quizzes, games and lessons
+   ===================================================================== */
+const BADGES = [[50,"🔍 مستكشف"],[150,"🧪 عالم صغير"],[300,"🏅 خبير"],[600,"🏆 عبقري المختبر"],[1000,"👑 أسطورة المعرفة"]];
+const PTS = { n:0 };
+try{ PTS.n = +localStorage.getItem("lab_pts") || 0; }catch(e){}
+function badgeOf(n){ let b = "🌱 مبتدئ"; BADGES.forEach(([k,t])=>{ if(n>=k) b = t; }); return b; }
+function award(n, why){ const before = badgeOf(PTS.n); PTS.n += n; try{ localStorage.setItem("lab_pts", PTS.n); }catch(e){} const after = badgeOf(PTS.n);
+  const c = $("bPts"); if(c){ c.textContent = `⭐ ${PTS.n} · ${after}`; c.classList.add("pop"); setTimeout(()=>c.classList.remove("pop"), 500); }
+  if(after !== before){ toast("🎉 وسام جديد: " + after); confettiBurst(); guideSay("أحسنت! حصلت على وسام " + after); } }
+
+/* =====================================================================
+   Touch game: "أين …؟" — find the named part by tapping its marker
+   ===================================================================== */
+const GAME = { on:false };
+function startFindGame(){
+  if(GAME.on){ endFindGame(); return; }
+  const seen = new Set(), list = [];
+  E.root.traverse(o=>{ if(o.isSprite && o.visible && o.userData.set){ const t = String(o.userData.text||"").trim(); if(t.length>=2 && t.length<=24 && !/[0-9٠-٩✔%°—]/.test(t) && !seen.has(t)){ seen.add(t); list.push(o); } } });
+  if(list.length < 3){ toast("هذا المشهد لا يحتوي على أجزاء مسمّاة كافية للعبة"); return; }
+  GAME.on = true; GAME.list = list; GAME.orig = list.map(s=>s.userData.text); GAME.score = 0; GAME.round = 0; GAME.rounds = Math.min(6, list.length);
+  GAME.order = shuffle(list.map((_,i)=>i)).slice(0, GAME.rounds);
+  list.forEach((s,i)=>{ s.userData.set("؟"); s.userData.gi = i; s.userData.onClick = ()=>gameTap(s); E.clickables.push(s); });
+  $("bGame").classList.add("on"); $("bGame").textContent = "⏹ إنهاء اللعبة"; gameAsk();
+}
+function gameAsk(){ if(GAME.round >= GAME.rounds){ const s = GAME.score; endFindGame(); const msg = `انتهت اللعبة! أصبت ${s} من ${GAME.rounds}`; toast("🏁 " + msg); guideSay(msg + (s===GAME.rounds?" — ممتاز!":"")); if(s===GAME.rounds) confettiBurst(); return; }
+  GAME.target = GAME.order[GAME.round]; GAME.tries = 0; const name = GAME.orig[GAME.target]; $("hint").textContent = `🎮 المس علامة: «${name}» (${GAME.round+1}/${GAME.rounds})`; guideSay("أين " + name + "؟"); speak("أين " + name + "؟"); }
+function gameTap(s){ if(!GAME.on) return; const i = s.userData.gi;
+  if(i === GAME.target){ s.userData.set(GAME.orig[i]); GAME.score += GAME.tries ? 0 : 1; award(GAME.tries ? 5 : 10); toast("✔ صحيح: " + GAME.orig[i]); GAME.round++; setTimeout(gameAsk, 700); }
+  else { GAME.tries++; toast("✖ ليس هذا، حاول مرة أخرى"); } }
+function endFindGame(){ if(!GAME.list) return; GAME.list.forEach((s,i)=>{ s.userData.set(GAME.orig[i]); delete s.userData.onClick; const k = E.clickables.indexOf(s); if(k>=0) E.clickables.splice(k,1); }); GAME.on = false; GAME.list = null; $("bGame").classList.remove("on"); $("bGame").textContent = "🎮 أين هو؟"; $("hint").textContent = "اسحب للتدوير · قرّب بإصبعين أو بالعجلة · انقر على الأجسام"; }
+
+/* =====================================================================
+   Real AR on phones: export the model (GLB for Android Scene Viewer,
+   USDZ for iPhone AR Quick Look) and place it in the room
+   ===================================================================== */
+const IS_IOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+const IS_ANDROID = /Android/i.test(navigator.userAgent);
+function loadScript(src){ return new Promise((res, rej)=>{ const s = document.createElement("script"); s.src = src; s.onload = res; s.onerror = rej; document.head.appendChild(s); }); }
+async function loadExporters(){ const base = "https://cdn.jsdelivr.net/npm/three@0.147.0/examples/js/";
+  if(!THREE.GLTFExporter) await loadScript(base + "exporters/GLTFExporter.js");
+  if(!window.fflate) await loadScript(base + "libs/fflate.min.js");
+  if(!THREE.USDZExporter) await loadScript(base + "exporters/USDZExporter.js"); }
+async function exportModel(ext){
+  await loadExporters();
+  const hidden = [], swapped = [];
+  E.root.traverse(o=>{ if((o.isSprite || o.isInstancedMesh || o.isPoints) && o.visible){ o.visible = false; hidden.push(o); } if(ext==="usdz" && o.isMesh && Array.isArray(o.material)){ swapped.push([o, o.material]); o.material = o.material.find(m=>m.isMeshStandardMaterial) || o.material[0]; } });
+  const box = new THREE.Box3().setFromObject(E.root), size = box.getSize(new THREE.Vector3()), c = box.getCenter(new THREE.Vector3());
+  const keep = {p:E.root.position.clone(), s:E.root.scale.clone()}, k = .8 / Math.max(size.x, size.y, size.z, .01);
+  E.root.scale.multiplyScalar(k); E.root.position.set(E.root.position.x - c.x*k, E.root.position.y - box.min.y*k, E.root.position.z - c.z*k); E.root.updateMatrixWorld(true);
+  try{
+    if(ext==="glb") return await new Promise((res, rej)=>new THREE.GLTFExporter().parse(E.root, r=>res(r), rej, {binary:true, onlyVisible:true}));
+    const u8 = await new THREE.USDZExporter().parse(E.root); return u8.buffer;
+  } finally { E.root.position.copy(keep.p); E.root.scale.copy(keep.s); E.root.updateMatrixWorld(true); hidden.forEach(o=>o.visible = true); swapped.forEach(([o,m])=>o.material = m); }
+}
+async function uploadAndOffer(buf, ext, title){
+  const r = await fetch("/api/armodel?type=" + ext, {method:"POST", credentials:"same-origin", body:buf});
+  const d = await r.json().catch(()=>({})); if(r.status===401) throw new Error("auth"); if(!r.ok || !d.url) throw new Error(d.error || "upload");
+  offerOpen(d.url, ext, title);
+}
+function offerOpen(url, ext, title){
+  const box = document.getElementById("arOffer") || (()=>{ const d = document.createElement("div"); d.id = "arOffer"; document.body.appendChild(d); return d; })();
+  let link;
+  if(ext==="usdz") link = `<a rel="ar" href="${esc(url)}#allowsContentScaling=1" class="btn" style="display:inline-block;text-decoration:none"><img alt="" style="display:none">📱 افتح في الواقع المعزز</a>`;
+  else { const fb = location.origin + "/lab.html"; link = `<a class="btn" style="display:inline-block;text-decoration:none" href="intent://arvr.google.com/scene-viewer/1.0?file=${encodeURIComponent(url)}&mode=ar_preferred&title=${encodeURIComponent(title||"")}#Intent;scheme=https;package=com.google.android.googlequicksearchbox;action=android.intent.action.VIEW;S.browser_fallback_url=${encodeURIComponent(fb)};end;">📱 افتح في الواقع المعزز</a>`; }
+  box.innerHTML = `<div class="aroff"><b>✅ المجسّم جاهز للواقع المعزز</b><p>اضغط الزر، ثم وجّه الكاميرا نحو الأرض أو الطاولة ليظهر المجسّم في مكانك الحقيقي. يمكنك تكبيره وتدويره بإصبعيك والتجول حوله.</p>${link} <button class="btn ghost" onclick="this.closest('#arOffer').remove()">إغلاق</button><p style="font-size:12px;color:#5B6B68;margin-top:8px">ملاحظة: يظهر المجسّم ثابتًا دون الحركة والتسميات. الرابط صالح 7 أيام.</p></div>`;
+}
+async function phoneAR(){
+  if(!IS_IOS && !IS_ANDROID){ toast("⬇️ تم تنزيل المجسّم GLB — افتح المختبر من الهاتف لعرضه في غرفتك"); const buf = await exportModel("glb"); const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([buf],{type:"model/gltf-binary"})); a.download = "مجسم.glb"; a.click(); return; }
+  const ext = IS_IOS ? "usdz" : "glb"; toast("⏳ جارٍ تجهيز المجسّم للواقع المعزز…");
+  try{ const buf = await exportModel(ext); const title = ($("panel").querySelector("h2")||{}).textContent || "";
+    if(RUN_MODE){ parent.postMessage({type:"ar-model", ext, title, buf}, "*", [buf]); return; }
+    await uploadAndOffer(buf, ext, title);
+  }catch(e){ toast(e.message==="auth" ? "سجّل الدخول في المنصة أولًا" : "تعذّر تجهيز المجسّم لهذا المشهد"); }
+}
+async function downloadGLB(){ try{ toast("⏳ جارٍ تصدير المجسّم…"); const buf = await exportModel("glb"); if(RUN_MODE){ parent.postMessage({type:"ar-download", buf}, "*", [buf]); return; } const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([buf],{type:"model/gltf-binary"})); a.download = "مجسم.glb"; a.click(); }catch(e){ toast("تعذّر تصدير المجسّم"); } }
+window.addEventListener("message", async e=>{
+  if(RUN_MODE || !BLD.frame || e.source !== BLD.frame.contentWindow || !e.data) return;
+  if(e.data.type==="ar-model"){ try{ await uploadAndOffer(e.data.buf, e.data.ext, e.data.title); }catch(err){ toast(err.message==="auth" ? "سجّل الدخول في المنصة أولًا" : "تعذّر رفع المجسّم"); } }
+  if(e.data.type==="ar-download"){ const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([e.data.buf],{type:"model/gltf-binary"})); a.download = "مجسم.glb"; a.click(); }
+});
+
+/* =====================================================================
    Home, routing, AR camera, WebXR
    ===================================================================== */
 let filter = "all";
@@ -1957,7 +2115,7 @@ function renderHome(){
 }
 $("chips").addEventListener("click", e=>{ const c=e.target.closest("[data-f]"); if(c){ filter=c.dataset.f; renderHome(); } });
 $("grid").addEventListener("click", e=>{ const c=e.target.closest("[data-x]"); if(c) openXP(c.dataset.x); });
-function showStage(on){ if(!RUN_MODE) $("home").style.display = on?"none":""; if(on && $("builder")) $("builder").style.display="none"; $("stage").classList.toggle("on", on); $("backHome").hidden = !on; window.dispatchEvent(new Event("resize")); }
+function showStage(on){ if(on && typeof guideInit==="function") setTimeout(guideInit, 0); if(!RUN_MODE) $("home").style.display = on?"none":""; if(on && $("builder")) $("builder").style.display="none"; $("stage").classList.toggle("on", on); $("backHome").hidden = !on; window.dispatchEvent(new Event("resize")); }
 function openXP(id){ const x = XP.find(q=>q.id===id); if(!x) return; showStage(true); clearScene(); E.scene.background = null; if(window.speechSynthesis) speechSynthesis.cancel(); x.build(); UI.quiz(QUIZ[id]); history.replaceState(null,"","#"+id); }
 $("backHome").onclick = ()=>{ $("builder").style.display="none"; if(window.speechSynthesis) speechSynthesis.cancel(); clearScene(); showStage(false); history.replaceState(null,"",location.pathname+location.search.replace(/[?&]ai=1[^#]*/,"")); };
 async function runAI(subject, grade, topic){
@@ -1977,7 +2135,7 @@ async function runAI(subject, grade, topic){
     toast(msg);
   }finally{ $("loading").classList.remove("on"); }
 }
-$("aiGo").onclick = ()=>{ const t = $("aiTopic").value.trim(); if(!t){ toast("اكتب عنوان الدرس"); return; } openBuilder($("aiSubject").value, $("aiGrade").value, t, $("aiNotes").value.trim()); };
+$("aiGo").onclick = ()=>{ const t = $("aiTopic").value.trim(); if(!t){ toast("اكتب عنوان الدرس"); return; } BLD.source = $("aiSource").value.trim(); openBuilder($("aiSubject").value, $("aiGrade").value, t, $("aiNotes").value.trim()); };
 $("mySaved").onclick = showSaved;
 $("bSend").onclick = ()=>{ const t = $("bText").value.trim(); if(!t || !BLD.code){ if(!BLD.code) toast("انتظر حتى يجهز المشهد"); return; } $("bText").value = ""; bMsg("me", esc(t)); buildLoop(Object.assign({}, BLD.meta, {mode:"edit", code:BLD.code, request:t}), "✍️ أعدّل المشهد حسب طلبك وأتحقق منه…"); };
 $("bText").addEventListener("keydown", e=>{ if(e.key==="Enter" && !e.shiftKey){ e.preventDefault(); $("bSend").click(); } });
@@ -1991,6 +2149,7 @@ $("grid").addEventListener("click", e=>{ const b = e.target.closest("[data-load]
 $("aiTopic").addEventListener("keydown", e=>{ if(e.key==="Enter") $("aiGo").click(); });
 
 /* toolbar */
+$("bGame").onclick = startFindGame; $("bPhone").onclick = phoneAR; $("bGlb").onclick = downloadGLB; $("bPts").onclick = ()=>toast(`⭐ ${PTS.n} نقطة · ${badgeOf(PTS.n)} — الأوسمة: ${BADGES.map(b=>b[1]+" ("+b[0]+")").join("، ")}`); $("bPts").textContent = `⭐ ${PTS.n} · ${badgeOf(PTS.n)}`;
 $("bQuiz").onclick = ()=>{ const q = $("quizBox"); if(q) q.scrollIntoView({behavior:"smooth", block:"center"}); else toast("لا توجد أسئلة لهذا المشهد"); };
 $("bReset").onclick = ()=>camTo(E.home.pos.toArray(), E.home.target.toArray(), 1);
 $("bSpin").onclick = ()=>{ E.autoSpin = !E.autoSpin; $("bSpin").classList.toggle("on", E.autoSpin); };
