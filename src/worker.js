@@ -58,6 +58,34 @@ async function getPepperKey(db) {
   pepperKey = await crypto.subtle.importKey("raw", enc.encode(row.v), { name: "HMAC", hash: "SHA-256" }, false, ["sign"]);
   return pepperKey;
 }
+// Admins need to read teachers' passwords back (to hand them out / export them), so besides the
+// one-way hash a copy is kept encrypted with AES-GCM under a server-only key; it is decrypted
+// only for admin sessions via /api/credentials and never appears in /api/doc responses.
+let encKey = null;
+async function getEncKey(db) {
+  if (encKey) return encKey;
+  let row = await db.prepare("SELECT v FROM sys WHERE k = 'enc'").first();
+  if (!row) {
+    await db.prepare("INSERT OR IGNORE INTO sys (k, v) VALUES ('enc', ?)").bind(randHex(32)).run();
+    row = await db.prepare("SELECT v FROM sys WHERE k = 'enc'").first();
+  }
+  const raw = new Uint8Array(row.v.match(/../g).map((h) => parseInt(h, 16)));
+  encKey = await crypto.subtle.importKey("raw", raw, { name: "AES-GCM" }, false, ["encrypt", "decrypt"]);
+  return encKey;
+}
+async function encryptCode(db, text) {
+  const iv = new Uint8Array(12); crypto.getRandomValues(iv);
+  const ct = await crypto.subtle.encrypt({ name: "AES-GCM", iv }, await getEncKey(db), enc.encode(text));
+  return hex(iv) + "." + hex(ct);
+}
+async function decryptCode(db, blob) {
+  try {
+    const [ivh, cth] = String(blob || "").split(".");
+    const toBytes = (h) => new Uint8Array(h.match(/../g).map((x) => parseInt(x, 16)));
+    const pt = await crypto.subtle.decrypt({ name: "AES-GCM", iv: toBytes(ivh) }, await getEncKey(db), toBytes(cth));
+    return new TextDecoder().decode(pt);
+  } catch { return ""; }
+}
 const isHashed = (s) => typeof s === "string" && s.startsWith("h1$");
 async function hashPassword(db, password) {
   const salt = randHex(16);
@@ -129,7 +157,7 @@ async function clearFails(db, key) { await db.prepare("DELETE FROM login_fail WH
 
 /* ---------------- what clients may see / write ---------------- */
 function publicTeachers(list) {
-  return (list || []).map((t) => { const { code, ...rest } = t; return { ...rest, code: "", hasCode: !!code }; });
+  return (list || []).map((t) => { const { code, codeEnc, ...rest } = t; return { ...rest, code: "", hasCode: !!code }; });
 }
 function publicInfo(info) {
   if (!info) return info;
@@ -144,10 +172,10 @@ async function mergeTeachers(db, incoming) {
   const out = [];
   for (const t of incoming.list || []) {
     const prev = byId.get(t.id);
-    const { hasCode, ...rec } = t;
-    if (typeof rec.code === "string" && rec.code && !isHashed(rec.code)) rec.code = await hashPassword(db, rec.code);
-    else if (isHashed(rec.code)) rec.code = prev && prev.code === rec.code ? rec.code : (prev?.code || "");
-    else rec.code = hasCode && prev?.code ? prev.code : "";
+    const { hasCode, codeEnc, ...rec } = t;
+    if (typeof rec.code === "string" && rec.code && !isHashed(rec.code)) { rec.codeEnc = await encryptCode(db, rec.code); rec.code = await hashPassword(db, rec.code); }
+    else if (hasCode && prev?.code) { rec.code = prev.code; if (prev.codeEnc) rec.codeEnc = prev.codeEnc; }
+    else rec.code = "";
     out.push(rec);
   }
   return { ...incoming, list: out };
@@ -189,7 +217,7 @@ async function handleLogin(db, request) {
         user = t.isAdmin && mode === "admin"
           ? { role: "admin", name: t.name, teacherId: t.id, coAdmin: true, title: t.title || "" }
           : { role: "teacher", name: t.name, subject: t.subject, teacherId: t.id, title: t.title || "" };
-        if (!isHashed(t.code)) { t.code = await hashPassword(db, password); await putDoc(db, "school/teachers", teachersDoc); }
+        if (!isHashed(t.code) || !t.codeEnc) { t.codeEnc = await encryptCode(db, password); t.code = await hashPassword(db, password); await putDoc(db, "school/teachers", teachersDoc); }
       }
     }
   }
@@ -403,6 +431,15 @@ export default {
             return json({ user: u });
           }
           case "/api/doc": return handleDoc(db, request, await currentUser(db, request));
+          case "/api/credentials": {
+            const user = await currentUser(db, request);
+            if (!user) return json({ error: "unauthorized" }, 401);
+            if (user.role !== "admin") return json({ error: "forbidden" }, 403);
+            const list = (await getDoc(db, "school/teachers"))?.list || [];
+            const out = [];
+            for (const t of list) out.push({ id: t.id, username: t.username || "", code: t.codeEnc ? await decryptCode(db, t.codeEnc) : "", hasCode: !!t.code });
+            return json({ list: out });
+          }
           case "/api/portfolio": return handlePortfolio(db, request, await currentUser(db, request), url);
           default:
             if (url.pathname === "/api/files" || url.pathname.startsWith("/api/files/")) return handleFiles(db, request, await currentUser(db, request), url);

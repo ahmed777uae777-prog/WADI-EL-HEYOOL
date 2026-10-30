@@ -1989,7 +1989,7 @@
     if(target) target.classList.add("active");
     else document.getElementById("view-dashboard").classList.add("active");
     if(id==="dashboard") renderDashboardTiles();
-    if(id==="adminaccounts" && currentUser && currentUser.role==="admin") renderAdminAccounts();
+    if(id==="adminaccounts" && currentUser && currentUser.role==="admin"){ renderAdminAccounts(); accLoadCreds().then(ok=>{ if(ok) renderAdminAccounts(); }); }
     if(id==="lrc" && currentUser) renderLrc(true);
     if(id==="absinbox" && currentUser) renderAbsInbox(true);
     if(id==="portfolio" && currentUser) renderPortfolio(true);
@@ -6136,7 +6136,7 @@ ${points?("نقاط يجب تضمينها صراحة: "+points+"."):""}
       return st==="ok" ? `<span class="pill ok">مفعّل</span>` : st==="off" ? `<span class="pill bad">معطّل</span>` : `<span class="pill wait">بدون كلمة مرور</span>`; };
     const body = rows.map(t=>{
       const shown = accShown.has(t.id);
-      const pass = t.code ? (shown ? escapeHTML(t.code) : "••••••••") : t.hasCode ? `<span style="color:var(--text-muted); font-size:12px;">🔒 مشفّرة</span>` : `<span style="color:var(--text-muted);">—</span>`;
+      const pass = t.code ? (shown ? escapeHTML(t.code) : "••••") : t.hasCode ? `<span style="color:var(--text-muted); font-size:12px;" title="أُنشئت قبل تفعيل الاسترجاع — اضغط 🔢 توليد">🔒 أعد التوليد</span>` : `<span style="color:var(--text-muted);">—</span>`;
       return `<tr data-tid="${escapeHTML(t.id)}">
         <td><span class="subj-badge"><span class="subj-ic">${iconSVG(subjectIconKey(t.subject))}</span><span><span style="font-weight:700;">${escapeHTML(t.name)}</span>${t.title?`<br><span style="font-size:11.5px; color:var(--accent); font-weight:700;">${escapeHTML(t.title)}</span>`:""}</span></span></td>
         <td>${escapeHTML(t.subject||"")}</td>
@@ -6153,6 +6153,18 @@ ${points?("نقاط يجب تضمينها صراحة: "+points+"."):""}
       </tr>`;
     }).join("") || `<tr><td colspan="6" style="text-align:center; color:var(--text-muted); padding:22px;">${teachers.length ? "لا نتائج مطابقة" : "لا يوجد معلمون بعد — اضغط «+ معلم جديد» لإضافة أول معلم."}</td></tr>`;
     tbl.innerHTML = `<thead><tr><th>المعلم</th><th>المادة</th><th>اسم المستخدم</th><th>كلمة المرور</th><th>الحالة</th><th></th></tr></thead><tbody>${body}</tbody>`;
+  }
+  // Admin-only: fetch teachers' current passwords (decrypted by the server) so they can be shown,
+  // sent and exported. Teachers whose password predates this feature show "أعد التوليد".
+  async function accLoadCreds(){
+    if(!window.__serverAuth || !currentUser || currentUser.role!=="admin") return false;
+    try{
+      await schoolDataReady;
+      const r = await fetch("/api/credentials", {cache:"no-store", credentials:"same-origin"}); if(!r.ok) return false;
+      const d = await r.json(); const map = new Map((d.list||[]).map(x=>[x.id, x]));
+      teachers.forEach(t=>{ const c = map.get(t.id); if(c && c.code && !t.code) t.code = c.code; });
+      return true;
+    }catch(e){ return false; }
   }
   function nextNumericUsername(excludeId){
     const taken = new Set(teachers.filter(x=>x.id!==excludeId).map(x=>(x.username||"").toLowerCase()));
@@ -6335,7 +6347,7 @@ ${points?("نقاط يجب تضمينها صراحة: "+points+"."):""}
   document.getElementById("accExportBtn").addEventListener("click", ()=>{
     if(typeof XLSX==="undefined"){ toast("تعذّر تحميل مكتبة Excel"); return; }
     const ordered = teachers.slice().sort((a,b)=> ((b.isAdmin?2:b.title?1:0)-(a.isAdmin?2:a.title?1:0)) || (a.subject||"").localeCompare(b.subject||"","ar") || (a.name||"").localeCompare(b.name||"","ar"));
-    const data = ordered.map(t=>({"الاسم":t.name, "المسمى / المادة":t.title||t.subject, "اسم المستخدم":t.username||"", "كلمة المرور":t.code||(t.hasCode?"(محفوظة مشفّرة — أنشئ جديدة لعرضها)":""), "الحالة": accStatus(t)==="ok"?"مفعّل":accStatus(t)==="off"?"معطّل":"بدون كلمة مرور"}));
+    const data = ordered.map(t=>({"الاسم":t.name, "المسمى / المادة":t.title||t.subject, "اسم المستخدم":t.username||"", "كلمة المرور":t.code||(t.hasCode?"(غير متاحة — اضغط 🔢 توليد)":""), "الحالة": accStatus(t)==="ok"?"مفعّل":accStatus(t)==="off"?"معطّل":"بدون كلمة مرور"}));
     const ws = XLSX.utils.json_to_sheet(data); ws["!cols"]=[{wch:30},{wch:24},{wch:16},{wch:14},{wch:16}];
     const wb = XLSX.utils.book_new(); wb.Workbook = {Views:[{RTL:true}]}; XLSX.utils.book_append_sheet(wb, ws, "المعلمون");
     XLSX.writeFile(wb, "قاعدة-بيانات-المعلمين.xlsx");
