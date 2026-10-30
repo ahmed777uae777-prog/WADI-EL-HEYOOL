@@ -1317,7 +1317,7 @@
           <option value="all">كل الحسابات</option><option value="ok">مفعّلة</option><option value="pending">بدون كلمة مرور</option><option value="off">معطّلة</option>
         </select></div>
         <button class="btn ghost sm" id="accExportBtn">⬇️ تنزيل (Excel)</button>
-        <button class="btn accent sm" id="accBulkBtn">⚡ إنشاء حسابات سهلة لكل من ليس له كلمة مرور</button>
+        <button class="btn accent sm" id="accBulkBtn">⚡ توليد للجميع</button>
       </div>
       <div class="card acc-form" id="accForm" hidden>
         <h3 id="accFormTitle" style="font-size:16px; margin-bottom:14px;">معلم جديد</h3>
@@ -1327,9 +1327,9 @@
         </div>
         <div class="row">
           <div class="field"><label>اسم المستخدم</label>
-            <div class="acc-inline"><input type="text" id="accUser" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="يُولَّد تلقائيًا من الاسم" dir="ltr"><button type="button" class="btn ghost sm" id="accGenUser" title="توليد من الاسم">🔤</button></div></div>
+            <div class="acc-inline"><input type="text" id="accUser" inputmode="numeric" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="رقم — اضغط 🔢 للتوليد" dir="ltr"><button type="button" class="btn ghost sm" id="accGenUser" title="توليد رقم">🔢</button></div></div>
           <div class="field"><label id="accPassLabel">كلمة المرور</label>
-            <div class="acc-inline"><input type="text" id="accPass" autocomplete="off" spellcheck="false" placeholder="اضغط 🎲 للتوليد" dir="ltr"><button type="button" class="btn ghost sm" id="accGenPass" title="توليد كلمة مرور قوية">🎲</button></div></div>
+            <div class="acc-inline"><input type="text" id="accPass" inputmode="numeric" autocomplete="off" spellcheck="false" placeholder="اضغط 🔢 للتوليد" dir="ltr"><button type="button" class="btn ghost sm" id="accGenPass" title="توليد ٤ أرقام">🔢</button></div></div>
         </div>
         <label class="acc-check"><input type="checkbox" id="accActive" checked> الحساب مفعّل (يستطيع تسجيل الدخول)</label>
         <div class="row"><div class="field"><label>المسمى الوظيفي (اختياري)</label><input type="text" id="accTitle" list="accTitleList" placeholder="مثال: مساعدة مدير المدرسة، أخصائي قواعد البيانات"><datalist id="accTitleList"><option value="مدير المدرسة"><option value="مساعدة مدير المدرسة"><option value="مساعد مدير المدرسة"><option value="أخصائي قواعد البيانات"><option value="أخصائية مصادر التعلم"><option value="أخصائي مصادر التعلم"><option value="أخصائي اجتماعي"><option value="أخصائية اجتماعية"></datalist></div></div>
@@ -6145,14 +6145,22 @@ ${points?("نقاط يجب تضمينها صراحة: "+points+"."):""}
         <td>${pill(t)}</td>
         <td><div class="acc-actions">
           <button class="btn ghost sm" data-acc="edit">✏️ تعديل</button>
-          <button class="btn ghost sm" data-acc="reset">🎲 كلمة مرور جديدة</button>
-          <button class="btn ghost sm" data-acc="numeric" title="اسم مستخدم وكلمة مرور بالأرقام">🔢 بالأرقام</button>
+          <button class="btn ghost sm" data-acc="numeric" title="توليد اسم مستخدم وكلمة مرور بالأرقام">🔢 توليد</button>
+          ${t.code ? `<button class="btn sm" data-acc="wa" title="إرسال البيانات عبر واتساب">📤 واتساب</button><button class="btn ghost sm" data-acc="copy" title="نسخ رسالة البيانات">📋 نسخ</button>` : ""}
           <button class="btn ghost sm" data-acc="toggle">${t.active===false?"✅ تفعيل":"⛔ تعطيل"}</button>
           <button class="btn ghost sm danger-text" data-acc="delete">🗑️ حذف</button>
         </div></td>
       </tr>`;
     }).join("") || `<tr><td colspan="6" style="text-align:center; color:var(--text-muted); padding:22px;">${teachers.length ? "لا نتائج مطابقة" : "لا يوجد معلمون بعد — اضغط «+ معلم جديد» لإضافة أول معلم."}</td></tr>`;
     tbl.innerHTML = `<thead><tr><th>المعلم</th><th>المادة</th><th>اسم المستخدم</th><th>كلمة المرور</th><th>الحالة</th><th></th></tr></thead><tbody>${body}</tbody>`;
+  }
+  function nextNumericUsername(excludeId){
+    const taken = new Set(teachers.filter(x=>x.id!==excludeId).map(x=>(x.username||"").toLowerCase()));
+    if(schoolInfo.adminUsername) taken.add(String(schoolInfo.adminUsername).toLowerCase());
+    let n = 1001; while(taken.has(String(n))) n++; return String(n);
+  }
+  function accCredText(t){
+    return `السلام عليكم أ. ${t.name}\nبيانات دخولك إلى منصة المعلّم الذكية — ${schoolInfo.name||"مدرسة وادي الحيول"}:\n🔗 الرابط: ${location.origin}\n👤 اسم المستخدم: ${t.username}\n🔑 كلمة المرور: ${t.code}\nيرجى عدم مشاركة هذه البيانات مع أحد.`;
   }
   function accOpenForm(t){
     accEditingId = t ? t.id : null;
@@ -6161,7 +6169,7 @@ ${points?("نقاط يجب تضمينها صراحة: "+points+"."):""}
     document.getElementById("accSubject").value = t ? (t.subject||"") : "";
     document.getElementById("accUser").value = t ? (t.username||"") : "";
     document.getElementById("accPass").value = "";
-    document.getElementById("accPass").placeholder = t && hasPass(t) ? "اتركها فارغة للإبقاء على الحالية" : "اضغط 🎲 للتوليد";
+    document.getElementById("accPass").placeholder = t && hasPass(t) ? "اتركها فارغة للإبقاء على الحالية" : "اضغط 🔢 للتوليد";
     document.getElementById("accActive").checked = t ? t.active!==false : true;
     document.getElementById("accIsAdmin").checked = !!(t && t.isAdmin);
     document.getElementById("accAdminWrap").hidden = !(currentUser && currentUser.main);
@@ -6179,13 +6187,13 @@ ${points?("نقاط يجب تضمينها صراحة: "+points+"."):""}
   document.getElementById("accFilter").addEventListener("change", ()=> renderAdminAccounts());
   document.getElementById("accGenUser").addEventListener("click", ()=>{
     const n = document.getElementById("accName").value.trim();
-    if(!n){ accFormError("اكتب اسم المعلم أولًا لتوليد اسم المستخدم."); return; }
-    document.getElementById("accUser").value = generateUsername(n, accEditingId);
+    if(!n && false){ return; }
+    document.getElementById("accUser").value = nextNumericUsername(accEditingId);
   });
-  document.getElementById("accGenPass").addEventListener("click", ()=>{ document.getElementById("accPass").value = generatePassword(10); });
+  document.getElementById("accGenPass").addEventListener("click", ()=>{ document.getElementById("accPass").value = easyPin(); });
   document.getElementById("accName").addEventListener("blur", ()=>{
     const u = document.getElementById("accUser"); const n = document.getElementById("accName").value.trim();
-    if(!accEditingId && n && !u.value.trim()) u.value = generateUsername(n, null);
+    if(!accEditingId && n && !u.value.trim()) u.value = nextNumericUsername(null);
   });
   document.getElementById("accSaveBtn").addEventListener("click", async ()=>{
     const name = document.getElementById("accName").value.trim();
@@ -6239,6 +6247,13 @@ ${points?("نقاط يجب تضمينها صراحة: "+points+"."):""}
     await schoolDataReady;
     const snapshot = JSON.stringify(teachers);
     let msg = "";
+    if(act==="wa" || act==="copy"){
+      if(!t.code){ toast("ولّد كلمة المرور أولًا"); return; }
+      const text = accCredText(t);
+      if(act==="wa"){ window.open("https://wa.me/?text="+encodeURIComponent(text), "_blank", "noopener"); return; }
+      try{ await navigator.clipboard.writeText(text); toast("📋 تم نسخ رسالة البيانات"); }catch(e){ window.prompt("انسخ الرسالة:", text); }
+      return;
+    }
     if(act==="numeric"){
       const taken = new Set(teachers.filter(x=>x.id!==t.id).map(x=>(x.username||"").toLowerCase()));
       if(schoolInfo.adminUsername) taken.add(String(schoolInfo.adminUsername).toLowerCase());
@@ -6293,15 +6308,22 @@ ${points?("نقاط يجب تضمينها صراحة: "+points+"."):""}
   }
   document.getElementById("accBulkBtn").addEventListener("click", async ()=>{
     await schoolDataReady;
-    const targets = teachers.filter(t=>!hasPass(t) && t.active!==false)
+    const targets = teachers.filter(t=>t.active!==false)
       .sort((a,b)=> ((b.isAdmin?2:b.title?1:0)-(a.isAdmin?2:a.title?1:0)) || (a.subject||"").localeCompare(b.subject||"","ar") || (a.name||"").localeCompare(b.name||"","ar"));
-    if(!targets.length){ toast("كل الحسابات لديها كلمات مرور بالفعل"); return; }
-    if(!window.confirm(`سيتم إنشاء ${targets.length} حسابًا:\n• اسم المستخدم: رقم من 4 خانات (1001، 1002، ...)\n• كلمة المرور: 4 أرقام\nثم يُنزَّل ملف Excel بالقائمة. الحسابات التي لها كلمة مرور لن تتغير.`)) return;
+    if(!targets.length){ toast("لا يوجد معلمون مفعّلون"); return; }
+    const withPass = targets.filter(t=>hasPass(t)).length;
+    if(!window.confirm(`توليد بيانات دخول جديدة لـ ${targets.length} معلمًا:\n• اسم المستخدم: رقم من 4 خانات\n• كلمة المرور: 4 أرقام${withPass?`\n\n⚠️ ${withPass} معلمًا لديهم كلمة مرور حالية ستتغيّر، ولن تعمل كلماتهم القديمة.`:""}\n\nبعدها يُنزَّل ملف Excel بالقائمة، وتستطيع إرسال بيانات كل معلم عبر واتساب.`)) return;
     const snapshot = JSON.stringify(teachers);
-    const taken = new Set(teachers.filter(t=>hasPass(t)).map(t=>(t.username||"").toLowerCase()));
-    if(schoolInfo.adminUsername) taken.add(schoolInfo.adminUsername.toLowerCase());
+    const keep = new Set();
+    const taken = new Set(teachers.filter(t=>!targets.includes(t)).map(t=>(t.username||"").toLowerCase()));
+    if(schoolInfo.adminUsername) taken.add(String(schoolInfo.adminUsername).toLowerCase());
+    targets.forEach(t=>{ if(/^\d{4}$/.test(t.username||"") && !taken.has(t.username) && !keep.has(t.username)) keep.add(t.username); });
+    keep.forEach(u=>taken.add(u));
     let n = 1001;
-    targets.forEach(t=>{ while(taken.has(String(n))) n++; t.username = String(n); taken.add(String(n)); n++; t.code = easyPin(); accShown.add(t.id); });
+    targets.forEach(t=>{
+      if(!(/^\d{4}$/.test(t.username||"") && keep.has(t.username))){ while(taken.has(String(n))) n++; t.username = String(n); taken.add(String(n)); n++; }
+      t.code = easyPin(); accShown.add(t.id);
+    });
     const btn = document.getElementById("accBulkBtn"); btn.disabled = true;
     const ok = await saveTeachers(); btn.disabled = false;
     if(!ok){ teachers = JSON.parse(snapshot); toast("⚠️ تعذّر الحفظ — تحقق من الاتصال وحاول مرة أخرى"); renderAdminAccounts(); return; }
