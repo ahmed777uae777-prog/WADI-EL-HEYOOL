@@ -2626,8 +2626,9 @@ ${fields.map(f=>GAME_SPEC[f]).join(",\n")}
     const withStudents = new Set((schoolStudents||[]).filter(x=>x.active!==false).map(x=>x.gradeId));
     gSel.innerHTML = `<option value="">— قائمة طلابي —</option>` + grades.slice().sort((a,b)=>a.order-b.order).filter(g=>withStudents.has(g.id)).map(g=>`<option value="${escapeHTML(g.id)}">${escapeHTML(g.name)}</option>`).join("");
     gSel.value = [...gSel.options].some(o=>o.value===curG) ? curG : "";
-    const secs = gSel.value ? sectionsOfGrade(gSel.value).filter(sc=>sc.kind!=="elective" && (schoolStudents||[]).some(x=>x.sectionId===sc.id && x.active!==false)) : [];
-    sSel.innerHTML = secs.length ? secs.map(sc=>`<option value="${escapeHTML(sc.id)}">${escapeHTML(sectionShort(sc.id))}</option>`).join("") : `<option value="">—</option>`;
+    const secs = gSel.value ? sectionsOfGrade(gSel.value).filter(sc=>sc.kind!=="elective") : [];
+    const cnt = id => (schoolStudents||[]).filter(x=>x.sectionId===id && x.active!==false).length;
+    sSel.innerHTML = secs.length ? secs.map(sc=>`<option value="${escapeHTML(sc.id)}">${escapeHTML(sectionShort(sc.id))} — ${cnt(sc.id)} طالب</option>`).join("") : `<option value="">—</option>`;
     sSel.value = [...sSel.options].some(o=>o.value===curS) ? curS : (secs[0] ? secs[0].id : "");
     sSel.disabled = !gSel.value;
   }
@@ -3028,6 +3029,23 @@ ${fields.map(f=>GAME_SPEC[f]).join(",\n")}
     const n = String(sec.name).trim().replace(/[٠-٩]/g, d=>"٠١٢٣٤٥٦٧٨٩".indexOf(d));
     return n==="1" ? "بنين" : n==="2" ? "بنات" : "";
   }
+  function nameGender(name){
+    const n = " "+String(name||"").replace(/\s+/g," ")+" ";
+    if(/ بنت /.test(n)) return "بنات";
+    if(/ بن /.test(n)) return "بنين";
+    return "";
+  }
+  function genderSectionFor(gradeId, name, fallbackId){
+    const g = gradeById(gradeId); if(!g || (g.order||0) < 7) return fallbackId;
+    const want = nameGender(name); if(!want) return fallbackId;
+    const sec = sectionsOfGrade(gradeId).find(sc=>sectionGender(sc)===want);
+    return sec ? sec.id : fallbackId;
+  }
+  function fixStudentGenderSections(){
+    let changed = 0;
+    (schoolStudents||[]).forEach(st=>{ const to = genderSectionFor(st.gradeId, st.name, st.sectionId); if(to && to!==st.sectionId){ st.sectionId = to; changed++; } });
+    return changed;
+  }
   function sectionShort(id){
     const sec = sectionById(id); if(!sec) return "-";
     const gd = sectionGender(sec);
@@ -3313,6 +3331,9 @@ ${fields.map(f=>GAME_SPEC[f]).join(",\n")}
           schoolStudents = remoteStu.concat(localOnlyStu);
           if(localOnlyStu.length) saveStudentsRoster();
         }
+        // Grades 7-12: boys in section 1, girls in section 2 — place students by the gender in
+        // their name (بنت / بن) and persist the correction (admins only can write the roster).
+        if(fixStudentGenderSections() && currentUser && currentUser.role==="admin") saveStudentsRoster();
         // else: leave empty — an admin must actually enter/import the real roster; nothing invented.
         if(stuAbsSnap.exists && Array.isArray(stuAbsSnap.data().list)){
           const remoteStuAbs = cloneList(stuAbsSnap.data().list);
@@ -7902,7 +7923,9 @@ ${fields.map(f=>GAME_SPEC[f]).join(",\n")}
       if(ministry){
         let updated=0, added=0, skipped=0;
         ministry.forEach(m=>{
-          const section = findSectionByLabel(m.grade.id, m.sectionText);
+          let section = findSectionByLabel(m.grade.id, m.sectionText);
+          const gSec = genderSectionFor(m.grade.id, m.name, section ? section.id : null);
+          if(gSec) section = sectionById(gSec) || section;
           if(!section){ skipped++; return; }
           const existing = schoolStudents.find(s=> (m.academicId && s.academicId===m.academicId) || (s.name===m.name && s.gradeId===m.grade.id && s.sectionId===section.id));
           if(existing){
