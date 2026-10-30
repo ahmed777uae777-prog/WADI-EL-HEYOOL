@@ -285,7 +285,12 @@ export default {
         return json({ error: "server_error" }, 500);
       }
     }
-    if (/^\/admin\/?$/i.test(url.pathname)) return env.ASSETS.fetch(new Request(new URL("/", url), request));
-    return env.ASSETS.fetch(request);
+    const asset = /^\/admin\/?$/i.test(url.pathname)
+      ? await env.ASSETS.fetch(new Request(new URL("/", url), request))
+      : await env.ASSETS.fetch(request);
+    // Always revalidate the app page so every update shows up immediately (no stale copies).
+    const res = new Response(asset.body, asset);
+    if ((res.headers.get("content-type") || "").includes("text/html")) res.headers.set("cache-control", "no-cache, must-revalidate");
+    return res;
   },
 };
