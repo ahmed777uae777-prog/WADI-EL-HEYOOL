@@ -6146,6 +6146,7 @@ ${points?("نقاط يجب تضمينها صراحة: "+points+"."):""}
         <td><div class="acc-actions">
           <button class="btn ghost sm" data-acc="edit">✏️ تعديل</button>
           <button class="btn ghost sm" data-acc="reset">🎲 كلمة مرور جديدة</button>
+          <button class="btn ghost sm" data-acc="numeric" title="اسم مستخدم وكلمة مرور بالأرقام">🔢 بالأرقام</button>
           <button class="btn ghost sm" data-acc="toggle">${t.active===false?"✅ تفعيل":"⛔ تعطيل"}</button>
           <button class="btn ghost sm danger-text" data-acc="delete">🗑️ حذف</button>
         </div></td>
@@ -6238,7 +6239,14 @@ ${points?("نقاط يجب تضمينها صراحة: "+points+"."):""}
     await schoolDataReady;
     const snapshot = JSON.stringify(teachers);
     let msg = "";
-    if(act==="reset"){
+    if(act==="numeric"){
+      const taken = new Set(teachers.filter(x=>x.id!==t.id).map(x=>(x.username||"").toLowerCase()));
+      if(schoolInfo.adminUsername) taken.add(String(schoolInfo.adminUsername).toLowerCase());
+      let n = 1001; while(taken.has(String(n))) n++;
+      t.username = /^\d{4}$/.test(t.username||"") && !taken.has(t.username) ? t.username : String(n);
+      t.code = easyPin(); accShown.add(t.id);
+      msg = `${t.name}: اسم المستخدم ${t.username} — كلمة المرور ${t.code}`;
+    } else if(act==="reset"){
       if(!t.username) t.username = generateUsername(t.name, t.id);
       t.code = generatePassword(10); accShown.add(t.id);
       msg = `كلمة مرور جديدة لـ ${t.name}: ${t.code}`;
@@ -6259,7 +6267,7 @@ ${points?("نقاط يجب تضمينها صراحة: "+points+"."):""}
     const ok = await saveTeachers();
     if(!ok){ teachers = JSON.parse(snapshot); toast("⚠️ تعذّر الحفظ — تحقق من الاتصال وحاول مرة أخرى"); renderAdminAccounts(); return; }
     if(act==="admin"){ logAction(t.isAdmin ? "منح صلاحية مدير" : "إلغاء صلاحية مدير", {teacher:t.name}); toast(msg); renderAdminAccounts(); return; }
-    logAction(act==="delete" ? "حذف معلم" : act==="reset" ? "إعادة تعيين كلمة مرور معلم" : (t.active===false ? "تعطيل حساب معلم" : "تفعيل حساب معلم"), {teacher:t.name});
+    logAction(act==="delete" ? "حذف معلم" : (act==="reset"||act==="numeric") ? "إعادة تعيين كلمة مرور معلم" : (t.active===false ? "تعطيل حساب معلم" : "تفعيل حساب معلم"), {teacher:t.name});
     toast(msg);
     renderAdminAccounts();
   });
