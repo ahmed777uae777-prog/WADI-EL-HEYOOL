@@ -426,6 +426,55 @@ async function handleAI(db, env, request, user) {
   }
 }
 
+/* ---------------- lesson media: AI images + YouTube videos ---------------- */
+const IMG_MODEL = "@cf/black-forest-labs/flux-1-schnell";
+async function bumpUsage(db, key, limit) {
+  const now = Date.now();
+  const u = await db.prepare("SELECT n, until FROM ai_usage WHERE k = ?").bind(key).first();
+  const n = u && u.until > now ? u.n + 1 : 1;
+  if (n > limit) return false;
+  await db.prepare("INSERT INTO ai_usage (k, n, until) VALUES (?1, ?2, ?3) ON CONFLICT(k) DO UPDATE SET n = ?2, until = ?3")
+    .bind(key, n, u && u.until > now ? u.until : now + 3600e3).run();
+  return true;
+}
+async function handleImage(db, env, request, user) {
+  if (!user) return json({ error: "session_expired" }, 401);
+  if (!env.AI) return json({ error: "capability_disabled" }, 503);
+  if (request.method !== "POST") return json({ error: "method_not_allowed" }, 405);
+  if (!(await bumpUsage(db, "img:" + (user.teacherId || user.role), 30))) return json({ error: "rate_limited" }, 429);
+  const body = await request.json().catch(() => ({}));
+  const prompt = clip(body.prompt, 600).trim();
+  if (!prompt) return json({ error: "empty_prompt" }, 400);
+  try {
+    const out = await env.AI.run(IMG_MODEL, { prompt: prompt + ", clean educational illustration for school students, bright colors, no text, no letters", steps: 4 });
+    if (!out || !out.image) return json({ error: "upstream_error" }, 502);
+    return json({ image: "data:image/jpeg;base64," + out.image });
+  } catch (err) {
+    const m = String(err && err.message || err);
+    return json({ error: /limit|quota|429|neurons/i.test(m) ? "rate_limited" : "upstream_error" }, 502);
+  }
+}
+async function handleVideos(db, request, user, url) {
+  if (!user) return json({ error: "session_expired" }, 401);
+  const q = clip(url.searchParams.get("q"), 200).trim();
+  if (!q) return json({ list: [] });
+  if (!(await bumpUsage(db, "vid:" + (user.teacherId || user.role), 60))) return json({ error: "rate_limited" }, 429);
+  try {
+    const r = await fetch("https://www.youtube.com/results?hl=ar&gl=OM&search_query=" + encodeURIComponent(q), {
+      headers: { "accept-language": "ar,en;q=0.8", "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124 Safari/537.36", "cookie": "CONSENT=YES+1; SOCS=CAI" } });
+    const html = await r.text();
+    const list = [], seen = new Set();
+    const re = /"videoRenderer":\{"videoId":"([\w-]{11})"[\s\S]{0,1500}?"title":\{"runs":\[\{"text":"((?:[^"\\]|\\.)*)"/g;
+    let m;
+    while ((m = re.exec(html)) && list.length < 4) {
+      if (seen.has(m[1])) continue; seen.add(m[1]);
+      let title = m[2]; try { title = JSON.parse('"' + m[2] + '"'); } catch {}
+      list.push({ id: m[1], title });
+    }
+    return json({ list });
+  } catch { return json({ list: [] }); }
+}
+
 /* ---------------- optional site-wide Basic Auth ---------------- */
 function basicAuthorized(request, env) {
   const h = request.headers.get("authorization") || "";
@@ -480,6 +529,8 @@ export default {
             return json({ list: out });
           }
           case "/api/portfolio": return handlePortfolio(db, request, await currentUser(db, request), url);
+          case "/api/image": return handleImage(db, env, request, await currentUser(db, request));
+          case "/api/videos": return handleVideos(db, request, await currentUser(db, request), url);
           case "/api/ai": return handleAI(db, env, request, request.method === "GET" ? null : await currentUser(db, request));
           default:
             if (url.pathname === "/api/files" || url.pathname.startsWith("/api/files/")) return handleFiles(db, request, await currentUser(db, request), url);

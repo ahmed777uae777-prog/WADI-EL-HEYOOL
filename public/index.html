@@ -349,6 +349,26 @@
   .btn.accent:hover{filter:brightness(.94);}
   .btn.sm{padding:7px 13px; font-size:12.5px;}
 
+  .lp{white-space:normal;font-size:15.5px;line-height:1.9}
+  .lp-title{display:flex;align-items:center;gap:10px;justify-content:center;background:linear-gradient(135deg,#FFF7E4,#E3EFEE);border:2px dashed #E2B864;border-radius:999px;padding:10px 18px;font-family:Cairo,sans-serif;font-weight:800;font-size:20px;color:#0B5457;margin-bottom:14px}
+  .lp-sec{background:#fff;border:1px solid #E3DED1;border-radius:16px;padding:12px 16px;margin-bottom:12px}
+  .lp-sec h3{margin:0 0 6px;font-family:Cairo,sans-serif;font-size:17px;color:#0B5457;display:flex;align-items:center;gap:8px}
+  .lp-sec ul{margin:4px 0;padding-inline-start:22px}
+  .lp-two{display:grid;grid-template-columns:1fr 1fr;gap:10px}@media(max-width:640px){.lp-two{grid-template-columns:1fr}}
+  .lp-box{background:#F6F1E6;border-radius:12px;padding:8px 12px}.lp-box b{color:#9A6B1F}
+  .lp-obj{display:grid;grid-template-columns:44px 1fr;gap:12px;align-items:start;border-top:1px dashed #E3DED1;padding-top:10px;margin-top:10px}
+  .lp-obj:first-of-type{border-top:0;margin-top:0;padding-top:0}
+  .lp-num{width:40px;height:40px;border-radius:50%;border:2.5px solid #0B5457;display:grid;place-items:center;font-family:Cairo,sans-serif;font-weight:800;font-size:18px;color:#0B5457}
+  .lp-obj .goal{font-weight:800;margin-bottom:6px}
+  .lp-tags{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:8px}
+  .lp-tag{border-radius:12px;padding:8px 10px;font-size:14.5px}.lp-tag b{display:block;font-size:13px}
+  .lp-tag.s{background:#E3EFEE}.lp-tag.f{background:#FFF1D6}.lp-tag.e{background:#F1E6F7}
+  .lp-media{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,300px));justify-content:center;gap:10px;margin-top:8px}
+  .lp-img{border-radius:12px;overflow:hidden;background:#F6F1E6;min-height:150px;display:grid;place-items:center;text-align:center;font-size:13px;color:#5B6B68}
+  .lp-img img{width:100%;display:block;aspect-ratio:1/1;object-fit:cover}.lp-img figcaption{padding:6px 8px;font-size:13px;color:#14302F}
+  .lp-vid{border-radius:12px;overflow:hidden;background:#000}.lp-vid iframe{width:100%;aspect-ratio:16/9;border:0;display:block}
+  .lp-vid div{background:#fff;padding:6px 8px;font-size:13px}
+  .lp-yt{display:inline-flex;gap:6px;align-items:center;background:#B23A3A;color:#fff!important;text-decoration:none;border-radius:999px;padding:6px 14px;font-weight:700;margin-top:6px}
   .result-box{
     background:var(--surface-2); border:1px solid var(--border); border-radius:var(--radius-m);
     padding:16px; margin-top:14px; white-space:pre-wrap; font-size:14px; line-height:1.85; min-height:40px;
@@ -801,7 +821,7 @@
 
   <section class="view" id="view-lesson">
     <div class="card">
-      <div class="view-head"><h2>🎯 مولد الدرس الكامل</h2><p>أهداف + أنشطة + تقويم، جاهزة للاستخدام مباشرة.</p></div>
+      <div class="view-head"><h2>🎯 مولد الدرس الكامل</h2><p>خطة كاملة على نموذج المدرسة: التهيئة ← التقويم القبلي ← التمهيد بالصور والفيديو ← الأهداف (استراتيجية + نشاط تكويني + نشاط إثرائي) ← التطبيق الموجّه والتعلم الذاتي ← النشاط الختامي.</p></div>
       <div class="row">
         <div class="field"><label>المادة</label><input type="text" id="lsSubject" placeholder="مثال: العلوم"></div>
         <div class="field"><label>الصف</label><input type="text" id="lsGrade" placeholder="مثال: الصف السادس"></div>
@@ -809,10 +829,12 @@
       <div class="field"><label>موضوع الدرس</label><input type="text" id="lsTopic" placeholder="مثال: دورة الماء في الطبيعة"></div>
       <div class="field"><label>ملاحظات إضافية (اختياري)</label><textarea id="lsNotes" placeholder="أي تفاصيل تريد مراعاتها..."></textarea></div>
       <button class="btn" id="lsGenBtn">✨ توليد الدرس</button>
+      <div class="field"><label>عدد الأهداف</label><select id="lsObjCount"><option>2</option><option selected>3</option><option>4</option></select></div>
       <div class="result-box empty" id="lsResult">اضغط "توليد الدرس" لعرض النتيجة هنا.</div>
       <div class="result-actions" id="lsActions" hidden>
-        <button class="btn ghost sm" data-copy="lsResult">📋 نسخ</button>
-        <button class="btn ghost sm" data-dl="lsResult" data-dlname="خطة_الدرس">⬇️ تنزيل</button>
+        <button class="btn ghost sm" id="lsCopyBtn">📋 نسخ</button>
+        <button class="btn ghost sm" id="lsPrintBtn">🖨️ طباعة / PDF</button>
+        <button class="btn ghost sm" id="lsWordBtn">⬇️ تنزيل Word</button>
       </div>
     </div>
   </section>
@@ -2356,23 +2378,129 @@
     if(d){ downloadText((d.dataset.dlname||"محتوى")+".txt", document.getElementById(d.dataset.dl).textContent); }
   });
 
-  document.getElementById("lsGenBtn").addEventListener("click", ()=>{
+  /* ---------- Lesson generator — school plan template (التهيئة، التقويم القبلي، التمهيد، الأهداف…) ---------- */
+  let lsLast = null;
+  function lsList(arr){ arr = Array.isArray(arr) ? arr : (arr ? [arr] : []); return arr.length ? `<ul>${arr.map(x=>`<li>${escapeHTML(String(x))}</li>`).join("")}</ul>` : ""; }
+  function lsTxt(x){ return escapeHTML(Array.isArray(x) ? x.join("، ") : String(x||"")); }
+  function renderLessonPlan(d, meta){
+    const objs = Array.isArray(d.objectives) ? d.objectives : [];
+    const pre = d.preparation || {}, w = d.warmup || {}, pa = d.preAssessment || {};
+    const imgs = (Array.isArray(w.images) ? w.images : []).slice(0,3);
+    return `<div class="lp">
+      <div class="lp-title">🌈 عنوان الدرس: ${escapeHTML(d.title || meta.topic)}</div>
+      <div style="text-align:center;color:#5B6B68;margin:-6px 0 12px;font-size:14px">${escapeHTML(meta.subject)} — ${escapeHTML(meta.grade)}</div>
+      <div class="lp-sec"><h3>✨ التهيئة</h3><div class="lp-two">
+        <div class="lp-box"><b>مادية (أنشطة – مواد – مجسمات)</b>${lsList(pre.material)}</div>
+        <div class="lp-box"><b>معنوية (الطالب)</b>${lsList(pre.moral)}</div></div></div>
+      <div class="lp-sec"><h3>📝 التقويم القبلي <small style="font-weight:600;color:#5B6B68">(جماعي – يستهدف جميع الطلبة)</small></h3>
+        ${pa.activity?`<div>${lsTxt(pa.activity)}</div>`:""}${lsList(pa.questions)}</div>
+      <div class="lp-sec"><h3>🎬 التمهيد <small style="font-weight:600;color:#5B6B68">(صور – فيديو – نماذج من مشاريع الطلبة)</small></h3>
+        <div>${lsTxt(w.text)}</div>
+        ${w.studentModels?`<div class="lp-box" style="margin-top:6px"><b>نماذج من مشاريع الطلبة:</b> ${lsTxt(w.studentModels)}</div>`:""}
+        <div class="lp-media" id="lsImgs">${imgs.map((im,i)=>`<figure class="lp-img" data-i="${i}" style="margin:0"><span>⏳ جارٍ إنشاء الصورة…</span><figcaption>${escapeHTML(im.caption||"")}</figcaption></figure>`).join("")}</div>
+        <div class="lp-media" id="lsVids" style="margin-top:10px"><div class="lp-img"><span>⏳ جارٍ البحث عن فيديو مناسب…</span></div></div>
+      </div>
+      <div class="lp-sec"><h3>🎯 أهداف الدرس</h3>
+        ${objs.map((o,i)=>`<div class="lp-obj"><div class="lp-num">${i+1}</div><div>
+          <div class="goal">${lsTxt(o.objective)}</div>
+          <div class="lp-tags">
+            <div class="lp-tag s"><b>🧠 الاستراتيجية</b>${lsTxt(o.strategy)}</div>
+            <div class="lp-tag f"><b>✍️ نشاط تكويني</b>${lsTxt(o.formative)}</div>
+            <div class="lp-tag e"><b>🚀 نشاط إثرائي</b>${lsTxt(o.enrichment)}</div>
+          </div></div></div>`).join("")}</div>
+      <div class="lp-sec"><h3>🤝 التطبيق الموجّه + التعلّم الذاتي</h3><div class="lp-two">
+        <div class="lp-box"><b>التطبيق الموجّه</b>${lsList(d.guidedPractice)}</div>
+        <div class="lp-box"><b>التعلّم الذاتي</b>${lsList(d.selfLearning)}</div></div></div>
+      <div class="lp-sec"><h3>🏁 النشاط الختامي</h3><div>${lsTxt(d.closing)}</div></div>
+    </div>`;
+  }
+  function lessonPlainText(d, meta){
+    const L=[], obj=d.objectives||[], pre=d.preparation||{}, w=d.warmup||{}, pa=d.preAssessment||{};
+    const arr=x=>(Array.isArray(x)?x:(x?[x]:[])).map(y=>"  • "+y).join("\n");
+    L.push("عنوان الدرس: "+(d.title||meta.topic), meta.subject+" — "+meta.grade, "");
+    L.push("التهيئة:", " مادية:", arr(pre.material), " معنوية:", arr(pre.moral), "");
+    L.push("التقويم القبلي (جماعي):", pa.activity||"", arr(pa.questions), "");
+    L.push("التمهيد:", w.text||"", w.studentModels?("نماذج من مشاريع الطلبة: "+w.studentModels):"", "");
+    L.push("أهداف الدرس:"); obj.forEach((o,i)=>L.push(`${i+1}) ${o.objective}`, "   الاستراتيجية: "+o.strategy, "   نشاط تكويني: "+o.formative, "   نشاط إثرائي: "+o.enrichment));
+    L.push("", "التطبيق الموجّه:", arr(d.guidedPractice), "التعلّم الذاتي:", arr(d.selfLearning), "", "النشاط الختامي:", d.closing||"");
+    return L.filter(x=>x!==undefined).join("\n");
+  }
+  async function loadLessonImages(w){
+    const figs = document.querySelectorAll("#lsImgs .lp-img");
+    const imgs = (w.images||[]).slice(0,3);
+    await Promise.all(imgs.map(async (im,i)=>{
+      const f = figs[i]; if(!f) return;
+      try{
+        const r = await fetch("/api/image",{method:"POST",credentials:"same-origin",headers:{"content-type":"application/json"},body:JSON.stringify({prompt:im.prompt||im.caption||""})});
+        const dj = await r.json().catch(()=>({}));
+        if(!r.ok || !dj.image) throw new Error(dj.error||"x");
+        f.querySelector("span").outerHTML = `<img alt="${escapeHTML(im.caption||"")}" src="${dj.image}">`;
+      }catch(e){ f.querySelector("span").textContent = "تعذّر إنشاء الصورة الآن"; }
+    }));
+  }
+  async function loadLessonVideos(q){
+    const box = document.getElementById("lsVids"); if(!box) return;
+    const yt = `<a class="lp-yt" target="_blank" rel="noopener" href="https://www.youtube.com/results?search_query=${encodeURIComponent(q)}">▶ المزيد على يوتيوب: ${escapeHTML(q)}</a>`;
+    try{
+      const r = await fetch("/api/videos?q="+encodeURIComponent(q),{credentials:"same-origin"});
+      const dj = await r.json().catch(()=>({}));
+      const list = (dj.list||[]).slice(0,2);
+      box.innerHTML = list.map(v=>`<div class="lp-vid"><iframe loading="lazy" allowfullscreen allow="encrypted-media; picture-in-picture" src="https://www.youtube-nocookie.com/embed/${encodeURIComponent(v.id)}"></iframe><div>${escapeHTML(v.title)}</div></div>`).join("") || "";
+      box.insertAdjacentHTML("afterend", `<div id="lsYt">${yt}</div>`);
+      if(lsLast) lsLast.videos = list;
+    }catch(e){ box.innerHTML = ""; box.insertAdjacentHTML("afterend", `<div id="lsYt">${yt}</div>`); }
+  }
+  document.getElementById("lsGenBtn").addEventListener("click", async ()=>{
     const subject=document.getElementById("lsSubject").value.trim()||"غير محدد";
     const grade=document.getElementById("lsGrade").value.trim()||"غير محدد";
     const topic=document.getElementById("lsTopic").value.trim();
     const notes=document.getElementById("lsNotes").value.trim();
+    const n = +document.getElementById("lsObjCount").value || 3;
     if(!topic){ toast("اكتب موضوع الدرس"); return; }
-    genInto({
-      btn: document.getElementById("lsGenBtn"),
-      resEl: document.getElementById("lsResult"),
-      actEl: document.getElementById("lsActions"),
-      prompt: `أنت مساعد تحضير دروس لمعلم عماني. المادة: ${subject}. الصف: ${grade}. موضوع الدرس: ${topic}. ${notes?("ملاحظات إضافية: "+notes+"."):""}
-اكتب خطة درس مختصرة بالعربية الفصحى، مباشرة بدون مقدمة أو خاتمة، تشمل:
-🎯 أهداف الدرس (٣-٤ أهداف قابلة للقياس)
-🧩 المفاهيم الأساسية
-📋 خطوات الدرس: تمهيد، عرض، تطبيق، تقويم
-✏️ نشاط تفاعلي واحد`
-    });
+    const btn=document.getElementById("lsGenBtn"), res=document.getElementById("lsResult"), act=document.getElementById("lsActions");
+    if(!sample){ res.classList.remove("empty"); res.textContent="ميزة الذكاء الاصطناعي غير متاحة الآن."; return; }
+    btn.disabled=true; act.hidden=true; res.classList.remove("empty"); res.textContent="⏳ جارٍ إعداد خطة الدرس…";
+    const prompt = `أنت خبير تربوي يعدّ خطط دروس لمعلم في سلطنة عُمان وفق نموذج المدرسة.
+المادة: ${subject}. الصف: ${grade}. موضوع الدرس: ${topic}. ${notes?("ملاحظات: "+notes):""}
+أعد كائن JSON فقط بهذه البنية (كل النصوص بالعربية الفصحى، عملية ومحددة لهذا الدرس، مناسبة لعمر الطلبة):
+{"title":"عنوان الدرس",
+"preparation":{"material":["أنشطة/مواد/مجسمات حسية يجهزها المعلم (3 عناصر)"],"moral":["تهيئة معنوية للطالب: تحفيز، تعزيز، جو صفي (3 عناصر)"]},
+"preAssessment":{"activity":"نشاط تقويم قبلي جماعي يستهدف جميع الطلبة","questions":["3 أسئلة قصيرة لقياس الخبرات السابقة"]},
+"warmup":{"text":"تمهيد مشوق يربط الدرس بحياة الطالب ويوضح كيف يُعرض الفيديو والصور","studentModels":"فكرة نموذج من مشاريع طلبة سابقين يُعرض للتمهيد","videoQuery":"عبارة بحث قصيرة بالعربية ليوتيوب لفيديو تعليمي عن الدرس","images":[{"caption":"وصف عربي قصير للصورة","prompt":"short English description of an educational illustration for this lesson"},{"caption":"...","prompt":"..."}]},
+"objectives":[{"objective":"أن يـ... (هدف سلوكي قابل للقياس)","strategy":"اسم استراتيجية تدريس مناسبة وطريقة تنفيذها باختصار","formative":"نشاط تكويني يقيس تحقق الهدف","enrichment":"نشاط إثرائي للمتميزين"}],
+"guidedPractice":["خطوات التطبيق الموجه بإشراف المعلم (3)"],
+"selfLearning":["مهام التعلم الذاتي يؤديها الطالب بنفسه (2-3)"],
+"closing":"نشاط ختامي ممتع يلخص الدرس"}
+عدد عناصر objectives = ${n} بالضبط، وعدد images = 2.`;
+    try{
+      let d;
+      try{ d = await sample.json(prompt,{modelTier:"default"}); }
+      catch(e1){ if(e1 && e1.code==="invalid_json") d = await sample.json(prompt,{modelTier:"default"}); else throw e1; }
+      if(!d || !Array.isArray(d.objectives)) throw Object.assign(new Error("invalid_json"),{code:"invalid_json"});
+      const meta={subject,grade,topic};
+      lsLast = {d, meta};
+      res.innerHTML = renderLessonPlan(d, meta);
+      act.hidden=false;
+      const w = d.warmup||{};
+      loadLessonImages(w);
+      loadLessonVideos(String(w.videoQuery||topic).slice(0,120));
+    }catch(e){ res.textContent = sampleErrorMessage(e); }
+    finally{ btn.disabled=false; }
+  });
+  function lessonDocHTML(){
+    const box=document.getElementById("lsResult").cloneNode(true);
+    box.querySelectorAll("iframe").forEach(f=>{ const id=(f.src.match(/embed\/([\w-]{11})/)||[])[1]; const a=document.createElement("a"); a.href="https://youtu.be/"+id; a.textContent="▶ رابط الفيديو: https://youtu.be/"+id; f.replaceWith(a); });
+    const css=[...document.querySelectorAll("style")].map(s=>s.textContent).join("\n").match(/\.lp[^{]*\{[^}]*\}/g)||[];
+    return `<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><title>خطة درس</title><style>body{font-family:Tahoma,Arial,sans-serif;direction:rtl;padding:18px;color:#14302F}${css.join("\n")}@media print{.lp-sec{break-inside:avoid}}</style></head><body>${box.innerHTML}</body></html>`;
+  }
+  document.getElementById("lsCopyBtn").addEventListener("click", ()=>{ if(lsLast) copyText(lessonPlainText(lsLast.d, lsLast.meta)); });
+  document.getElementById("lsPrintBtn").addEventListener("click", ()=>{
+    const w=window.open("","_blank"); if(!w){ toast("اسمح بالنوافذ المنبثقة للطباعة"); return; }
+    w.document.write(lessonDocHTML()); w.document.close(); setTimeout(()=>w.print(), 600);
+  });
+  document.getElementById("lsWordBtn").addEventListener("click", ()=>{
+    const blob=new Blob(["﻿"+lessonDocHTML()],{type:"application/msword"});
+    const a=document.createElement("a"); a.href=URL.createObjectURL(blob); a.download="خطة_الدرس_"+((lsLast&&lsLast.meta.topic)||"").replace(/\s+/g,"_")+".doc"; a.click(); setTimeout(()=>URL.revokeObjectURL(a.href),2000);
   });
 
   document.getElementById("aiDocGenBtn").addEventListener("click", ()=>{
