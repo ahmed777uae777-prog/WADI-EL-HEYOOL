@@ -1221,7 +1221,7 @@
         <button class="btn" id="addStudentRosterBtn">+ إضافة طالب</button>
         <button class="btn ghost sm" id="stuExportBtn">⬇️ تنزيل السجل (Excel)</button>
         <button class="btn ghost sm" id="stuImportBtn">⬆️ استيراد من Excel</button>
-        <input type="file" id="stuImportFile" accept=".xlsx,.xls" hidden>
+        <input type="file" id="stuImportFile" accept=".xlsx,.xls,.csv" multiple hidden>
       </div>
       <div class="card" id="addStudentForm" hidden style="background:var(--surface-2); margin-bottom:14px;">
         <div class="row">
@@ -7121,17 +7121,70 @@ ${points?("نقاط يجب تضمينها صراحة: "+points+"."):""}
   document.getElementById("stuImportBtn").addEventListener("click", ()=>{
     document.getElementById("stuImportFile").click();
   });
+  // Ministry of Education student lists (قوائم الطلاب): the header row sits mid-sheet with
+  // "الاســـــم" / "الرقم المدرسي" / "الهاتف النقال", and the class comes from a "الصف" line above
+  // the rows (grade name + section number). Returns null if the sheet isn't in that format.
+  function parseMinistryStudentSheet(rows){
+    const clean = v => String(v==null?"":v).replace(/ـ/g,"").replace(/\s+/g," ").trim();
+    let hdr = -1;
+    for(let i=0;i<rows.length;i++){ const r=(rows[i]||[]).map(clean); if(r.includes("الاسم") && r.some(c=>c.includes("الهاتف")||c.includes("الرقم المدرسي"))){ hdr=i; break; } }
+    if(hdr<0) return null;
+    const H = (rows[hdr]||[]).map(clean);
+    const col = f => H.findIndex(f);
+    const nameC = col(h=>h==="الاسم"), phoneC = col(h=>h.includes("الهاتف")), idC = col(h=>h.includes("الرقم المدرسي")), numC = col(h=>h==="م");
+    const gradeOf = txt => { const t = clean(txt).replace(/^الصف\s*/,""); return grades.find(g=> g.name===t || g.name.replace(/\s*أساسي$/,"")===t) || null; };
+    const out = []; let cur = null;
+    rows.forEach((r,i)=>{
+      const cells = (r||[]).map(clean);
+      const sIdx = cells.lastIndexOf("الصف");
+      if(sIdx>-1){
+        const g = cells.map(gradeOf).find(Boolean);
+        const sec = cells.find(c=>/^\d{1,2}$/.test(c));
+        if(g) cur = {grade:g, section: sec||"1"};
+        return;
+      }
+      if(i<=hdr && !cur) return;
+      const name = nameC>-1 ? cells[nameC] : "";
+      if(!name || name==="الاسم" || (numC>-1 && !/^\d+$/.test(cells[numC]||""))) return;
+      if(!cur) return;
+      out.push({name, grade:cur.grade, sectionText:cur.section, guardianName:"", guardianPhone: phoneC>-1 ? cells[phoneC] : "", academicId: idC>-1 ? cells[idC] : ""});
+    });
+    return out;
+  }
   document.getElementById("stuImportFile").addEventListener("change", async (e)=>{
-    const file = e.target.files && e.target.files[0];
+    const files = Array.from(e.target.files || []);
     e.target.value = "";
-    if(!file) return;
+    if(!files.length) return;
     if(typeof XLSX==="undefined"){ toast("تعذّر تحميل مكتبة Excel — تحقق من الاتصال وحاول مجددًا"); return; }
+    await schoolDataReady;
+    let T = {updated:0, added:0, skipped:0, files:0};
+    for(const file of files){
     try{
       const buf = await file.arrayBuffer();
       const wb = XLSX.read(buf, {type:"array"});
       const ws = wb.Sheets[wb.SheetNames[0]];
-      const rows = XLSX.utils.sheet_to_json(ws, {header:1});
-      if(!rows.length){ toast("الملف فارغ"); return; }
+      const rows = XLSX.utils.sheet_to_json(ws, {header:1, raw:false, defval:""});
+      if(!rows.length){ continue; }
+      const ministry = parseMinistryStudentSheet(rows);
+      if(ministry){
+        let updated=0, added=0, skipped=0;
+        ministry.forEach(m=>{
+          const section = findSectionByLabel(m.grade.id, m.sectionText);
+          if(!section){ skipped++; return; }
+          const existing = schoolStudents.find(s=> (m.academicId && s.academicId===m.academicId) || (s.name===m.name && s.gradeId===m.grade.id && s.sectionId===section.id));
+          if(existing){
+            existing.name = m.name; existing.gradeId = m.grade.id; existing.sectionId = section.id;
+            if(m.guardianPhone) existing.guardianPhone = m.guardianPhone;
+            if(m.academicId) existing.academicId = m.academicId;
+            updated++;
+          } else {
+            schoolStudents.push({id: nextStudentId(), name:m.name, gradeId:m.grade.id, sectionId:section.id, guardianName:"", guardianPhone:m.guardianPhone, academicId:m.academicId, active:true});
+            added++;
+          }
+        });
+        T.updated+=updated; T.added+=added; T.skipped+=skipped; T.files++;
+        continue;
+      }
       const header = rows[0].map(h=> String(h||"").trim());
       const nameIdx = header.findIndex(h=> h.includes("اسم") && !h.includes("ولي") && !h.includes("مستخدم"));
       const gradeIdx = header.findIndex(h=> h.includes("صف"));
@@ -7139,7 +7192,7 @@ ${points?("نقاط يجب تضمينها صراحة: "+points+"."):""}
       const gNameIdx = header.findIndex(h=> h.includes("اسم") && h.includes("ولي"));
       const gPhoneIdx = header.findIndex(h=> h.includes("رقم") && h.includes("ولي"));
       const academicIdIdx = header.findIndex(h=> h.includes("أكاديمي") || h.includes("اكاديمي"));
-      if(nameIdx===-1 || gradeIdx===-1 || sectionIdx===-1){ toast('تعذّر إيجاد أعمدة "الاسم"/"الصف"/"الشعبة" في الملف'); return; }
+      if(nameIdx===-1 || gradeIdx===-1 || sectionIdx===-1){ toast(`تعذّر إيجاد أعمدة "الاسم"/"الصف"/"الشعبة" في ${file.name}`); continue; }
       let updated=0, added=0, skipped=0;
       for(let i=1;i<rows.length;i++){
         const row = rows[i]; if(!row) continue;
@@ -7150,7 +7203,7 @@ ${points?("نقاط يجب تضمينها صراحة: "+points+"."):""}
         const guardianPhone = gPhoneIdx>-1 ? String(row[gPhoneIdx]||"").trim() : "";
         const academicId = academicIdIdx>-1 ? String(row[academicIdIdx]||"").trim() : "";
         if(!name || !gradeText || !sectionText) continue;
-        const grade = grades.find(g=>g.name===gradeText || gradeText.includes(g.name));
+        const grade = grades.find(g=>g.name===gradeText || gradeText.includes(g.name) || g.name.replace(/\s*أساسي$/,"")===gradeText.replace(/^الصف\s*/,""));
         if(!grade){ skipped++; continue; }
         const section = findSectionByLabel(grade.id, sectionText);
         if(!section){ skipped++; continue; }
@@ -7165,13 +7218,14 @@ ${points?("نقاط يجب تضمينها صراحة: "+points+"."):""}
           added++;
         }
       }
-      if(!updated && !added){ toast(skipped ? `تعذّر التعرّف على الصف/الشعبة في ${skipped} صفًا — تأكد من مطابقتها لأسماء الصفوف/الشعب الحالية بالضبط` : "لا توجد بيانات جديدة لاستيرادها"); return; }
-      await schoolDataReady;
-      const ok = await saveStudentsRoster();
-      renderAdminStudents();
-      logAction("استيراد سجل طلاب من Excel", {updated, added, skipped});
-      toast(ok ? `تم الاستيراد: ${updated} تحديث، ${added} طالب جديد${skipped?`، تم تجاهل ${skipped} صفًا لعدم مطابقة الصف/الشعبة`:""} ✅` : "⚠️ تعذّر حفظ البيانات المستوردة — تحقق من الاتصال وحاول مرة أخرى");
-    }catch(err){ toast("تعذّر قراءة الملف — تأكد أنه بصيغة Excel صحيحة"); }
+      T.updated+=updated; T.added+=added; T.skipped+=skipped; T.files++;
+    }catch(err){ toast(`تعذّر قراءة الملف ${file.name} — تأكد أنه بصيغة Excel صحيحة`); }
+    }
+    if(!T.updated && !T.added){ toast(T.skipped ? `تعذّر التعرّف على الصف/الشعبة في ${T.skipped} صفًا — تأكد من مطابقتها لأسماء الصفوف/الشعب` : "لم يُعثر على طلاب في الملفات"); return; }
+    const ok = await saveStudentsRoster();
+    renderAdminStudents();
+    logAction("استيراد سجل طلاب من Excel", {files:T.files, updated:T.updated, added:T.added, skipped:T.skipped});
+    toast(ok ? `✅ تم الاستيراد من ${T.files} ملف: ${T.added} طالب جديد، ${T.updated} تحديث${T.skipped?`، تم تجاهل ${T.skipped}`:""}` : "⚠️ تعذّر حفظ سجل الطلاب — تحقق من الاتصال وحاول مرة أخرى");
   });
 
   /* ===== معالج تسجيل غياب طالب (student absence wizard) ===== */
