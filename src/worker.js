@@ -475,6 +475,82 @@ async function handleVideos(db, request, user, url) {
   } catch { return json({ list: [] }); }
 }
 
+/* ---------------- AR scene builder: writes three.js scene code like a human developer ---------------- */
+const AR_PER_HOUR = 30;
+const AR_SYSTEM = `You are an expert educational 3D/AR developer and subject-matter expert for schools in the Sultanate of Oman.
+You write JavaScript for an existing three.js r147 lab (global THREE). Your answer is ONLY the BODY of a function, inside one \`\`\`js code block. These helpers are already in scope:
+
+- setHome([x,y,z],[tx,ty,tz]) camera start. Ground is y=0; keep the model about 8-10 units wide and up to ~6 high, centred on the origin.
+- M(color, opts) -> MeshStandardMaterial (opts: transparent, opacity, metalness, roughness, emissive, side...).
+- mesh(geometry, material, parent?) -> adds a Mesh (with shadows) to the scene or to a THREE.Group parent. Create groups with new THREE.Group() and add them with mesh(...) or E.root.add(group).
+- label(text, [x,y,z], {size:0.18-0.4, parent, color, bg:"none"}) -> Arabic text sprite facing the camera; sprite.userData.set(newText) changes it.
+- cylBetween(a, b, radius, material, parent) -> cylinder from point a to point b (bones, wires, rods, vessels). setCyl(m, a, b) moves it.
+- clickable(object, fn) click handler · onUpdate((dt, t)=>{...}) per-frame animation · tweenVal(from, to, seconds, fn, done) · camTo([x,y,z],[tx,ty,tz], seconds).
+- canvasTex(w, h, (ctx, w, h)=>{...}) -> CanvasTexture for detailed surfaces (patterns, maps, diagrams, numbers).
+- buildHaram(group, {crowd:400, labels:true}) -> an accurate, already-built model of the Kaaba, the mataf, Maqam Ibrahim, Hijr Ismail, Safa & Marwa (1 unit = 10 m). For ANY lesson about the Kaaba, Masjid al-Haram, tawaf, sa'i, Hajj or Umrah you MUST use it instead of drawing them.
+- sayNow(text, "ar-SA"|"en-US") speaks text. toast(text) shows a short message.
+- UI.reset(title, subtitle) MUST be called first. UI.sec(title) -> panel section; UI.slider(sec, {label, min, max, step, value, unit, onInput}); UI.buttons(sec, [{t:"label", on:()=>{}}], {radio:true}); UI.info() -> element (set .innerHTML).
+- UI.steps([{t:"title", d:"explanation 1-3 sentences", run:()=>{...}}]) 5-8 steps. Every run() must visibly change the scene (camTo the part, show/hide, animate, highlight).
+- UI.quiz([[question, [correct, wrong1, wrong2, wrong3], explanation], ...]) 6-8 questions; the FIRST option is the correct one (options are shuffled automatically).
+- Also available: lerp, clamp, ease, D2R, E (engine: E.root group, E.camera, E.scene).
+
+Quality bar (this is what the teacher expects — be like a professional studio):
+1. Scientific, mathematical, geographical and religious ACCURACY first. Use correct facts that match Omani curricula; if you are not sure of a number, do not state it. Islamic content must follow mainstream Sunni/Ibadi-compatible consensus; never write Qur'an text; never depict prophets or faces.
+2. Realistic models: build each object from several primitives with correct relative proportions, positions, colours and orientation (e.g. a heart with four chambers, valves, aorta and vessels; a flower with sepals, petals, stamens, pistil; a volcano cut-away). Use groups, transparency and cut-aways to show the inside.
+3. Animate the process being taught (flow, rotation, growth, motion) with onUpdate.
+4. Link speech and scene: every part named in a step's d MUST have a label() with EXACTLY the same Arabic words, so it lights up automatically while being explained; each step's run() should camTo that part.
+5. Add an interactive panel: controls (sliders/buttons) that change the model meaningfully, and an info box explaining what is shown.
+6. All text in clear Modern Standard Arabic suitable for the grade (English lessons: English words with Arabic meaning).
+7. Code rules: no fetch/XHR/import/eval, no document/window access except through the helpers, no infinite loops, keep particle counts under 400, dispose nothing (the engine cleans up). Must run without errors in three.js r147 (use CapsuleGeometry, ExtrudeGeometry, LatheGeometry, TubeGeometry with CatmullRomCurve3, etc.).
+Return ONLY the code block.`;
+function extractText(out) {
+  if (!out) return "";
+  if (typeof out === "string") return out;
+  if (typeof out.response === "string") return out.response;
+  if (typeof out.output_text === "string") return out.output_text;
+  if (out.choices && out.choices[0] && out.choices[0].message) return out.choices[0].message.content || "";
+  if (Array.isArray(out.output)) return out.output.filter(o => o.type === "message").flatMap(o => (o.content || []).map(c => c.text || "")).join("");
+  if (out.result) return extractText(out.result);
+  return "";
+}
+async function callLLM(env, system, user, maxTokens) {
+  if (env.ANTHROPIC_API_KEY) {
+    const r = await fetch("https://api.anthropic.com/v1/messages", { method: "POST",
+      headers: { "content-type": "application/json", "x-api-key": env.ANTHROPIC_API_KEY, "anthropic-version": "2023-06-01" },
+      body: JSON.stringify({ model: env.ANTHROPIC_MODEL || "claude-sonnet-5-5", max_tokens: maxTokens, system, messages: [{ role: "user", content: user }] }) });
+    const d = await r.json().catch(() => ({}));
+    if (r.ok) return { text: (d.content || []).map(c => c.text || "").join(""), engine: "claude" };
+  }
+  if (!env.AI) throw new Error("capability_disabled");
+  try {
+    const out = await env.AI.run("@cf/openai/gpt-oss-120b", { instructions: system, input: user, reasoning: { effort: "medium" }, max_output_tokens: maxTokens });
+    const text = extractText(out); if (text.trim()) return { text, engine: "gpt-oss-120b" };
+  } catch (e) {}
+  const out = await env.AI.run(AI_MODEL, { messages: [{ role: "system", content: system }, { role: "user", content: user }], max_tokens: 6000, temperature: 0.3 });
+  return { text: extractText(out), engine: "llama-3.3-70b" };
+}
+async function handleAR(db, env, request, user) {
+  if (request.method === "GET") return json({ available: !!env.AI || !!env.ANTHROPIC_API_KEY, engine: env.ANTHROPIC_API_KEY ? "claude" : "gpt-oss-120b" });
+  if (!user) return json({ error: "session_expired" }, 401);
+  if (!(await bumpUsage(db, "ar:" + (user.teacherId || user.role), AR_PER_HOUR))) return json({ error: "rate_limited" }, 429);
+  const b = await request.json().catch(() => ({}));
+  const subject = clip(b.subject, 80), grade = clip(b.grade, 60), topic = clip(b.topic, 300), req = clip(b.request, 1500), code = clip(b.code, 60000), err = clip(b.error, 1500);
+  let prompt;
+  if (b.mode === "edit") prompt = `Lesson: ${topic} — ${subject} — ${grade}.\nCurrent scene code:\n\`\`\`js\n${code}\n\`\`\`\nThe teacher asks for this change (Arabic): «${req}».\nApply it carefully, keep everything else working and accurate, and return the FULL updated code.`;
+  else if (b.mode === "fix") prompt = `Lesson: ${topic} — ${subject} — ${grade}.\nThis scene code failed with the error: ${err}\n\`\`\`js\n${code}\n\`\`\`\nFix the bug(s) and return the FULL corrected code. Keep the content and accuracy.`;
+  else prompt = `Build a complete, accurate, interactive 3D/AR scene for this lesson.\nSubject: ${subject}\nGrade: ${grade}\nLesson: ${topic}\n${req ? "Teacher notes: " + req + "\n" : ""}Plan the model's real structure and proportions first (silently), then write the code.`;
+  try {
+    const { text, engine } = await callLLM(env, AR_SYSTEM, prompt, 14000);
+    const m = String(text).match(/```(?:js|javascript)?\s*([\s\S]*?)```/i);
+    const out = (m ? m[1] : String(text)).trim();
+    if (!out || !/UI\.reset/.test(out)) return json({ error: "bad_output", engine }, 502);
+    return json({ code: out, engine });
+  } catch (e) {
+    const msg = String(e && e.message || e);
+    return json({ error: /limit|quota|429|neurons/i.test(msg) ? "rate_limited" : "upstream_error" }, 502);
+  }
+}
+
 /* ---------------- optional site-wide Basic Auth ---------------- */
 function basicAuthorized(request, env) {
   const h = request.headers.get("authorization") || "";
@@ -530,6 +606,7 @@ export default {
           }
           case "/api/portfolio": return handlePortfolio(db, request, await currentUser(db, request), url);
           case "/api/image": return handleImage(db, env, request, await currentUser(db, request));
+          case "/api/ar": return handleAR(db, env, request, request.method === "GET" ? null : await currentUser(db, request));
           case "/api/videos": return handleVideos(db, request, await currentUser(db, request), url);
           case "/api/ai": return handleAI(db, env, request, request.method === "GET" ? null : await currentUser(db, request));
           default:

@@ -82,6 +82,16 @@ h1,h2,h3{font-family:Cairo,sans-serif;margin:0}
 .loading{position:absolute;inset:0;display:none;place-items:center;background:rgba(251,247,238,.85);z-index:8;font-weight:800;color:var(--primary);text-align:center;padding:20px}
 .loading.on{display:grid}
 .spin{width:44px;height:44px;border:4px solid #E3EFEE;border-top-color:var(--primary);border-radius:50%;animation:sp 1s linear infinite;margin:0 auto 10px}@keyframes sp{to{transform:rotate(360deg)}}
+.builder{display:none;grid-template-columns:380px 1fr;height:calc(100vh - 62px);height:calc(100dvh - 62px)}
+.bchat{display:flex;flex-direction:column;background:#fff;border-inline-start:1px solid var(--line);min-height:0}
+.bhead{padding:12px;border-bottom:1px solid var(--line)}.bhead .sub{font-size:13px;color:var(--muted)}
+.blog{flex:1;overflow:auto;padding:12px;display:flex;flex-direction:column;gap:8px}
+.bm{border-radius:14px;padding:9px 12px;font-size:14px;line-height:1.8;max-width:92%}.bm.me{background:var(--primary);color:#fff;align-self:flex-start}.bm.ai{background:var(--surface-2);align-self:flex-end}
+.bchips{display:flex;gap:6px;flex-wrap:wrap;padding:6px 12px}.bchips .pill{font-size:12px;padding:4px 8px}
+.binput{display:flex;gap:6px;padding:8px 12px}.binput textarea{flex:1;border:1px solid var(--line);border-radius:12px;padding:8px;font-family:inherit;font-size:14px;resize:none}
+#bFrame{width:100%;height:100%;border:0;background:#FBF7EE}
+.spin.s{display:inline-block;width:16px;height:16px;border-width:3px;margin:0 0 -3px 6px}
+@media(max-width:860px){.builder{grid-template-columns:1fr;grid-template-rows:60vh auto;height:auto}#bFrame{height:60vh;order:1}.bchat{order:2}}
 .quiz .q{font-weight:800;margin:6px 0}.quiz .o{display:block;width:100%;text-align:start;margin:4px 0}
 .quiz .o.good{background:#d8f3dc;border-color:var(--ok)}.quiz .o.bad{background:#fde2e1;border-color:var(--danger)}
 #xrOverlay{display:none;position:fixed;inset:0;pointer-events:none}
@@ -111,12 +121,13 @@ h1,h2,h3{font-family:Cairo,sans-serif;margin:0}
       <p>📷 <b>واقع معزز</b>: المجسّم يظهر فوق كاميرا الجهاز · 🥽 <b>ضعه في الغرفة</b> على الطاولة أو الأرض (أجهزة أندرويد الداعمة) · 🔊 <b>شرح صوتي</b> · ⛶ <b>عرض على السبورة</b></p>
     </div>
     <div class="card ai-card">
-      <h2>✨ أي درس بالذكاء الاصطناعي</h2>
+      <h2>🛠️ منشئ الواقع المعزز بالذكاء الاصطناعي</h2><p style="font-size:13.5px">اكتب أي درس من أي مادة: يخطط الذكاء الاصطناعي للنموذج ويكتب المشهد ثلاثي الأبعاد مع الشرح والأسئلة، ويختبره ويصلح أخطاءه، ثم تعدّله بالمحادثة.</p>
       <div class="row">
         <select id="aiSubject"><option>الرياضيات</option><option>العلوم</option><option>الفيزياء</option><option>الكيمياء</option><option>الأحياء</option><option>العلوم البيئية</option><option>التربية الإسلامية</option><option>اللغة العربية</option><option>اللغة الإنجليزية</option><option>الدراسات الاجتماعية</option><option>الجغرافيا الاقتصادية</option><option>الجغرافيا والتقنيات الحديثة</option><option>الهوية والمواطنة</option><option>تقنية المعلومات</option><option>المهارات الحياتية</option><option>التربية البدنية والصحية</option><option>الرياضة المدرسية</option><option>الفنون التشكيلية</option><option>الفنون البصرية</option><option>الفنون الموسيقية</option><option>المهارات الموسيقية</option><option>خدمة التوجيه المهني</option></select>
         <select id="aiGrade"><option>الصف الأول</option><option>الصف الثاني</option><option>الصف الثالث</option><option>الصف الرابع</option><option selected>الصف الخامس</option><option>الصف السادس</option><option>الصف السابع</option><option>الصف الثامن</option><option>الصف التاسع</option><option>الصف العاشر</option><option>الصف الحادي عشر</option><option>الصف الثاني عشر</option></select>
-        <input class="full" id="aiTopic" placeholder="مثال: البراكين، أجزاء الزهرة، الوضوء، الهرم الغذائي…">
-        <button class="btn full" id="aiGo">✨ ابنِ المشهد ثلاثي الأبعاد</button>
+        <input class="full" id="aiTopic" placeholder="مثال: القلب والدورة الدموية، أجزاء الزهرة، الأشكال الرباعية…">
+        <input class="full" id="aiNotes" placeholder="ملاحظات اختيارية: ما الذي تريد التركيز عليه؟">
+        <button class="btn full" id="aiGo">🛠️ ابنِ المشهد</button><button class="btn ghost full" id="mySaved">📂 مشاهدي المحفوظة والمشتركة</button>
       </div>
     </div>
   </div>
@@ -142,6 +153,16 @@ h1,h2,h3{font-family:Cairo,sans-serif;margin:0}
     <div class="hint" id="hint">اسحب للتدوير · قرّب بإصبعين أو بالعجلة · انقر على الأجسام</div>
     <div class="loading" id="loading"><div><div class="spin"></div><div id="loadingMsg">جارٍ بناء المشهد…</div></div></div>
   </div>
+</section>
+<section class="builder" id="builder">
+  <aside class="bchat">
+    <div class="bhead"><div><b>🛠️ منشئ الواقع المعزز</b><div id="bTitle" class="sub"></div></div></div>
+    <div class="blog" id="bLog"></div>
+    <div class="bchips"><button class="pill" data-q="أضف شرحًا أكثر تفصيلًا لكل جزء مع حركة توضيحية">➕ شرح أعمق</button><button class="pill" data-q="أضف 4 أسئلة تقويم إضافية متنوعة المستوى">🎯 أسئلة أكثر</button><button class="pill" data-q="اجعل النموذج أكثر واقعية ودقة في الشكل والنسب والألوان">✨ أكثر واقعية</button><button class="pill" data-q="بسّط الشرح والمفردات لتناسب طلاب الحلقة الأولى">🧒 بسّط</button></div>
+    <div class="binput"><textarea id="bText" rows="2" placeholder="اطلب تعديلًا… مثال: أضف الشريان الأورطي واشرح اتجاه الدم"></textarea><button class="btn" id="bSend">إرسال</button></div>
+    <div class="btns" style="padding:0 12px 12px"><button class="pill" id="bSave" disabled>💾 حفظ</button><button class="pill" id="bShare">🌐 مشاركة مع المعلمين</button><button class="pill" id="bFull" disabled>⛶ ملء الشاشة</button><button class="pill" id="bNew">✨ درس جديد</button></div>
+  </aside>
+  <iframe id="bFrame" title="المشهد" sandbox="allow-scripts" allow="camera; xr-spatial-tracking; fullscreen; autoplay; accelerometer; gyroscope" allowfullscreen></iframe>
 </section>
 <div id="xrOverlay"><div class="xrbar"><button id="xrExit">✕ خروج</button><button id="xrPlace">📍 أعد التموضع</button></div><div class="xrmsg" id="xrMsg">حرّك الهاتف ببطء نحو سطح مستوٍ ثم المس الشاشة</div></div>
 <div class="toast" id="toast"></div>
@@ -201,7 +222,7 @@ const E = {}; // engine state
       camera.position.lerpVectors(tw.p0, tw.p1, k); controls.target.lerpVectors(tw.t0, tw.t1, k); if(tw.t>=1) E.tween=null; }
     if(E.autoSpin && !E.xr) { const off = camera.position.clone().sub(controls.target); off.applyAxisAngle(new THREE.Vector3(0,1,0), dt*.35); camera.position.copy(controls.target).add(off); }
     hlTick(now);
-    for(const u of E.updaters.slice()) { try{ u(dt, now); }catch(err){ console.error(err); } }
+    for(const u of E.updaters.slice()) { try{ u(dt, now); }catch(err){ console.error(err); if(E.onErr) E.onErr(err); } }
     if(E.xr) xrFrame(frame); else controls.update();
     R.render(scene, camera);
   });
@@ -299,7 +320,7 @@ const UI = {
     const go = k => { i = clamp(k, 0, list.length-1); const s=list[i];
       box.querySelector(".n").textContent = `${i+1} / ${list.length}`; box.querySelector("h3").textContent = s.t; box.querySelector("p").textContent = s.d;
       box.querySelector('[data-a="next"]').textContent = i===list.length-1 ? "↺ من البداية" : "التالي ←";
-      try{ s.run && s.run(); }catch(e){ console.error(e); }
+      try{ s.run && s.run(); }catch(e){ console.error(e); if(E.onErr) E.onErr(e); }
       setTimeout(()=>highlightFor(s.t + " " + s.d), 450);
       clearTimeout(autoT); const spoke = speak(s.t + ". " + s.d, auto ? advance : null);
       if(auto && !spoke) autoT = setTimeout(advance, Math.max(4500, (s.t+s.d).length*75)); };
@@ -1795,6 +1816,106 @@ function buildAIScene(S, meta){
 }
 
 /* =====================================================================
+   Run mode (?run=1): this page is loaded inside a sandboxed iframe and
+   executes scene code written by the AR builder, isolated from the
+   teacher's session (no cookies, no same-origin access).
+   ===================================================================== */
+const RUN_MODE = new URLSearchParams(location.search).get("run") === "1";
+const SDK = () => ({ THREE, E, M, mesh, label, cylBetween, setCyl, clickable, onUpdate, tweenVal, camTo, setHome, UI, canvasTex, cardTex, cardMesh, sayNow, speak, buildHaram, KAABA, lerp, clamp, ease, D2R, toast, esc, EMOJI_FONT, confettiBurst, shuffle });
+function runScene(code){
+  showStage(true); clearScene(); E.scene.background = null; let reported = false;
+  const report = (m)=>{ if(reported) return; reported = true; parent.postMessage({type:"ar-error", message:String(m).slice(0,600)}, "*"); };
+  E.onErr = (err)=>report(err && (err.stack || err.message) || err);
+  try{ const sdk = SDK(), names = Object.keys(sdk); new Function(...names, '"use strict";\n' + code)(...names.map(n=>sdk[n])); }
+  catch(err){ report(err && (err.stack || err.message) || err); return; }
+  // also run every step once quickly is too slow; instead validate the step/quiz panels exist
+  setTimeout(()=>{ if(!reported){ const steps = !!document.querySelector(".steps"), quiz = !!document.querySelector("#quizBox"); parent.postMessage({type:"ar-ok", steps, quiz}, "*"); } }, 2500);
+}
+if(RUN_MODE){
+  document.querySelector(".top").style.display = "none"; $("home").style.display = "none";
+  $("stage").style.height = "100vh"; if(innerWidth > 860) $("stage").style.gridTemplateColumns = "300px 1fr";
+  window.addEventListener("message", e=>{ if(e.source !== parent || !e.data) return; if(e.data.type==="run") runScene(String(e.data.code||"")); if(e.data.type==="step" ){ const b=document.querySelector('.steps [data-a="next"]'); b && b.click(); } });
+  window.addEventListener("error", e=>{ if(E.onErr) E.onErr(e.error || e.message); });
+  parent.postMessage({type:"ar-ready"}, "*");
+}
+
+/* =====================================================================
+   AR builder — chat with the AI that writes, tests and fixes the scene
+   ===================================================================== */
+const BLD = { code:"", meta:null, frame:null, ready:false, waiting:null, busy:false, me:null };
+function bMsg(who, html){ const d = document.createElement("div"); d.className = "bm " + who; d.innerHTML = html; $("bLog").appendChild(d); $("bLog").scrollTop = 1e9; return d; }
+function frameRun(code){ return new Promise(res=>{ BLD.waiting = res; const send = ()=>BLD.frame.contentWindow.postMessage({type:"run", code}, "*"); if(BLD.ready) send(); else BLD.pending = send; setTimeout(()=>{ if(BLD.waiting===res){ BLD.waiting=null; res({ok:true}); } }, 9000); }); }
+window.addEventListener("message", e=>{
+  if(!BLD.frame || e.source !== BLD.frame.contentWindow || !e.data) return;
+  if(e.data.type==="ar-ready"){ BLD.ready = true; if(BLD.pending){ const f = BLD.pending; BLD.pending = null; f(); } }
+  if(e.data.type==="ar-ok" && BLD.waiting){ const r = BLD.waiting; BLD.waiting = null; r({ok:true, steps:e.data.steps, quiz:e.data.quiz}); }
+  if(e.data.type==="ar-error" && BLD.waiting){ const r = BLD.waiting; BLD.waiting = null; r({ok:false, error:e.data.message}); }
+});
+async function arCall(body){
+  const r = await fetch("/api/ar", {method:"POST", credentials:"same-origin", headers:{"content-type":"application/json"}, body:JSON.stringify(body)});
+  const d = await r.json().catch(()=>({}));
+  if(r.status===401) throw new Error("auth"); if(!r.ok || !d.code) throw new Error(d.error || "ai"); return d;
+}
+function errText(e){ return e.message==="auth" ? "سجّل الدخول في المنصة أولًا ثم أعد المحاولة." : e.message==="rate_limited" ? "تم بلوغ الحد المسموح من طلبات البناء لهذه الساعة، حاول لاحقًا." : "تعذّر الاتصال بالذكاء الاصطناعي الآن، حاول مرة أخرى."; }
+async function buildLoop(body, label0){
+  if(BLD.busy) return; BLD.busy = true; $("bSend").disabled = $("aiGo").disabled = true;
+  const st = bMsg("ai", `<span class="spin s"></span> ${label0}`);
+  try{
+    let d = await arCall(body), code = d.code, tries = 0;
+    st.innerHTML = `✍️ كُتب المشهد (${Math.round(code.length/1024)} ك.ب) — جارٍ تشغيله والتحقق منه…`;
+    let res = await frameRun(code);
+    while(!res.ok && tries < 3){ tries++;
+      st.innerHTML = `<span class="spin s"></span> 🛠️ وُجد خطأ برمجي، جارٍ الإصلاح تلقائيًا (محاولة ${tries})…<br><small dir="ltr">${esc(res.error.split("\n")[0])}</small>`;
+      d = await arCall(Object.assign({}, BLD.meta, {mode:"fix", code, error:res.error})); code = d.code; res = await frameRun(code); }
+    if(!res.ok){ st.innerHTML = `⚠️ لم أتمكن من تشغيل المشهد بعد عدة محاولات. جرّب صياغة أخرى أو اطلب تبسيطه.`; return; }
+    BLD.code = code;
+    st.innerHTML = `✅ المشهد جاهز ويعمل${res.steps?" · فيه شرح خطوة بخطوة":""}${res.quiz?" · وأسئلة تقويم":""}.<br><small>المحرّك: ${esc(d.engine||"")}${tries?` · أُصلح ${tries} خطأ تلقائيًا`:""}</small><br>اكتب أي تعديل تريده في الأسفل (مثال: «أضف شرحًا للصمامات»، «كبّر النموذج»، «أضف 3 أسئلة»).`;
+    $("bSave").disabled = false; $("bFull").disabled = false;
+  }catch(e){ st.innerHTML = "⚠️ " + errText(e); }
+  finally{ BLD.busy = false; $("bSend").disabled = $("aiGo").disabled = false; }
+}
+function openBuilder(subject, grade, topic, notes){
+  showStage(false); $("home").style.display = "none"; $("builder").style.display = "grid"; $("backHome").hidden = false;
+  if(!BLD.frame){ BLD.frame = $("bFrame"); BLD.frame.src = "/lab.html?run=1"; }
+  BLD.meta = {subject, grade, topic}; BLD.code = ""; $("bLog").innerHTML = ""; $("bSave").disabled = true; $("bFull").disabled = true;
+  $("bTitle").textContent = topic;
+  bMsg("me", `ابنِ مشهد واقع معزز لدرس <b>${esc(topic)}</b> — ${esc(subject)}، ${esc(grade)}${notes?`<br><small>${esc(notes)}</small>`:""}`);
+  const m = matchBuiltin(topic);
+  if(m) bMsg("ai", `💡 توجد محاكاة دقيقة جاهزة لهذا الموضوع: <button class="pill" data-open="${m.id}">${m.icon} ${esc(m.t)}</button><br>سأبني لك مشهدًا جديدًا مخصصًا أيضًا.`);
+  buildLoop(Object.assign({}, BLD.meta, {mode:"build", request:notes||""}), "🧠 أخطط للنموذج وأكتب المشهد ثلاثي الأبعاد بدقة… (30–90 ثانية)");
+}
+async function bMe(){ if(BLD.me) return BLD.me; try{ const r = await fetch("/api/me",{credentials:"same-origin"}); const d = await r.json(); BLD.me = d.user || null; }catch(e){} return BLD.me; }
+async function docGet(path){ const r = await fetch("/api/doc?path="+encodeURIComponent(path), {credentials:"same-origin"}); return r.ok ? r.json() : null; }
+async function docPut(path, obj){ const r = await fetch("/api/doc?path="+encodeURIComponent(path), {method:"PUT", credentials:"same-origin", headers:{"content-type":"application/json"}, body:JSON.stringify(obj)}); if(!r.ok) throw new Error("save"); }
+async function saveScene(share){
+  const me = await bMe(); if(!me){ toast("سجّل الدخول في المنصة أولًا"); return; }
+  const tid = String(me.teacherId || me.role || "me").replace(/[^\w-]/g,"").slice(0,20), id = "ar" + Date.now().toString(36);
+  try{
+    await docPut("classroom/" + id, {code:BLD.code, meta:BLD.meta, by:me.name||"", at:Date.now()});
+    const listPath = share ? "classroom/arshared" : "classroom/arlist_" + tid;
+    const cur = (await docGet(listPath)) || {list:[]}; cur.list = [{id, title:BLD.meta.topic, subject:BLD.meta.subject, grade:BLD.meta.grade, by:me.name||"", at:Date.now()}].concat(cur.list||[]).slice(0,200);
+    await docPut(listPath, cur); toast(share ? "🌐 تمت مشاركة المشهد مع جميع المعلمين" : "💾 تم حفظ المشهد في مشاهدي");
+  }catch(e){ toast("تعذّر الحفظ — تحقق من تسجيل الدخول"); }
+}
+async function showSaved(){
+  const me = await bMe(); if(!me){ toast("سجّل الدخول في المنصة أولًا"); return; }
+  const tid = String(me.teacherId || me.role || "me").replace(/[^\w-]/g,"").slice(0,20);
+  const [mine, shared] = await Promise.all([docGet("classroom/arlist_"+tid), docGet("classroom/arshared")]);
+  const row = (x)=>`<button class="pill" data-load="${esc(x.id)}" style="display:block;width:100%;text-align:start;margin:4px 0">🥽 ${esc(x.title)} <small style="color:#5B6B68">— ${esc(x.subject||"")} · ${esc(x.grade||"")}${x.by?` · ${esc(x.by)}`:""}</small></button>`;
+  $("grid").innerHTML = `<div class="xp" style="grid-column:1/-1;cursor:default"><h3>📂 مشاهدي المحفوظة</h3>${(mine&&mine.list&&mine.list.length)?mine.list.map(row).join(""):"<p>لا توجد مشاهد محفوظة بعد.</p>"}
+    <h3 style="margin-top:14px">🌐 مشاهد شاركها المعلمون</h3>${(shared&&shared.list&&shared.list.length)?shared.list.map(row).join(""):"<p>لا توجد مشاهد مشتركة بعد.</p>"}
+    <div class="btns" style="margin-top:10px"><button class="pill" data-f="all">⬅ كل التجارب</button></div></div>`;
+}
+async function loadSaved(id){
+  const d = await docGet("classroom/"+id); if(!d || !d.code){ toast("تعذّر فتح المشهد"); return; }
+  showStage(false); $("home").style.display = "none"; $("builder").style.display = "grid"; $("backHome").hidden = false;
+  if(!BLD.frame){ BLD.frame = $("bFrame"); BLD.frame.src = "/lab.html?run=1"; }
+  BLD.meta = d.meta || {subject:"", grade:"", topic:""}; BLD.code = d.code; $("bLog").innerHTML = ""; $("bTitle").textContent = BLD.meta.topic;
+  const st = bMsg("ai", `📂 فُتح المشهد المحفوظ «${esc(BLD.meta.topic)}»${d.by?` (${esc(d.by)})`:""}. يمكنك طلب أي تعديل عليه.`);
+  const res = await frameRun(d.code); if(!res.ok) st.innerHTML += "<br>⚠️ حدث خطأ أثناء التشغيل."; $("bSave").disabled = false; $("bFull").disabled = false;
+}
+
+/* =====================================================================
    Home, routing, AR camera, WebXR
    ===================================================================== */
 let filter = "all";
@@ -1805,9 +1926,9 @@ function renderHome(){
 }
 $("chips").addEventListener("click", e=>{ const c=e.target.closest("[data-f]"); if(c){ filter=c.dataset.f; renderHome(); } });
 $("grid").addEventListener("click", e=>{ const c=e.target.closest("[data-x]"); if(c) openXP(c.dataset.x); });
-function showStage(on){ $("home").style.display = on?"none":""; $("stage").classList.toggle("on", on); $("backHome").hidden = !on; window.dispatchEvent(new Event("resize")); }
+function showStage(on){ if(!RUN_MODE) $("home").style.display = on?"none":""; if(on && $("builder")) $("builder").style.display="none"; $("stage").classList.toggle("on", on); $("backHome").hidden = !on; window.dispatchEvent(new Event("resize")); }
 function openXP(id){ const x = XP.find(q=>q.id===id); if(!x) return; showStage(true); clearScene(); E.scene.background = null; if(window.speechSynthesis) speechSynthesis.cancel(); x.build(); UI.quiz(QUIZ[id]); history.replaceState(null,"","#"+id); }
-$("backHome").onclick = ()=>{ if(window.speechSynthesis) speechSynthesis.cancel(); clearScene(); showStage(false); history.replaceState(null,"",location.pathname+location.search.replace(/[?&]ai=1[^#]*/,"")); };
+$("backHome").onclick = ()=>{ $("builder").style.display="none"; if(window.speechSynthesis) speechSynthesis.cancel(); clearScene(); showStage(false); history.replaceState(null,"",location.pathname+location.search.replace(/[?&]ai=1[^#]*/,"")); };
 async function runAI(subject, grade, topic){
   if(!topic){ toast("اكتب عنوان الدرس"); return; }
   const built = matchBuiltin(topic);
@@ -1825,7 +1946,17 @@ async function runAI(subject, grade, topic){
     toast(msg);
   }finally{ $("loading").classList.remove("on"); }
 }
-$("aiGo").onclick = ()=>runAI($("aiSubject").value, $("aiGrade").value, $("aiTopic").value.trim());
+$("aiGo").onclick = ()=>{ const t = $("aiTopic").value.trim(); if(!t){ toast("اكتب عنوان الدرس"); return; } openBuilder($("aiSubject").value, $("aiGrade").value, t, $("aiNotes").value.trim()); };
+$("mySaved").onclick = showSaved;
+$("bSend").onclick = ()=>{ const t = $("bText").value.trim(); if(!t || !BLD.code){ if(!BLD.code) toast("انتظر حتى يجهز المشهد"); return; } $("bText").value = ""; bMsg("me", esc(t)); buildLoop(Object.assign({}, BLD.meta, {mode:"edit", code:BLD.code, request:t}), "✍️ أعدّل المشهد حسب طلبك وأتحقق منه…"); };
+$("bText").addEventListener("keydown", e=>{ if(e.key==="Enter" && !e.shiftKey){ e.preventDefault(); $("bSend").click(); } });
+document.querySelector(".bchips").addEventListener("click", e=>{ const b = e.target.closest("[data-q]"); if(b){ $("bText").value = b.dataset.q; $("bSend").click(); } });
+$("bLog").addEventListener("click", e=>{ const b = e.target.closest("[data-open]"); if(b){ $("builder").style.display="none"; openXP(b.dataset.open); } });
+$("bSave").onclick = ()=>BLD.code && saveScene(false);
+$("bShare").onclick = ()=>{ if(!BLD.code){ toast("لا يوجد مشهد بعد"); return; } saveScene(true); };
+$("bFull").onclick = ()=>{ const f = $("bFrame"); (f.requestFullscreen ? f.requestFullscreen() : Promise.reject()).catch(()=>toast("ملء الشاشة غير مدعوم هنا")); };
+$("bNew").onclick = ()=>{ $("builder").style.display="none"; showStage(false); };
+$("grid").addEventListener("click", e=>{ const b = e.target.closest("[data-load]"); if(b) loadSaved(b.dataset.load); const f = e.target.closest('[data-f="all"]'); if(f){ filter="all"; renderHome(); } });
 $("aiTopic").addEventListener("keydown", e=>{ if(e.key==="Enter") $("aiGo").click(); });
 
 /* toolbar */
@@ -1879,11 +2010,12 @@ $("xrPlace").onclick = ()=>{ placed=false; E.world.visible=false; $("xrMsg").tex
 renderHome();
 document.fonts && document.fonts.ready.then(()=>{ E.scene.traverse(o=>{ if(o.isSprite && o.userData.set && o.userData.text!=null) o.userData.set(o.userData.text); }); });
 (function boot(){
+  if(RUN_MODE) return;
   const q = new URLSearchParams(location.search);
   if(q.get("topic")){ const sub = q.get("subject")||"العلوم", gr = q.get("grade")||"", tp = q.get("topic");
     $("aiTopic").value = tp; if(sub) { const o=[...$("aiSubject").options].find(o=>sub.includes(o.text)||o.text.includes(sub)); if(o) $("aiSubject").value=o.text; }
     if(gr){ const o=[...$("aiGrade").options].find(o=>gr.includes(o.text.replace("الصف ",""))); if(o) $("aiGrade").value=o.text; }
-    const m = matchBuiltin(tp); if(m && q.get("prefer")!=="ai") openXP(m.id); else runAI($("aiSubject").value, $("aiGrade").value, tp); return; }
+    const m = matchBuiltin(tp); if(m && q.get("prefer")!=="ai") openXP(m.id); else openBuilder($("aiSubject").value, $("aiGrade").value, tp, ""); return; }
   const h = location.hash.slice(1); if(h && XP.some(x=>x.id===h)) openXP(h);
 })();
 </script>
