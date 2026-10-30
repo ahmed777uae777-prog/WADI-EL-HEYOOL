@@ -135,6 +135,7 @@ h1,h2,h3{font-family:Cairo,sans-serif;margin:0}
       <button id="bSpin">🔄 تدوير</button>
       <div class="sp"></div>
       <button id="bReset">🎯 إعادة الكاميرا</button>
+      <button id="bQuiz">🎯 اختبار</button>
       <button id="bShot">📸 لقطة</button>
       <button id="bFull">⛶ ملء الشاشة</button>
     </div>
@@ -199,6 +200,7 @@ const E = {}; // engine state
     if(E.tween){ const tw=E.tween; tw.t=Math.min(1,tw.t+dt/tw.d); const k=ease(tw.t);
       camera.position.lerpVectors(tw.p0, tw.p1, k); controls.target.lerpVectors(tw.t0, tw.t1, k); if(tw.t>=1) E.tween=null; }
     if(E.autoSpin && !E.xr) { const off = camera.position.clone().sub(controls.target); off.applyAxisAngle(new THREE.Vector3(0,1,0), dt*.35); camera.position.copy(controls.target).add(off); }
+    hlTick(now);
     for(const u of E.updaters.slice()) { try{ u(dt, now); }catch(err){ console.error(err); } }
     if(E.xr) xrFrame(frame); else controls.update();
     R.render(scene, camera);
@@ -244,7 +246,7 @@ function clickable(obj, fn){ obj.userData.onClick = fn; E.clickables.push(obj); 
 function onUpdate(fn){ E.updaters.push(fn); }
 function tweenVal(from, to, sec, fn, done){ let t = 0; const u = (dt)=>{ t = Math.min(1, t + dt/sec); fn(lerp(from, to, ease(t))); if(t>=1){ E.updaters.splice(E.updaters.indexOf(u),1); done && done(); } }; E.updaters.push(u); return u; }
 function clearScene(){
-  (E.onClear||[]).splice(0).forEach(f=>{ try{ f(); }catch(e){} }); E.updaters.length = 0; E.clickables.length = 0; E.tween = null; stopSpin();
+  (E.onClear||[]).splice(0).forEach(f=>{ try{ f(); }catch(e){} }); clearHighlight(); E.updaters.length = 0; E.clickables.length = 0; E.tween = null; stopSpin();
   E.root.traverse(o=>{ if(o.geometry) o.geometry.dispose(); if(o.material){ (Array.isArray(o.material)?o.material:[o.material]).forEach(m=>{ if(m.map) m.map.dispose(); m.dispose(); }); } });
   E.root.clear(); E.root.position.set(0,0,0); E.root.rotation.set(0,0,0); E.root.scale.set(1,1,1);
   E.floor.visible = !E.ar; E.grid.visible = !E.ar; E.scene.fog = null; E.hemi.intensity = .85; E.sun.intensity = .85;
@@ -254,7 +256,21 @@ function clearScene(){
 const SPEECH = { on:false, voice:null };
 function pickVoice(){ const vs = (window.speechSynthesis && speechSynthesis.getVoices()) || []; SPEECH.voice = vs.find(v=>/^ar/i.test(v.lang)) || null; }
 if(window.speechSynthesis){ pickVoice(); speechSynthesis.onvoiceschanged = pickVoice; }
-function speak(text){ if(!SPEECH.on || !window.speechSynthesis) return; speechSynthesis.cancel(); const u = new SpeechSynthesisUtterance(String(text).replace(/[^؀-ۿ\s0-9.,،؛:٪%°+\-=×÷/()]/g," ")); u.lang = (SPEECH.voice && SPEECH.voice.lang) || "ar-SA"; if(SPEECH.voice) u.voice = SPEECH.voice; u.rate = .95; speechSynthesis.speak(u); }
+function speak(text, onend){ if(!SPEECH.on || !window.speechSynthesis){ return false; } speechSynthesis.cancel(); const u = new SpeechSynthesisUtterance(String(text).replace(/[^؀-ۿ\s0-9.,،؛:٪%°+\-=×÷/()]/g," ")); u.lang = (SPEECH.voice && SPEECH.voice.lang) || "ar-SA"; if(SPEECH.voice) u.voice = SPEECH.voice; u.rate = .95; if(onend){ u.onend = onend; u.onerror = onend; } speechSynthesis.speak(u); return true; }
+/* ---------- link the scene to what is being explained: highlight every labelled object the step mentions ---------- */
+const norm = t => " " + String(t||"").replace(/[ً-ْـ]/g,"").replace(/[أإآ]/g,"ا").replace(/ة/g,"ه").replace(/ى/g,"ي").replace(/[^؀-ۿA-Za-z0-9 ]/g," ").replace(/\s+/g," ").trim() + " ";
+const HL = { pointers:[], sprites:[] };
+function clearHighlight(){ HL.sprites.forEach(sp=>{ sp.material.opacity = 1; if(sp.userData.base){ sp.scale.copy(sp.userData.base); delete sp.userData.base; } sp.userData.hl = false; }); HL.sprites = []; HL.pointers.forEach(p=>{ p.parent && p.parent.remove(p); p.geometry.dispose(); }); HL.pointers = []; }
+function highlightFor(text){
+  clearHighlight(); const T = norm(text); const all = [], hit = [];
+  E.root.traverse(o=>{ if(o.isSprite && o.userData.set && o.visible){ all.push(o); const lt = norm(o.userData.text).trim(); if(lt.length>=3 && !/^[0-9 ]+$/.test(lt)){ const core = lt.replace(/^ال/,""); const words = lt.split(" "), w0 = words[0], GEN = ["الركن","عظم","الجهه","اللب","محافظه","الخليه","الغشاء","جهاز","الشبكه","حرف","شعبه","الصف","الزاويه","مثلث"];
+        if(T.includes(" "+lt+" ") || (core.length>=3 && (T.includes(" "+core+" ") || T.includes(" ال"+core+" ") || T.includes(" "+lt))) || (words.length===2 && w0.length>=5 && !GEN.includes(w0) && T.includes(" "+w0+" "))) hit.push(o); } } });
+  if(!hit.length) return 0;
+  all.forEach(sp=>{ if(/[0-9٠-٩✔%°]/.test(sp.userData.text||"")) return; HL.sprites.push(sp); sp.userData.base = sp.userData.base || sp.scale.clone(); sp.material.opacity = hit.includes(sp) ? 1 : .32; });
+  hit.slice(0,6).forEach(sp=>{ sp.userData.hl = true; const cone = new THREE.Mesh(new THREE.ConeGeometry(.09,.24,16), new THREE.MeshBasicMaterial({color:0xE2B864, depthTest:false})); cone.rotation.x = Math.PI; cone.renderOrder = 30; cone.userData.sp = sp; (sp.parent||E.root).add(cone); HL.pointers.push(cone); });
+  return hit.length;
+}
+function hlTick(t){ HL.sprites.forEach(sp=>{ if(sp.userData.hl && sp.userData.base) sp.scale.copy(sp.userData.base).multiplyScalar(1.12 + Math.sin(t*5)*.08); }); HL.pointers.forEach(c=>{ const sp = c.userData.sp; c.position.set(sp.position.x, sp.position.y + sp.scale.y*.75 + .18 + Math.abs(Math.sin(t*4))*.12, sp.position.z); }); }
 
 /* ---------- side panel UI kit ---------- */
 const UI = {
@@ -277,12 +293,18 @@ const UI = {
     const box=document.createElement("div"); box.className="steps"; $("panel").insertBefore(box, $("panel").children[1]);
     let i = -1;
     box.innerHTML = `<div class="hd">📘 الشرح خطوة بخطوة <span class="n"></span></div><h3></h3><p></p>
-      <div class="nav"><button data-a="prev">→ السابق</button><button class="main" data-a="next">التالي ←</button><button data-a="voice" title="شرح صوتي">🔊</button></div>`;
+      <div class="nav"><button data-a="prev">→ السابق</button><button class="main" data-a="next">التالي ←</button><button data-a="voice" title="شرح صوتي">🔊</button><button data-a="auto" title="تشغيل الشرح تلقائيًا مع الصوت">▶</button></div>`;
+    let auto = false, autoT = null;
+    const advance = ()=>{ clearTimeout(autoT); if(!auto) return; if(i >= list.length-1){ auto = false; box.querySelector('[data-a="auto"]').textContent = "▶"; return; } autoT = setTimeout(()=>go(i+1), 1100); };
     const go = k => { i = clamp(k, 0, list.length-1); const s=list[i];
       box.querySelector(".n").textContent = `${i+1} / ${list.length}`; box.querySelector("h3").textContent = s.t; box.querySelector("p").textContent = s.d;
       box.querySelector('[data-a="next"]').textContent = i===list.length-1 ? "↺ من البداية" : "التالي ←";
-      try{ s.run && s.run(); }catch(e){ console.error(e); } speak(s.t + ". " + s.d); };
+      try{ s.run && s.run(); }catch(e){ console.error(e); }
+      setTimeout(()=>highlightFor(s.t + " " + s.d), 450);
+      clearTimeout(autoT); const spoke = speak(s.t + ". " + s.d, auto ? advance : null);
+      if(auto && !spoke) autoT = setTimeout(advance, Math.max(4500, (s.t+s.d).length*75)); };
     box.addEventListener("click", e=>{ const a=e.target.closest("button"); if(!a) return;
+      if(a.dataset.a==="auto"){ auto = !auto; a.textContent = auto ? "⏸" : "▶"; if(auto){ SPEECH.on = true; box.querySelector('[data-a="voice"]').style.background = "#E2B864"; go(i>=list.length-1?0:i); } else { clearTimeout(autoT); if(window.speechSynthesis) speechSynthesis.cancel(); } return; }
       if(a.dataset.a==="prev") go(i-1); else if(a.dataset.a==="next") go(i===list.length-1?0:i+1);
       else { SPEECH.on=!SPEECH.on; a.style.background = SPEECH.on ? "#E2B864" : ""; if(!SPEECH.on && window.speechSynthesis) speechSynthesis.cancel(); else { if(!SPEECH.voice) toast("لا يوجد صوت عربي مثبت على الجهاز — سيُستخدم الصوت الافتراضي"); speak(list[i].t+". "+list[i].d); } } });
     go(0);
@@ -554,6 +576,135 @@ def({id:"fractions", s:"math", icon:"🍕", t:"الكسور بالدوائر و�
   ]);
  }});
 
+/* ---------- Accurate model of the Kaaba & the mataf (1 unit = 10 m) ----------
+   Orientation: +x = east, -z = north. Door on the eastern (north-east) wall near the
+   Black Stone (south-east corner); Hijr Ismail & the mizab on the northern side;
+   Maqam Ibrahim in front of the door; tawaf anticlockwise with the Kaaba on the left. */
+const KAABA = { w:1.284, d:1.128, h:1.5 };   // door wall 12.84 m · Hijr wall 11.28 m · height ≈ 15 m
+function kiswaTex(face){ return canvasTex(512, 512, (x,w,h)=>{
+  x.fillStyle = "#0b0b0b"; x.fillRect(0,0,w,h);
+  x.strokeStyle = "rgba(255,255,255,.035)"; x.lineWidth = 2; for(let i=-h;i<w;i+=26){ x.beginPath(); x.moveTo(i,0); x.lineTo(i+h,h); x.stroke(); x.beginPath(); x.moveTo(i+h,0); x.lineTo(i,h); x.stroke(); }
+  if(face==="top") return;
+  const by = h*(1-10/15) - 20, bh = 40;                      // the gold belt (hizam) at about two-thirds of the height
+  const gg = x.createLinearGradient(0,by,0,by+bh); gg.addColorStop(0,"#8a6a22"); gg.addColorStop(.5,"#f1d27a"); gg.addColorStop(1,"#8a6a22");
+  x.fillStyle = gg; x.fillRect(0,by,w,bh); x.fillStyle = "#0b0b0b"; x.fillRect(0,by+6,w,bh-12);
+  x.strokeStyle = "#e3c062"; x.lineWidth = 3; for(let i=8;i<w;i+=22){ x.beginPath(); x.moveTo(i,by+bh/2); x.bezierCurveTo(i+5,by+9,i+12,by+9,i+16,by+bh/2); x.bezierCurveTo(i+12,by+bh-9,i+5,by+bh-9,i,by+bh/2); x.stroke(); }
+  x.fillStyle = "#d9b45a"; [[.16,.0],[.5,.0],[.84,.0]].forEach(([u])=>{ const cx=u*w; x.fillRect(cx-16, by+bh+10, 32, 54); x.fillStyle="#0b0b0b"; x.fillRect(cx-11, by+bh+15, 22, 44); x.fillStyle="#d9b45a"; for(let k=0;k<3;k++) x.fillRect(cx-8, by+bh+21+k*13, 16, 3); });
+}); }
+function buildHaram(H, o){
+  o = o || {}; const K = KAABA;
+  const marble = M("#F7F5EE",{roughness:.25}), gold = M("#D4AF37",{metalness:.85, roughness:.25});
+  const mataf = mesh(new THREE.CylinderGeometry(o.matafR||3.6, o.matafR||3.6, .04, 96), marble, H); mataf.position.y = .02; mataf.castShadow = false;
+  // Kaaba body with the kiswa (black cloth + gold belt)
+  const side = kiswaTex("side"), top = kiswaTex("top");
+  const kMat = [side,side,top,top,side,side].map(t=>new THREE.MeshStandardMaterial({map:t, roughness:.9}));
+  const kaaba = new THREE.Group(); H.add(kaaba);
+  // east/west walls (door wall = 12.84 m) run along z; north/south walls (Hijr wall = 11.28 m) run along x
+  const body = mesh(new THREE.BoxGeometry(K.d, K.h, K.w), kMat, kaaba); body.position.y = K.h/2 + .045;
+  const roofRim = mesh(new THREE.BoxGeometry(K.d+.02,.04,K.w+.02), M("#1a1a1a"), kaaba); roofRim.position.y = K.h+.065;
+  // Shadharwan: marble skirt at the base (not on the Hijr side)
+  [[K.d/2+.03,0,0,.06,K.w+.12],[-K.d/2-.03,0,0,.06,K.w+.12],[0,0,K.w/2+.03,K.d+.12,.06]].forEach(([x,y,z,sx,sz])=>{ const s = mesh(new THREE.BoxGeometry(sx,.045,sz), marble, kaaba); s.position.set(x,.023,z); });
+  // The golden door on the eastern wall, 2.25 m above the floor, 1.90 × 3.10 m, close to the Black Stone corner
+  const doorZ = K.w/2 - .2 - .095;
+  const door = mesh(new THREE.BoxGeometry(.02,.31,.19), M("#C9A227",{metalness:.9, roughness:.2}), kaaba); door.position.set(K.d/2+.012, .225+.155+.045, doorZ);
+  const sitara = mesh(new THREE.BoxGeometry(.012,.36,.24), new THREE.MeshStandardMaterial({map:canvasTex(128,192,(x,w,h)=>{ x.fillStyle="#0b0b0b"; x.fillRect(0,0,w,h); x.strokeStyle="#e3c062"; x.lineWidth=4; x.strokeRect(8,8,w-16,h-16); for(let i=0;i<5;i++){ x.strokeRect(22,24+i*32,w-44,20); } }), roughness:.8}), kaaba); sitara.position.set(K.d/2+.026, .225+.155+.045, doorZ);
+  // Black Stone (south-east corner, ≈ 1.5 m high, silver frame)
+  const bs = new THREE.Group(); bs.position.set(K.d/2+.005, .15+.045, K.w/2+.005); bs.rotation.y = Math.PI/4; kaaba.add(bs);
+  mesh(new THREE.TorusGeometry(.03,.012,10,24), M("#C0C0C0",{metalness:.9, roughness:.2}), bs).rotation.y = Math.PI/2;
+  mesh(new THREE.SphereGeometry(.027,16,12), M("#1b1410",{roughness:.4}), bs);
+  // Hijr Ismail: low semicircular wall on the northern side (~1.3 m high), with openings at both ends
+  const hs = new THREE.Shape(); const R1 = .82, R0 = .74; hs.absarc(0,0,R1,.12,Math.PI-.12,false); hs.absarc(0,0,R0,Math.PI-.12,.12,true);
+  const hg = new THREE.ExtrudeGeometry(hs,{depth:.13, bevelEnabled:false}); hg.rotateX(-Math.PI/2);
+  const hijr = mesh(hg, M("#EFE9DC",{roughness:.4}), kaaba); hijr.position.set(0,0,-K.w/2 + .05);
+  // the mizab (gold rain spout) on the north roof edge, pouring into the Hijr
+  const mz = mesh(new THREE.BoxGeometry(.026,.023,.195), gold, kaaba); mz.position.set(0, K.h+.03, -K.w/2-.09);
+  // Maqam Ibrahim: gold-and-glass enclosure facing the door
+  const mq = new THREE.Group(); mq.position.set(K.d/2 + 1.1, 0, doorZ); kaaba.add(mq);
+  mesh(new THREE.CylinderGeometry(.09,.11,.06,8), M("#E8E2D2"), mq).position.y=.03;
+  const cage = mesh(new THREE.CylinderGeometry(.075,.075,.2,8,1,true), M("#D4AF37",{metalness:.85, roughness:.25, wireframe:true}), mq); cage.position.y=.16;
+  mesh(new THREE.SphereGeometry(.075,16,10,0,Math.PI*2,0,Math.PI/2), new THREE.MeshPhysicalMaterial({color:0xffffff, transparent:true, opacity:.35, roughness:.05}), mq).position.y=.26;
+  mesh(new THREE.ConeGeometry(.02,.06,8), gold, mq).position.y=.36;
+  // colonnade + minarets around the mataf
+  const R = (o.matafR||3.6) + .7, arch = M("#EDE6D6",{roughness:.6}), N = 40;
+  for(let i=0;i<N;i++){ const a = i/N*Math.PI*2; const p = mesh(new THREE.BoxGeometry(.18,.6,.18), arch, H); p.position.set(Math.cos(a)*R,.3,Math.sin(a)*R); }
+  const ring = mesh(new THREE.TorusGeometry(R,.09,6,96), arch, H); ring.rotation.x = Math.PI/2; ring.position.y = .62;
+  if(o.minarets!==false) [[1,1],[-1,1],[1,-1],[-1,-1]].forEach(([sx,sz])=>{ const x = sx*(R+.6), z = sz*(R+.6); const mi = mesh(new THREE.CylinderGeometry(.11,.15,3.2,12), M("#F3EEE2"), H); mi.position.set(x,1.6,z); const tp = mesh(new THREE.ConeGeometry(.12,.45,12), gold, H); tp.position.set(x,3.42,z); const cr = mesh(new THREE.TorusGeometry(.04,.012,6,16,Math.PI*1.4), gold, H); cr.position.set(x,3.72,z); });
+  // Mas'a: Safa in the south-east, Marwa in the north-east
+  const mx = R + 1.2;
+  const masa = mesh(new THREE.BoxGeometry(.9,.04,6.6), marble, H); masa.position.set(mx,.02,0);
+  const roofM = mesh(new THREE.BoxGeometry(1.0,.06,6.6), arch, H); roofM.position.set(mx,.62,0);
+  const rock = M("#9C8466",{flatShading:true, roughness:1});
+  const safa = mesh(new THREE.SphereGeometry(.42,14,8,0,Math.PI*2,0,Math.PI/2), rock, H); safa.position.set(mx,0,3.1);
+  const marwa = mesh(new THREE.SphereGeometry(.36,14,8,0,Math.PI*2,0,Math.PI/2), rock, H); marwa.position.set(mx,0,-3.1);
+  // crowd performing tawaf: anticlockwise (seen from above), Kaaba on their left, outside the Hijr
+  const crowdN = o.crowd || 0; let crowd = null, data = [];
+  if(crowdN){
+    const g = new THREE.CapsuleGeometry(.024,.1,3,6); g.translate(0,.074,0);
+    crowd = new THREE.InstancedMesh(g, new THREE.MeshStandardMaterial({color:0xffffff, roughness:.7}), crowdN); crowd.castShadow = false; H.add(crowd);
+    const cols = [0xffffff,0xffffff,0xffffff,0xf4f1ea,0x1d1d1d,0x2b2b3a,0xe9e2d0];
+    for(let i=0;i<crowdN;i++){ const r = 1.6 + Math.pow(Math.random(),.7)*((o.matafR||3.6)-1.75); data.push({r, a:Math.random()*Math.PI*2, w:.55/r * (.8+Math.random()*.4)}); crowd.setColorAt(i, new THREE.Color(cols[i%cols.length])); }
+    const m4 = new THREE.Matrix4(), q = new THREE.Quaternion(), up = new THREE.Vector3(0,1,0), pos = new THREE.Vector3(), one = new THREE.Vector3(1,1,1);
+    const step = (dt)=>{ for(let i=0;i<crowdN;i++){ const d = data[i]; d.a += dt*d.w*(o.crowdSpeed||1); pos.set(Math.cos(d.a)*d.r, 0, -Math.sin(d.a)*d.r); q.setFromAxisAngle(up, d.a); m4.compose(pos,q,one); crowd.setMatrixAt(i,m4); } crowd.instanceMatrix.needsUpdate = true; };
+    step(0); onUpdate(step);
+  }
+  const labels = [];
+  if(o.labels){ const sz = o.labelSize || .16, Lb = (t,p)=>{ const l = label(t, p, {size:sz, parent:H}); labels.push(l); return l; };
+    Lb("الكعبة المشرفة", [0, K.h+.45, 0]);
+    Lb("الحجر الأسود", [K.d/2+.35, .45, K.w/2+.35]);
+    Lb("باب الكعبة", [K.d/2+.3, .78, doorZ-.15]);
+    Lb("الملتزم", [K.d/2+.32, .28, (doorZ + K.w/2)/2+.05]);
+    Lb("حِجْر إسماعيل", [0, .38, -K.w/2-.95]);
+    Lb("الميزاب", [0, K.h+.22, -K.w/2-.3]);
+    Lb("الركن اليماني", [-K.d/2-.35, .45, K.w/2+.35]);
+    Lb("الركن الشامي", [-K.d/2-.35, .45, -K.w/2-.35]);
+    Lb("الركن العراقي", [K.d/2+.35, .45, -K.w/2-.35]);
+    Lb("مقام إبراهيم", [K.d/2+1.1, .55, doorZ]);
+    Lb("الصفا", [mx, .75, 3.1]); Lb("المروة", [mx, .7, -3.1]); Lb("المسعى", [mx+.75, .9, 0]);
+  }
+  return { kaaba, mataf, safa, marwa, mx, doorZ, crowd, labels, stoneAngle: -Math.atan2(K.w/2, K.d/2) };
+}
+
+/* ---------- Kaaba & Umrah (close, accurate) ---------- */
+def({id:"kaaba", s:"isl", icon:"🕋", t:"الكعبة المشرفة ومناسك العمرة", g:"الصف 3–12", d:"نموذج دقيق للكعبة بأبعادها وكسوتها وأركانها الأربعة وبابها والحجر الأسود والملتزم والحِجر والميزاب ومقام إبراهيم، مع الطائفين وخطوات العمرة.", tags:"الكعبة الكعبة المشرفة المسجد الحرام الطواف طواف السعي العمرة عمرة الحجر الأسود مقام إبراهيم الملتزم حجر إسماعيل الميزاب الركن اليماني الكسوة القبلة",
+ build(){
+  setHome([5.5,3.6,6.5],[0,.7,0]);
+  const H = new THREE.Group(); E.root.add(H);
+  const HR = buildHaram(H, {crowd:520, labels:true, labelSize:.17});
+  // our pilgrim (highlighted) doing the rites
+  const me = new THREE.Group(); H.add(me); mesh(new THREE.CapsuleGeometry(.035,.12,4,8), M("#FFFFFF",{emissive:"#3DB8A8", emissiveIntensity:.5}), me).position.y=.1; const halo = mesh(new THREE.TorusGeometry(.08,.012,8,24), M("#3DB8A8",{emissive:"#3DB8A8", emissiveIntensity:.8}), me); halo.rotation.x=Math.PI/2; halo.position.y=.01;
+  const counter = label("", [0,0,0], {size:.22, parent:H}); counter.visible = false;
+  let job = null; const stop = ()=>{ if(job){ const i=E.updaters.indexOf(job); if(i>=0) E.updaters.splice(i,1); job=null; } };
+  const R0 = 1.6, a0 = HR.stoneAngle;
+  me.position.set(Math.cos(a0)*R0, 0, -Math.sin(a0)*R0);
+  function tawaf(){ stop(); let a = 0; counter.visible = true; camTo([4.5,4.2,5.5],[0,.6,0]);
+    job = (dt)=>{ a += dt*1.25; const ang = a0 + a; me.position.set(Math.cos(ang)*R0, 0, -Math.sin(ang)*R0); const n = Math.min(7, Math.floor(a/(2*Math.PI))+1);
+      counter.position.set(me.position.x, .55, me.position.z); counter.userData.set(a >= 7*2*Math.PI ? "✔ اكتملت 7 أشواط" : `الشوط ${n} من 7`); if(a >= 7*2*Math.PI) stop(); };
+    E.updaters.push(job); }
+  function sai(){ stop(); let a = 0; counter.visible = true; camTo([HR.mx+3.5,3,3.5],[HR.mx,.3,0]);
+    job = (dt)=>{ a += dt*.5; const k = a % 2, z = k<1 ? lerp(2.85,-2.85,k) : lerp(-2.85,2.85,k-1); me.position.set(HR.mx, 0, z); const n = Math.min(7, Math.floor(a)+1);
+      counter.position.set(me.position.x, .55, me.position.z); counter.userData.set(a >= 7 ? "✔ اكتمل السعي: 7 أشواط" : `الشوط ${n} من 7 (${n%2? "من الصفا إلى المروة":"من المروة إلى الصفا"})`); if(a>=7) stop(); };
+    E.updaters.push(job); }
+  const show = (on)=>HR.labels.forEach(l=>l.visible = on);
+  UI.reset(this.t, this.g);
+  const s = UI.sec("المشاهدة");
+  UI.buttons(s, [{t:"🕋 الكعبة عن قرب", on:()=>camTo([2.6,1.5,2.8],[0,.7,0])},{t:"⬛ الحجر الأسود", on:()=>camTo([1.6,.6,1.7],[.56,.2,.64])},{t:"🚪 الباب والملتزم", on:()=>camTo([2.2,.7,.9],[.56,.35,.25])},{t:"🌙 الحِجر والميزاب", on:()=>camTo([.9,2.0,-2.6],[0,.6,-.9])},{t:"✨ مقام إبراهيم", on:()=>camTo([2.5,.8,1.2],[1.66,.2,.25])},{t:"⬆️ منظر علوي", on:()=>camTo([0,8,.3],[0,0,0])},{t:"🏷️ إظهار/إخفاء الأسماء", on:()=>show(!HR.labels[0].visible)}]);
+  const s2 = UI.sec("محاكاة"); UI.buttons(s2, [{t:"🔁 الطواف 7 أشواط", on:tawaf},{t:"↔️ السعي 7 أشواط", on:sai},{t:"⏸️ إيقاف", on:()=>{ stop(); counter.visible=false; }}]);
+  const info = UI.info();
+  info.innerHTML = `📏 <b>أبعاد تقريبية للكعبة</b>: الارتفاع نحو 15 م · ضلع الملتزم (جهة الباب) 12.84 م · جهة الحِجر 11.28 م · الباب يرتفع عن الأرض 2.25 م (1.90 × 3.10 م) · الحجر الأسود في الركن الجنوبي الشرقي على ارتفاع نحو 1.5 م.<br><small>المقياس في النموذج: كل وحدة = 10 أمتار. المسجد والأروقة مبسّطة.</small>`;
+  UI.steps([
+    {t:"الكعبة المشرفة", d:"بيت الله الحرام وقبلة المسلمين، في وسط المسجد الحرام بمكة المكرمة. يبلغ ارتفاعها نحو 15 مترًا، وتُكسى بكسوة سوداء يزيّنها حزام مطرز بالذهب.", run:()=>{ stop(); counter.visible=false; camTo([5.5,3.6,6.5],[0,.7,0]); }},
+    {t:"أركان الكعبة", d:"للكعبة أربعة أركان: الركن الأسود (فيه الحجر الأسود)، والركن اليماني، والركن الشامي، والركن العراقي.", run:()=>camTo([0,5,.4],[0,.4,0])},
+    {t:"الحجر الأسود", d:"في الركن الجنوبي الشرقي على ارتفاع نحو متر ونصف، يحيط به إطار من الفضة، ومنه يبدأ الطواف وإليه ينتهي.", run:()=>camTo([1.6,.6,1.7],[.56,.2,.64])},
+    {t:"باب الكعبة والملتزم", d:"الباب في الجهة الشرقية، مكسو بالذهب، ويرتفع عن الأرض نحو مترين وربع. والملتزم هو ما بين الحجر الأسود والباب، يُستحب الدعاء عنده.", run:()=>camTo([2.2,.7,.9],[.56,.35,.25])},
+    {t:"حِجر إسماعيل والميزاب", d:"الحِجر جدار منخفض على شكل نصف دائرة في الجهة الشمالية، وهو من الكعبة فيجب الطواف من خارجه. والميزاب الذهبي يصب ماء المطر في الحِجر.", run:()=>camTo([.9,2.0,-2.6],[0,.6,-.9])},
+    {t:"مقام إبراهيم", d:"الحجر الذي قام عليه إبراهيم عليه السلام عند بناء الكعبة، ويقع أمام باب الكعبة داخل غطاء من الذهب والزجاج، ويُصلّى خلفه ركعتا الطواف.", run:()=>camTo([2.5,.8,1.2],[1.66,.2,.25])},
+    {t:"العمرة ١: الإحرام", d:"يحرم المعتمر من الميقات: ينوي العمرة ويلبس ملابس الإحرام ويبدأ التلبية.", run:()=>{ stop(); counter.visible=false; camTo([4.5,4.2,5.5],[0,.6,0]); }},
+    {t:"العمرة ٢: الطواف", d:"سبعة أشواط حول الكعبة عكس اتجاه عقارب الساعة، تبدأ من الحجر الأسود وتكون الكعبة عن يسار الطائف، ومن خارج الحِجر. لاحظ حركة الطائفين حولها.", run:tawaf},
+    {t:"العمرة ٣: السعي", d:"سبعة أشواط بين الصفا والمروة، تبدأ بالصفا وتنتهي بالمروة؛ الذهاب شوط والرجوع شوط.", run:sai},
+    {t:"العمرة ٤: الحلق أو التقصير", d:"بعد السعي يحلق المعتمر رأسه أو يقصّر شعره، وبذلك تتم العمرة ويتحلل من إحرامه.", run:()=>{ stop(); counter.visible=false; camTo([5.5,3.6,6.5],[0,.7,0]); }}
+  ]);
+ }});
+
 /* ---------- 5) Hajj ---------- */
 def({id:"hajj", s:"isl", icon:"🕋", t:"مناسك الحج خطوة بخطوة", g:"الصف 4–12", d:"رحلة ثلاثية الأبعاد بين المشاعر: الإحرام، منى، عرفات، مزدلفة، رمي الجمرات، الطواف والسعي — مع عدّاد الأشواط.", tags:"حج الحج مناسك عمرة طواف سعي عرفة عرفات منى مزدلفة جمرات رمي إحرام الكعبة المسجد الحرام الصفا المروة",
  build(){
@@ -564,22 +715,9 @@ def({id:"hajj", s:"isl", icon:"🕋", t:"مناسك الحج خطوة بخطوة
   const mm = M("#B98F5E",{roughness:1, flatShading:true});
   [[-18,-12,3,4],[-12,-14,2.5,3],[10,-13,3,3.4],[18,-10,2.6,4.2],[22,6,2.2,3],[-22,8,2.4,3.2],[3,-14,2,2.6],[-4,13,2,2.4]].forEach(([x,z,r,h])=>{ const c = mesh(new THREE.ConeGeometry(r,h,7), mm, E.root); c.position.set(x,h/2,z); c.rotation.y = x; });
   const SITES = { haram:[-20,0,2], mina:[-8,0,0], jamarat:[-11,0,-3.6], muz:[1,0,1], arafat:[11,0,0] };
-  // --- Masjid al-Haram ---
+  // --- Masjid al-Haram (accurate model, shared with the Kaaba experience) ---
   const H = new THREE.Group(); H.position.set(...SITES.haram); E.root.add(H);
-  const mataf = mesh(new THREE.CylinderGeometry(3.4,3.4,.06,64), M("#F8F6F0",{roughness:.3}), H); mataf.position.y=.03;
-  const colon = M("#EDE4D0"); for(let i=0;i<28;i++){ const a=i/28*Math.PI*2; const p = mesh(new THREE.BoxGeometry(.5,1.2,.5), colon, H); p.position.set(Math.cos(a)*4.4,.6,Math.sin(a)*4.4); }
-  [[4.3,4.3],[-4.3,4.3],[4.3,-4.3],[-4.3,-4.3]].forEach(([x,z])=>{ const mi = mesh(new THREE.CylinderGeometry(.18,.24,4.4,12), M("#F3EEE2"), H); mi.position.set(x,2.2,z); const tp = mesh(new THREE.ConeGeometry(.22,.6,12), M("#C9A44C",{metalness:.6}), H); tp.position.set(x,4.7,z); });
-  const kaaba = new THREE.Group(); H.add(kaaba);
-  const kb = mesh(new THREE.BoxGeometry(1.2,1.4,1.0), M("#111111",{roughness:.85}), kaaba); kb.position.y=.76;
-  const band = mesh(new THREE.BoxGeometry(1.23,.12,1.03), M("#C9A44C",{metalness:.7, roughness:.3}), kaaba); band.position.y=1.12;
-  const door = mesh(new THREE.BoxGeometry(.24,.42,.02), M("#C9A44C",{metalness:.8, roughness:.25}), kaaba); door.position.set(.18,.72,.51);
-  const stone = mesh(new THREE.SphereGeometry(.06,16,12), M("#3a2a1a",{metalness:.3}), kaaba); stone.position.set(.61,.5,.51);
-  const hijr = mesh(new THREE.TorusGeometry(.75,.06,8,40,Math.PI), M("#F3EEE2"), kaaba); hijr.rotation.x = -Math.PI/2; hijr.position.set(0,.1,-.5); hijr.rotation.z = Math.PI;
-  const maqam = mesh(new THREE.CylinderGeometry(.09,.12,.35,12), M("#C9A44C",{metalness:.7}), kaaba); maqam.position.set(-.1,.18,1.2);
-  // Safa & Marwa (mas'a) east of the mosque
-  const masa = mesh(new THREE.BoxGeometry(1.1,.05,7), M("#F3EEE2"), H); masa.position.set(5.6,.03,0);
-  const safa = mesh(new THREE.SphereGeometry(.7,16,10,0,Math.PI*2,0,Math.PI/2), M("#9C8466",{flatShading:true}), H); safa.position.set(5.6,0,-3.4);
-  const marwa = mesh(new THREE.SphereGeometry(.6,16,10,0,Math.PI*2,0,Math.PI/2), M("#9C8466",{flatShading:true}), H); marwa.position.set(5.6,0,3.4);
+  const HR = buildHaram(H, {crowd:320, labels:true, labelSize:.2});
   // Mina tents
   const tentM = M("#FFFFFF",{roughness:.6});
   for(let i=0;i<9;i++) for(let j=0;j<6;j++){ const t = mesh(new THREE.ConeGeometry(.32,.5,4), tentM, E.root); t.position.set(SITES.mina[0]-2+i*.55, .25, SITES.mina[2]-1.5+j*.6+((i%2)*.25)); t.rotation.y = Math.PI/4; }
@@ -604,8 +742,6 @@ def({id:"hajj", s:"isl", icon:"🕋", t:"مناسك الحج خطوة بخطوة
   const L = (t,p)=>label(t, p, {size:.55, anchorBottom:true});
   L("المسجد الحرام", [SITES.haram[0], 5.4, SITES.haram[2]]); L("منى", [SITES.mina[0]+.5, 1.6, SITES.mina[2]]); L("الجمرات", [SITES.jamarat[0], 3.1, SITES.jamarat[2]]);
   L("مزدلفة", [SITES.muz[0], 1.8, SITES.muz[2]]); L("عرفات", [SITES.arafat[0], 4.2, SITES.arafat[2]]);
-  const sm = (t,p,o)=>label(t, p, Object.assign({size:.24, parent:H}, o||{}));
-  const kLabels = [sm("الكعبة المشرفة",[0,1.9,0]), sm("الحجر الأسود",[.9,.75,.9]), sm("الحِجْر",[0,.55,-1.55]), sm("مقام إبراهيم",[-.1,.7,1.55]), sm("الصفا",[5.6,1.1,-3.4]), sm("المروة",[5.6,1.0,3.4])];
   // pilgrims
   const pil = new THREE.Group(); E.root.add(pil);
   const pm = M("#FFFFFF",{roughness:.5}), skin = M("#C68B59");
@@ -615,13 +751,13 @@ def({id:"hajj", s:"isl", icon:"🕋", t:"مناسك الحج خطوة بخطوة
   const say = label("", [0,0,0], {size:.36, anchorBottom:true, bg:"rgba(255,247,228,.95)", border:"#9A6B1F"}); say.visible = false;
   let job = null;
   function stopJob(){ if(job){ const i=E.updaters.indexOf(job); if(i>=0) E.updaters.splice(i,1); job=null; } counter.visible=false; }
-  function walkTo(target, sec, done){ stopJob(); const from = pil.position.clone(), to = new THREE.Vector3(...target); let t=0;
+  function walkTo(target, sec, done){ stopJob(); pil.scale.setScalar(1); const from = pil.position.clone(), to = new THREE.Vector3(...target); let t=0;
     job = (dt)=>{ t=Math.min(1,t+dt/sec); pil.position.lerpVectors(from,to,ease(t)); pil.children.forEach((b,i)=>b.position.y = Math.abs(Math.sin(t*40+i))*.05); if(t>=1){ stopJob(); done&&done(); } }; E.updaters.push(job); }
   function circuits(kind){ stopJob(); const center = new THREE.Vector3(...SITES.haram); let a = 0, n = 0; counter.visible = true;
-    const R0 = 1.25, start = kind==="tawaf" ? Math.atan2(.51, .61) : 0;
+    const R0 = 1.75, start = HR.stoneAngle; pil.scale.setScalar(.4);
     job = (dt)=>{ if(kind==="tawaf"){ a += dt*1.6; const ang = start + a; pil.position.set(center.x + Math.cos(ang)*R0, 0, center.z - Math.sin(ang)*R0); pil.rotation.y = ang; n = Math.min(7, Math.floor(a/(2*Math.PI))); }
-      else { a += dt*.55; const k = a % 2, seg = Math.floor(a); const z = k<1 ? lerp(-3.1,3.1,k) : lerp(3.1,-3.1,k-1); pil.position.set(center.x+5.6, 0, center.z + z); n = Math.min(7, seg); }
-      counter.position.set(pil.position.x, 1.4, pil.position.z); counter.userData.set(`الشوط ${Math.min(n+1,7)} من 7`);
+      else { a += dt*.55; const k = a % 2, seg = Math.floor(a); const z = k<1 ? lerp(2.85,-2.85,k) : lerp(-2.85,2.85,k-1); pil.position.set(center.x+HR.mx, 0, center.z + z); n = Math.min(7, seg); }
+      counter.position.set(pil.position.x, 1.0, pil.position.z); counter.userData.set(`الشوط ${Math.min(n+1,7)} من 7`);
       if((kind==="tawaf" && a >= 7*2*Math.PI) || (kind==="sai" && a>=7)){ counter.userData.set("✔ اكتملت 7 أشواط"); stopJob(); counter.visible=true; } };
     E.updaters.push(job); }
   function stoning(which){ stopJob(); const list = which==="aqaba" ? [2] : [0,1,2]; let idx=0, cnt=0, t=0; counter.visible=true;
@@ -644,7 +780,7 @@ def({id:"hajj", s:"isl", icon:"🕋", t:"مناسك الحج خطوة بخطوة
     {t:"🌙 مزدلفة", on:()=>camTo([SITES.muz[0],5,7],[SITES.muz[0],0,1])},
     {t:"⛰️ عرفات", on:()=>camTo([SITES.arafat[0],6,8],[SITES.arafat[0],1,-1])},
     {t:"🗺️ الخريطة كاملة", on:()=>camTo([-6,22,27],[-6,0,0])}]);
-  const s2 = UI.sec("محاكاة"); UI.buttons(s2, [{t:"🔁 الطواف 7 أشواط", on:()=>{ camTo([SITES.haram[0]+3.5,7.5,SITES.haram[2]+8],[SITES.haram[0],.4,SITES.haram[2]]); circuits("tawaf"); }},{t:"↔️ السعي 7 أشواط", on:()=>{ camTo([SITES.haram[0]+12,6,SITES.haram[2]+3],[SITES.haram[0]+5.6,0,SITES.haram[2]]); circuits("sai"); }},{t:"🪨 رمي الجمرات", on:()=>{ camTo([SITES.jamarat[0],4,3.5],[SITES.jamarat[0],1,-3]); stoning("all"); }}]);
+  const s2 = UI.sec("محاكاة"); UI.buttons(s2, [{t:"🔁 الطواف 7 أشواط", on:()=>{ camTo([SITES.haram[0]+3.5,7.5,SITES.haram[2]+8],[SITES.haram[0],.4,SITES.haram[2]]); circuits("tawaf"); }},{t:"↔️ السعي 7 أشواط", on:()=>{ camTo([SITES.haram[0]+HR.mx+4,4.5,SITES.haram[2]+3],[SITES.haram[0]+HR.mx,0,SITES.haram[2]]); circuits("sai"); }},{t:"🪨 رمي الجمرات", on:()=>{ camTo([SITES.jamarat[0],4,3.5],[SITES.jamarat[0],1,-3]); stoning("all"); }}]);
   UI.steps([
     {t:"الحج ركن الإسلام الخامس", d:"فرضه الله على المسلم البالغ العاقل المستطيع مرة في العمر. تبدأ المناسك في الثامن من ذي الحجة. هذه خريطة المشاعر المقدسة: المسجد الحرام، منى، مزدلفة، عرفات.", run:()=>{ stopJob(); talbiya(""); pil.position.set(-16.4,0,2); camTo([-6,22,27],[-6,0,0]); }},
     {t:"١) الإحرام", d:"يغتسل الحاج ويلبس ملابس الإحرام البيضاء، وينوي الحج ويبدأ التلبية: لبيك اللهم لبيك، لبيك لا شريك لك لبيك.", run:()=>{ stopJob(); pil.position.set(-16.4,0,2); talbiya("لبيك اللهم لبيك", [-16.4,1.2,2]); camTo([-14,4,8],[-16.4,.5,2]); }},
@@ -654,7 +790,7 @@ def({id:"hajj", s:"isl", icon:"🕋", t:"مناسك الحج خطوة بخطوة
     {t:"٥) يوم النحر — رمي جمرة العقبة", d:"في العاشر (يوم العيد) يرمي الحاج جمرة العقبة الكبرى بسبع حصيات متعاقبات، يكبّر مع كل حصاة.", run:()=>{ camTo([SITES.jamarat[0]+2,4,4],[SITES.jamarat[0]+1.5,1.2,-3]); stoning("aqaba"); }},
     {t:"٦) الهدي والحلق أو التقصير", d:"بعد الرمي يذبح الحاج المتمتع والقارن الهدي، ثم يحلق رأسه أو يقصّر، فيتحلل التحلل الأول.", run:()=>{ stopJob(); camTo([SITES.mina[0],5,6],[SITES.mina[0],0,0]); walkTo([SITES.mina[0],0,1.6], 2); }},
     {t:"٧) طواف الإفاضة", d:"يطوف الحاج حول الكعبة سبعة أشواط عكس عقارب الساعة، يبدأ كل شوط وينتهي عند الحجر الأسود، وتكون الكعبة عن يساره.", run:()=>{ camTo([SITES.haram[0]+3.5,7.5,SITES.haram[2]+8],[SITES.haram[0],.4,SITES.haram[2]]); circuits("tawaf"); }},
-    {t:"٨) السعي بين الصفا والمروة", d:"يسعى الحاج سبعة أشواط، يبدأ بالصفا وينتهي بالمروة؛ الذهاب شوط والعودة شوط.", run:()=>{ camTo([SITES.haram[0]+12,6,SITES.haram[2]+3],[SITES.haram[0]+5.6,0,SITES.haram[2]]); circuits("sai"); }},
+    {t:"٨) السعي بين الصفا والمروة", d:"يسعى الحاج سبعة أشواط، يبدأ بالصفا وينتهي بالمروة؛ الذهاب شوط والعودة شوط.", run:()=>{ camTo([SITES.haram[0]+HR.mx+4,4.5,SITES.haram[2]+3],[SITES.haram[0]+HR.mx,0,SITES.haram[2]]); circuits("sai"); }},
     {t:"٩) أيام التشريق — رمي الجمرات الثلاث", d:"في الحادي عشر والثاني عشر (والثالث عشر لمن تأخر) يبيت الحاج بمنى ويرمي الجمرات الثلاث بعد الزوال: الصغرى ثم الوسطى ثم العقبة، كل واحدة بسبع حصيات.", run:()=>{ camTo([SITES.jamarat[0],4,4],[SITES.jamarat[0],1,-3]); stoning("all"); }},
     {t:"١٠) طواف الوداع", d:"آخر عمل للحاج قبل مغادرة مكة: يطوف بالبيت سبعة أشواط. تقبّل الله من الحجاج حجهم.", run:()=>{ camTo([SITES.haram[0]+3.5,7.5,SITES.haram[2]+8],[SITES.haram[0],.4,SITES.haram[2]]); circuits("tawaf"); }}
   ]);
@@ -894,7 +1030,7 @@ def({id:"solar", s:"sci", ss:["geo","phy"], icon:"🪐", t:"المجموعة ا�
   const glowC = document.createElement("canvas"); glowC.width=glowC.height=256; const gx=glowC.getContext("2d"); const gr=gx.createRadialGradient(128,128,20,128,128,128); gr.addColorStop(0,"rgba(255,210,80,.9)"); gr.addColorStop(1,"rgba(255,160,0,0)"); gx.fillStyle=gr; gx.fillRect(0,0,256,256);
   const glow = new THREE.Sprite(new THREE.SpriteMaterial({map:new THREE.CanvasTexture(glowC), transparent:true, depthWrite:false})); glow.scale.set(6,6,1); sun.add(glow);
   const pl = new THREE.PointLight(0xffffff, 1.3, 0, 0); sun.add(pl); E.hemi.intensity = .3; E.sun.intensity = .15;
-  const PL = [["عطارد","#9E9E9E",.18,2.6,4.15,"أقرب الكواكب إلى الشمس وأصغرها. ليس له أقمار.","88 يومًا","0"],["الزهرة","#E8C27A",.3,3.5,1.62,"أشد الكواكب حرارة بسبب غلافه الجوي الكثيف من ثاني أكسيد الكربون.","225 يومًا","0"],["الأرض","#3C8DDE",.32,4.6,1,"الكوكب الوحيد المعروف بوجود الحياة والماء السائل على سطحه.","365 يومًا","1"],["المريخ","#D2553A",.24,5.7,.53,"الكوكب الأحمر بسبب أكسيد الحديد في تربته.","687 يومًا","2"],["المشتري","#D8A47F",.8,7.6,.084,"أكبر كواكب المجموعة الشمسية، كوكب غازي فيه البقعة الحمراء العظيمة.","12 سنة","95"],["زحل","#E3CB8F",.68,9.6,.034,"يتميز بحلقاته الجميلة المكونة من الجليد والصخور.","29 سنة","146"],["أورانوس","#9ED7E3",.48,11.3,.012,"يدور وهو مائل على جانبه تقريبًا.","84 سنة","28"],["نبتون","#4067D8",.46,12.8,.006,"أبعد الكواكب عن الشمس، رياحه هي الأسرع في المجموعة الشمسية.","165 سنة","16"]];
+  const PL = [["عطارد","#9E9E9E",.18,2.6,4.15,"أقرب الكواكب إلى الشمس وأصغرها. ليس له أقمار.","88 يومًا","0"],["الزهرة","#E8C27A",.3,3.5,1.62,"أشد الكواكب حرارة بسبب غلافه الجوي الكثيف من ثاني أكسيد الكربون.","225 يومًا","0"],["الأرض","#3C8DDE",.32,4.6,1,"الكوكب الوحيد المعروف بوجود الحياة والماء السائل على سطحه.","365 يومًا","1"],["المريخ","#D2553A",.24,5.7,.53,"الكوكب الأحمر بسبب أكسيد الحديد في تربته.","687 يومًا","2"],["المشتري","#D8A47F",.8,7.6,.084,"أكبر كواكب المجموعة الشمسية، كوكب غازي فيه البقعة الحمراء العظيمة.","نحو 12 سنة","أكثر من 90"],["زحل","#E3CB8F",.68,9.6,.034,"يتميز بحلقاته الجميلة المكونة من الجليد والصخور.","نحو 29 سنة","أكثر من 270 (أكثر الكواكب أقمارًا)"],["أورانوس","#9ED7E3",.48,11.3,.012,"يدور وهو مائل على جانبه تقريبًا.","نحو 84 سنة","أكثر من 25"],["نبتون","#4067D8",.46,12.8,.006,"أبعد الكواكب عن الشمس، رياحه هي الأسرع في المجموعة الشمسية.","نحو 165 سنة","16"]];
   const bodies = []; let speed = 1;
   PL.forEach(([n,c,r,d,w,fact,year,moons],i)=>{
     const orbit = new THREE.Mesh(new THREE.RingGeometry(d-.01,d+.01,128), new THREE.MeshBasicMaterial({color:0xb7a98a, side:THREE.DoubleSide, transparent:true, opacity:.55})); orbit.rotation.x=-Math.PI/2; orbit.position.y=1.5; E.root.add(orbit);
@@ -903,7 +1039,7 @@ def({id:"solar", s:"sci", ss:["geo","phy"], icon:"🪐", t:"المجموعة ا�
     if(n==="زحل"){ const ring = new THREE.Mesh(new THREE.RingGeometry(r*1.3,r*2.2,64), new THREE.MeshStandardMaterial({color:0xd9c08a, side:THREE.DoubleSide, transparent:true, opacity:.8})); ring.rotation.x = -Math.PI/2.4; p.add(ring); }
     if(n==="الأرض"){ const moon = mesh(new THREE.SphereGeometry(.08,16,12), M("#cfcfcf"), p); moon.position.x=.55; p.userData.moon = moon; }
     const lb = label(n, [d, r+.45, 0], {size:.26, parent:pivot});
-    clickable(p, ()=>{ info.innerHTML = `<div class="big">${n}</div>${fact}<br>⏱️ سنته (دورة حول الشمس): <b>${year}</b><br>🌙 عدد الأقمار: <b>${moons}</b><br>📍 ترتيبه من الشمس: <b>${i+1}</b>`; const wp = new THREE.Vector3(); p.getWorldPosition(wp); camTo([wp.x+r*6, wp.y+r*3, wp.z+r*6],[wp.x,wp.y,wp.z],1.2); speak(n+". "+fact); });
+    clickable(p, ()=>{ info.innerHTML = `<div class="big">${n}</div>${fact}<br>⏱️ سنته (دورة حول الشمس): <b>${year}</b><br>🌙 عدد الأقمار المكتشفة: <b>${moons}</b><br>📍 ترتيبه من الشمس: <b>${i+1}</b>`; const wp = new THREE.Vector3(); p.getWorldPosition(wp); camTo([wp.x+r*6, wp.y+r*3, wp.z+r*6],[wp.x,wp.y,wp.z],1.2); speak(n+". "+fact); });
     bodies.push({pivot, p, w});
   });
   label("الشمس", [0,3.4,0], {size:.36});
@@ -1111,7 +1247,7 @@ def({id:"english", s:"en", icon:"🇬🇧", t:"English 3D Vocabulary", g:"الص
  build(){
   setHome([0,2.4,9],[0,1.6,0]);
   const CATS = {
-    "Alphabet":["🍎A a|Apple","⚽B b|Ball","🐱C c|Cat","🐶D d|Dog","🥚E e|Egg","🐟F f|Fish","🍇G g|Grapes","🐴H h|Horse","🍦I i|Ice cream","🧃J j|Juice","🪁K k|Kite","🦁L l|Lion","🐒M m|Monkey","👃N n|Nose","🍊O o|Orange","🐧P p|Penguin","👑Q q|Queen","🌈R r|Rainbow","☀️S s|Sun","🐯T t|Tiger","☂️U u|Umbrella","🎻V v|Violin","🍉W w|Watermelon","🦊X x|Fox","🪀Y y|Yo-yo","🦓Z z|Zebra"],
+    "Alphabet":["🍎A a|Apple","⚽B b|Ball","🐱C c|Cat","🐶D d|Dog","🥚E e|Egg","🐟F f|Fish","🍇G g|Grapes","🐴H h|Horse","🍦I i|Ice cream","🧃J j|Juice","🪁K k|Kite","🦁L l|Lion","🐒M m|Monkey","👃N n|Nose","🍊O o|Orange","🐧P p|Penguin","👑Q q|Queen","🌈R r|Rainbow","☀️S s|Sun","🐯T t|Tiger","☂️U u|Umbrella","🎻V v|Violin","🍉W w|Watermelon","🩻X x|X-ray","🪀Y y|Yo-yo","🦓Z z|Zebra"],
     "Animals":["🐱|cat|قطة","🐶|dog|كلب","🦁|lion|أسد","🐘|elephant|فيل","🐟|fish|سمكة","🐦|bird|طائر","🐴|horse|حصان","🐄|cow|بقرة","🐫|camel|جمل","🐢|turtle|سلحفاة"],
     "Fruits":["🍎|apple|تفاحة","🍌|banana|موز","🍊|orange|برتقال","🍇|grapes|عنب","🍓|strawberry|فراولة","🍉|watermelon|بطيخ","🍋|lemon|ليمون","🥭|mango|مانجو","🍐|pear|كمثرى","🥝|kiwi|كيوي"],
     "Colors":["🔴|red|أحمر","🔵|blue|أزرق","🟢|green|أخضر","🟡|yellow|أصفر","🟠|orange|برتقالي","🟣|purple|بنفسجي","⚫|black|أسود","⚪|white|أبيض","🟤|brown|بني","🩷|pink|وردي"],
@@ -1502,6 +1638,64 @@ def({id:"volcano", s:"geo", ss:["sci","env"], icon:"🌋", t:"طبقات الأ�
  }});
 
 /* =====================================================================
+   Question bank — [question, [correct, wrong, wrong, wrong], explanation]
+   ===================================================================== */
+const QUIZ = {
+ angles:[["الزاوية التي قياسها 90° تسمى زاوية:",["قائمة","حادة","منفرجة","مستقيمة"],"الزاوية القائمة قياسها 90° تمامًا."],["زاوية قياسها 135° هي زاوية:",["منفرجة","حادة","منعكسة","قائمة"],"المنفرجة أكبر من 90° وأصغر من 180°."],["قياس الزاوية المستقيمة:",["180°","90°","360°","270°"],"ضلعا الزاوية المستقيمة على خط واحد."],["أي القياسات التالية لزاوية حادة؟",["40°","95°","180°","200°"],"الحادة أكبر من 0° وأصغر من 90°."],["الزاوية المنعكسة قياسها:",["أكبر من 180° وأصغر من 360°","بين 90° و180°","90° تمامًا","أقل من 90°"],"مثل الزاوية 250°."],["الأداة المستخدمة لقياس الزوايا:",["المنقلة","المسطرة","الفرجار","الميزان"],"نضع مركز المنقلة على رأس الزاوية ونقرأ القياس."]],
+ triangles:[["مجموع قياسات زوايا المثلث الداخلية:",["180°","90°","360°","270°"],"مهما تغير شكل المثلث يبقى المجموع 180°."],["مثلث قياسا زاويتين فيه 50° و60°، فقياس الثالثة:",["70°","80°","90°","60°"],"180 − (50 + 60) = 70°."],["المثلث الذي أضلاعه الثلاثة متساوية يسمى:",["متساوي الأضلاع","متطابق الضلعين","مختلف الأضلاع","قائم الزاوية"],""],["قياس كل زاوية في المثلث متساوي الأضلاع:",["60°","45°","90°","30°"],"180 ÷ 3 = 60°."],["أكبر عدد من الزوايا المنفرجة في مثلث واحد:",["زاوية واحدة","زاويتان","ثلاث زوايا","لا يحتوي أبدًا"],"زاويتان منفرجتان مجموعهما أكبر من 180°."]],
+ solids:[["عدد أوجه المكعب:",["6","8","12","4"],""],["عدد أحرف المكعب:",["12","6","8","10"],""],["عدد رؤوس المكعب:",["8","6","12","4"],""],["حجم مكعب طول ضلعه 3 سم:",["27 سم³","9 سم³","18 سم³","12 سم³"],"3 × 3 × 3 = 27."],["حجم متوازي مستطيلات أبعاده 2 و3 و4 سم:",["24 سم³","9 سم³","14 سم³","20 سم³"],"2 × 3 × 4 = 24."],["تتكون شبكة المكعب من:",["6 مربعات متطابقة","4 مربعات","6 مستطيلات مختلفة","8 مثلثات"],""]],
+ fractions:[["في الكسر 3/8 يسمى العدد 8:",["المقام","البسط","الناتج","العامل"],"المقام عدد الأجزاء المتساوية كلها."],["أي الكسور التالية يكافئ ½؟",["2/4","2/3","1/3","3/4"],"نضرب البسط والمقام في 2."],["دائرة مقسومة إلى 4 أجزاء متساوية لُوّن منها 3، فالكسر:",["3/4","1/4","4/3","1/3"],""],["أيهما أكبر: 1/3 أم 1/4؟",["1/3","1/4","متساويان","لا يمكن المقارنة"],"كلما قل المقام (والبسط واحد) كبر الجزء."],["الكسر 5/5 يساوي:",["1","5","0","½"],"عندما يتساوى البسط والمقام يساوي الكسر واحدًا صحيحًا."]],
+ hajj:[["الحج هو الركن ... من أركان الإسلام:",["الخامس","الرابع","الثالث","الثاني"],""],["يوم عرفة هو اليوم ... من ذي الحجة:",["التاسع","الثامن","العاشر","الحادي عشر"],""],["في يوم التروية (8 ذو الحجة) يتوجه الحجاج إلى:",["منى","عرفات","مزدلفة","المدينة المنورة"],""],["عدد الحصيات التي تُرمى بها جمرة العقبة يوم النحر:",["7","3","21","49"],"سبع حصيات متعاقبات مع التكبير."],["معنى «الحج عرفة»:",["الوقوف بعرفة أعظم أركان الحج","الحج كله في عرفات","عرفة أول المناسك","الوقوف بعرفة سنة"],""],["يبيت الحجاج ليلة العاشر من ذي الحجة في:",["مزدلفة","عرفات","مكة","الجمرات"],"ويجمعون فيها الحصى."],["ترتيب الجمرات في أيام التشريق:",["الصغرى ثم الوسطى ثم العقبة","العقبة ثم الوسطى ثم الصغرى","الوسطى ثم الصغرى ثم العقبة","العقبة فقط"],""],["آخر أعمال الحاج قبل مغادرة مكة:",["طواف الوداع","رمي الجمرات","السعي","الوقوف بعرفة"],""]],
+ kaaba:[["يقع الحجر الأسود في الركن:",["الجنوبي الشرقي","الشامي","العراقي","اليماني"],"ويسمى الركن الأسود، ومنه يبدأ الطواف."],["يكون الطائف أثناء الطواف والكعبة:",["عن يساره","عن يمينه","أمامه","خلفه"],"الطواف عكس اتجاه عقارب الساعة."],["الملتزم هو:",["ما بين الحجر الأسود وباب الكعبة","حِجر إسماعيل","مقام إبراهيم","ما بين الصفا والمروة"],""],["يقع حِجر إسماعيل في الجهة:",["الشمالية من الكعبة","الجنوبية","الشرقية","الغربية"],"ويجب الطواف من خارجه."],["يصب الميزاب ماء المطر في:",["حِجر إسماعيل","بئر زمزم","المسعى","مقام إبراهيم"],""],["أركان الكعبة الأربعة:",["الأسود واليماني والشامي والعراقي","الأسود والأبيض والأخضر والأحمر","الصفا والمروة ومنى وعرفات","الباب والملتزم والحِجر والمقام"],""],["عدد أشواط الطواف:",["7","5","3","10"],""],["أعمال العمرة بالترتيب:",["الإحرام ثم الطواف ثم السعي ثم الحلق أو التقصير","الطواف ثم الإحرام ثم السعي","السعي ثم الطواف ثم الإحرام","الإحرام ثم السعي ثم الطواف"],""],["يبدأ السعي من:",["الصفا","المروة","الحجر الأسود","مقام إبراهيم"],"ويبدأ بالصفا وينتهي بالمروة."]],
+ globe:[["الخط الذي يقسم الأرض إلى نصف شمالي ونصف جنوبي:",["خط الاستواء","خط جرينتش","مدار السرطان","الدائرة القطبية"],""],["خط الطول الرئيسي (صفر) هو:",["خط جرينتش","خط الاستواء","مدار الجدي","خط التوقيت الدولي"],""],["تدور الأرض حول محورها دورة كاملة كل:",["24 ساعة تقريبًا","365 يومًا","30 يومًا","12 ساعة"],""],["ينتج عن دوران الأرض حول محورها:",["تعاقب الليل والنهار","الفصول الأربعة","خسوف القمر","كسوف الشمس"],"أما الفصول فتنتج عن دوران الأرض حول الشمس وميل محورها."],["اتجاه القبلة من سلطنة عُمان تقريبًا نحو:",["الغرب","الشرق","الشمال","الجنوب"],"مكة المكرمة تقع غرب عُمان مع ميل خفيف نحو الجنوب."]],
+ solutions:[["في محلول الملح والماء يُسمّى الماء:",["المذيب","المذاب","الراسب","الكاشف"],""],["المحلول الذي لا يذوب فيه مزيد من المذاب عند درجة حرارة معينة:",["مشبع","غير مشبع","مخفف","متعادل"],""],["لزيادة سرعة ذوبان السكر في الماء:",["نرفع درجة الحرارة ونحرّك","نبرّد الماء","نقلل كمية الماء","نضيف ملحًا"],""],["المحلول خليط:",["متجانس","غير متجانس","صلب دائمًا","لا يحتوي على ماء"],""],["لون محلول كبريتات النحاس في الماء:",["أزرق","أحمر","عديم اللون","أصفر"],""]],
+ acids:[["الرقم الهيدروجيني (pH) للماء النقي:",["7","1","14","0"],"الماء النقي متعادل."],["محلول رقمه الهيدروجيني 3 يكون:",["حمضيًا","قاعديًا","متعادلًا","مشبعًا"],""],["من المواد القاعدية:",["الصابون","عصير الليمون","الخل","المشروبات الغازية"],""],["الغاز الناتج من تفاعل الخل مع بيكربونات الصوديوم:",["ثاني أكسيد الكربون","الأكسجين","الهيدروجين","النيتروجين"],""],["الكاشف مادة:",["يتغير لونها حسب نوع المحلول","تذيب كل المواد","تعادل الأحماض فقط","لا تتأثر بالمحاليل"],""]],
+ states:[["يتجمد الماء النقي (عند الضغط الجوي العادي) عند:",["0 °س","100 °س","10 °س","−10 °س"],""],["يغلي الماء النقي عند مستوى سطح البحر عند:",["100 °س","0 °س","50 °س","80 °س"],""],["تحوّل المادة من الحالة الصلبة إلى السائلة يسمى:",["الانصهار","التجمد","التكاثف","التبخر"],""],["الحالة التي ليس لها شكل ثابت ولا حجم ثابت:",["الغازية","الصلبة","السائلة","لا توجد حالة كذلك"],""],["تحوّل بخار الماء إلى ماء سائل يسمى:",["التكاثف","التبخر","الانصهار","التجمد"],""]],
+ solar:[["أقرب الكواكب إلى الشمس:",["عطارد","الزهرة","الأرض","المريخ"],""],["أكبر كواكب المجموعة الشمسية:",["المشتري","زحل","الأرض","نبتون"],""],["الكوكب الأحمر:",["المريخ","الزهرة","المشتري","عطارد"],""],["عدد كواكب المجموعة الشمسية:",["8","9","7","10"],""],["تدور الأرض حول الشمس دورة كاملة في:",["سنة (نحو 365 يومًا)","يوم واحد","شهر","أسبوع"],""]],
+ atom:[["الجسيمات الموجبة الشحنة في النواة:",["البروتونات","الإلكترونات","النيوترونات","الذرات"],""],["العدد الذري يساوي عدد:",["البروتونات","النيوترونات","البروتونات والنيوترونات معًا","مستويات الطاقة"],""],["التوزيع الإلكتروني لذرة الصوديوم (العدد الذري 11):",["2 ، 8 ، 1","2 ، 9","8 ، 2 ، 1","2 ، 8 ، 2"],""],["عدد النيوترونات في ذرة كربون عددها الذري 6 والكتلي 12:",["6","12","18","3"],"12 − 6 = 6."],["أقصى عدد من الإلكترونات في المستوى الأول:",["2","8","18","1"],""]],
+ circuit:[["الدارة التي يسري فيها التيار الكهربائي:",["المغلقة","المفتوحة","المقطوعة","التي بلا بطارية"],""],["في التوصيل على التوالي إذا تلف أحد المصباحين:",["ينطفئ الآخر","يبقى الآخر مضيئًا","يزداد ضوء الآخر","لا يتغير شيء"],"لأن للتيار مسارًا واحدًا."],["توصَل الأجهزة الكهربائية في المنازل على:",["التوازي","التوالي","لا توصل","التبادل"],""],["وظيفة المفتاح في الدارة:",["فتح الدارة وإغلاقها","توليد الكهرباء","تخزين الطاقة","إضاءة المصباح"],""],["من المواد الموصلة للكهرباء:",["النحاس","البلاستيك","الخشب","المطاط"],""]],
+ computer:[["«عقل» الحاسوب الذي ينفذ التعليمات:",["المعالج (CPU)","الذاكرة RAM","مزود الطاقة","الشاشة"],""],["الذاكرة التي تُمحى بياناتها عند إطفاء الجهاز:",["RAM","SSD","القرص الصلب HDD","الذاكرة الفلاشية"],""],["وحدة تحفظ البيانات بشكل دائم:",["SSD أو HDD","RAM","المعالج","مروحة التبريد"],""],["من وحدات الإدخال:",["لوحة المفاتيح","الشاشة","الطابعة","السماعات"],""],["يحوّل الكهرباء إلى جهد مناسب لتغذية المكونات:",["مزود الطاقة","اللوحة الأم","بطاقة الرسوميات","المعالج"],""]],
+ arletters:[["عدد الحروف الهجائية في اللغة العربية:",["28","26","29","30"],""],["أي الحروف التالية لا يتصل بما بعده؟",["الدال","الباء","السين","الميم"],"الحروف التي لا تتصل بما بعدها: ا، د، ذ، ر، ز، و."],["الحركة التي تُكتب تحت الحرف:",["الكسرة","الفتحة","الضمة","السكون"],""],["الحركة التي تُكتب على شكل دائرة صغيرة فوق الحرف:",["السكون","الفتحة","الكسرة","الضمة"],""],["كلمة «بطة» تبدأ بحرف:",["الباء","التاء","الطاء","الدال"],""]],
+ english:[["The English word for «تفاحة» is:",["apple","banana","orange","grapes"],""],["«cat» means:",["قطة","كلب","حصان","سمكة"],""],["How many letters are in the English alphabet?",["26","28","24","30"],""],["Choose the number «five»:",["5","4","6","9"],""],["The color of a banana is usually:",["yellow","blue","black","purple"],""]],
+ cell:[["مركز التحكم في الخلية:",["النواة","الفجوة","الجدار الخلوي","الغشاء البلازمي"],""],["عضية توجد في الخلية النباتية وتقوم بالبناء الضوئي:",["البلاستيدات الخضراء","الميتوكوندريا","النواة","جهاز جولجي"],""],["«محطة الطاقة» في الخلية:",["الميتوكوندريا","جهاز جولجي","الفجوة","النواة"],""],["الجدار الخلوي يوجد في:",["الخلية النباتية","الخلية الحيوانية","كلتيهما","لا يوجد في الخلايا"],""],["الخلية الحيوانية تختلف عن النباتية بأنها:",["ليس لها جدار خلوي ولا بلاستيدات خضراء","لها جدار خلوي","ليس لها نواة","ليس لها غشاء"],""]],
+ skeleton:[["عدد عظام جسم الإنسان البالغ:",["206","300","106","186"],""],["أطول عظمة في الجسم:",["عظم الفخذ","عظم العضد","الترقوة","الساق"],""],["تحمي الجمجمة:",["الدماغ","القلب","الرئتين","المعدة"],""],["مفصل الكتف من نوع:",["كروي حقي","رزّي","ثابت","انزلاقي"],"يسمح بالحركة في كل الاتجاهات."],["يحمي القفص الصدري:",["القلب والرئتين","الدماغ","الكلى","الأمعاء"],""]],
+ watercycle:[["تحوّل ماء البحر إلى بخار بفعل حرارة الشمس يسمى:",["التبخر","التكاثف","الهطول","التسرب"],""],["تتكون السحب بعملية:",["التكاثف","التبخر","الجريان","الانصهار"],""],["مصدر الطاقة في دورة الماء:",["الشمس","الرياح","القمر","البراكين"],""],["تغذي المياه الجوفية في عُمان:",["الآبار والأفلاج","السحب","البحر","الثلوج"],""],["سقوط الماء من السحب مطرًا أو ثلجًا يسمى:",["الهطول","التبخر","التكاثف","التسرب"],""]],
+ lever:[["النقطة الثابتة التي تدور حولها الرافعة:",["نقطة الارتكاز","المقاومة","القوة","الذراع"],""],["العزم يساوي:",["القوة × بعدها عن نقطة الارتكاز","القوة + البعد","القوة ÷ البعد","الكتلة × السرعة"],""],["كتلة 6 كجم على بعد 2 م توازنها كتلة 3 كجم على بعد:",["4 م","2 م","3 م","6 م"],"6 × 2 = 3 × 4 = 12."],["المقص من روافع:",["النوع الأول","النوع الثاني","النوع الثالث","ليس رافعة"],"نقطة الارتكاز في الوسط."],["الملقط من روافع:",["النوع الثالث","النوع الأول","النوع الثاني","ليس رافعة"],"القوة في الوسط."]],
+ plate:[["المجموعة الغذائية التي تمد الجسم بالطاقة (النشويات):",["الحبوب","الماء","الملح","التوابل"],""],["البروتين ضروري لـ:",["بناء العضلات وتجديد الخلايا","إعطاء الطعم فقط","رفع السكر في الدم","لا فائدة له"],""],["الألبان غنية بـ:",["الكالسيوم لبناء العظام والأسنان","الألياف","السكر المضاف","الدهون المتحولة"],""],["أفضل مشروب يومي للجسم:",["الماء","المشروبات الغازية","العصائر المحلاة","مشروبات الطاقة"],""],["في الطبق الصحي يكون نصف الطبق تقريبًا:",["خضروات وفواكه","حلويات","لحومًا","خبزًا"],""]],
+ oman:[["عاصمة سلطنة عُمان:",["مسقط","صلالة","نزوى","صحار"],""],["عدد محافظات سلطنة عُمان:",["11","9","12","8"],""],["مركز محافظة ظفار:",["صلالة","مرباط","نزوى","صور"],""],["تشرف محافظة مسندم على مضيق:",["هرمز","باب المندب","جبل طارق","البوسفور"],""],["ألوان العلم العُماني:",["الأبيض والأحمر والأخضر","الأحمر والأسود والأبيض","الأخضر والأبيض فقط","الأزرق والأبيض والأحمر"],""],["أعلى قمة جبلية في سلطنة عُمان:",["جبل شمس","جبل سمحان","جبل حفيت","الجبل الأبيض"],"يقع في محافظة الداخلية."]],
+ colors:[["الألوان الأساسية:",["الأحمر والأصفر والأزرق","الأخضر والبرتقالي والبنفسجي","الأبيض والأسود والرمادي","الأحمر والأخضر والأسود"],""],["ناتج مزج الأصفر والأزرق:",["الأخضر","البرتقالي","البنفسجي","البني"],""],["من الألوان الباردة:",["الأزرق","الأحمر","البرتقالي","الأصفر"],""],["اللون المتكامل مع الأحمر في دائرة الألوان:",["الأخضر","الأزرق","الأصفر","البرتقالي"],"اللونان المتقابلان في الدائرة."],["لتفتيح لون ما نضيف إليه:",["الأبيض","الأسود","الأزرق","الأحمر"],""]],
+ music:[["عدد النغمات الأساسية في السلم الموسيقي:",["7","8","5","12"],"دو ري مي فا صول لا سي."],["النغمة التي تأتي بعد «مي»:",["فا","صول","ري","لا"],""],["القضيب الأقصر في الإكسيليفون يعطي صوتًا:",["حادًا","غليظًا","بلا صوت","مماثلًا للأطول"],""],["الإكسيليفون من الآلات:",["الإيقاعية اللحنية","الوترية","النفخية","الإلكترونية فقط"],""],["التردد القياسي لنغمة «لا»:",["440 هرتز","261 هرتز","100 هرتز","1000 هرتز"],""]],
+ volcano:[["الطبقة الخارجية الصلبة للأرض:",["القشرة","الوشاح","اللب الخارجي","اللب الداخلي"],""],["أسمك طبقات الأرض:",["الوشاح","القشرة","اللب الداخلي","اللب الخارجي"],""],["حالة اللب الخارجي:",["سائلة","صلبة","غازية","فارغة"],""],["المكان الذي تتجمع فيه الصهارة تحت البركان:",["غرفة الصهارة","الفوهة","المخروط","المدخنة"],""],["تسمى الصهارة بعد خروجها على سطح الأرض:",["الحمم (اللابة)","الوشاح","الجليد","القشرة"],""]]
+};
+function shuffle(a){ a = a.slice(); for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } return a; }
+UI.quiz = function(list){
+  if(!list || !list.length) return;
+  const box = UI.sec(`🎯 اختبر نفسك (${list.length} أسئلة)`); box.classList.add("quiz"); box.id = "quizBox";
+  let order, i, score, wrong;
+  const start = ()=>{ order = shuffle(list); i = 0; score = 0; wrong = []; render(); };
+  const render = ()=>{
+    if(i >= order.length){ const pct = Math.round(score/order.length*100), stars = pct>=90?"⭐⭐⭐":pct>=60?"⭐⭐":"⭐";
+      box.innerHTML = `<b>🎯 النتيجة</b><div class="big" style="font-family:Cairo;font-size:26px;color:var(--primary)">${score} / ${order.length} ${stars}</div><div>${pct>=90?"ممتاز! أحسنت":pct>=60?"جيد جدًا، راجع الأخطاء":"راجع الشرح ثم أعد المحاولة"}</div>
+        ${wrong.length?`<div style="margin-top:8px;font-size:13.5px"><b>راجع:</b><br>${wrong.map(w=>`• ${esc(w[0])} ← <b>${esc(w[1][0])}</b>`).join("<br>")}</div>`:""}
+        <div class="btns" style="margin-top:8px"><button class="pill on" data-q="again">↺ أعد الاختبار</button></div>`;
+      if(pct>=60) confettiBurst(); return; }
+    const [q, opts, ex] = order[i], sh = shuffle(opts);
+    box.innerHTML = `<b>🎯 السؤال ${i+1} من ${order.length} · الدرجة ${score}</b><div class="q">${esc(q)}</div>${sh.map(o=>`<button class="pill o" data-o="${esc(o)}">${esc(o)}</button>`).join("")}<div class="qfb"></div>`;
+    speak(q);
+  };
+  box.addEventListener("click", e=>{
+    const a = e.target.closest("[data-q]"); if(a){ start(); return; }
+    const b = e.target.closest("[data-o]"); if(!b || box.dataset.lock) return;
+    const [q, opts, ex] = order[i], ok = b.dataset.o === opts[0]; box.dataset.lock = 1;
+    if(ok){ score++; b.classList.add("good"); } else { wrong.push(order[i]); b.classList.add("bad"); box.querySelectorAll("[data-o]").forEach(x=>{ if(x.dataset.o===opts[0]) x.classList.add("good"); }); }
+    box.querySelector(".qfb").innerHTML = `<div style="margin-top:8px;font-weight:800;color:${ok?"#2E7D4F":"#B23A3A"}">${ok?"✔ إجابة صحيحة":"✖ الإجابة الصحيحة: "+esc(opts[0])}</div>${ex?`<div style="font-size:13.5px">${esc(ex)}</div>`:""}<div class="btns" style="margin-top:8px"><button class="pill on" data-next="1">${i+1<order.length?"السؤال التالي ←":"عرض النتيجة"}</button></div>`;
+    box.querySelector("[data-next]").onclick = ()=>{ delete box.dataset.lock; i++; render(); };
+  });
+  start();
+};
+function confettiBurst(){ const cs=["#E2B864","#3DB8A8","#0B5457","#B23A3A","#7B4F9D"]; for(let i=0;i<36;i++){ const d=document.createElement("div"); d.style.cssText=`position:fixed;top:-10px;left:${Math.random()*100}vw;width:9px;height:13px;border-radius:2px;background:${cs[i%5]};z-index:300;transition:transform 1.8s ease-in,opacity 1.8s;`; document.body.appendChild(d); requestAnimationFrame(()=>{ d.style.transform=`translateY(105vh) rotate(${Math.random()*720}deg)`; d.style.opacity=".2"; }); setTimeout(()=>d.remove(),1900); } }
+
+/* =====================================================================
    AI scene — any lesson → JSON scene DSL → 3D
    ===================================================================== */
 function matchBuiltin(text){ const t = " "+String(text||"").replace(/[^\u0600-\u06FFA-Za-z0-9 ]/g," ")+" "; let best=null, sc=0;
@@ -1518,13 +1712,31 @@ async function aiScene(subject, grade, topic){
 "quiz":[{"q":"سؤال","options":["أ","ب","ج","د"],"answer":"النص الصحيح"}]}
 قواعد: الوحدة متر تقريبًا، المشهد داخل مكعب من -4 إلى 4 أفقيًا ومن 0 إلى 5 رأسيًا، والأرض y=0 (ضع الأجسام فوقها).
 size: box=[عرض,ارتفاع,عمق]، sphere=[نصف قطر]، cylinder/cone=[نصف قطر,ارتفاع]، torus/ring=[نصف القطر,السمك]، plane=[عرض,طول]، capsule=[نصف قطر,طول]، arrow: pos=البداية و size=[dx,dy,dz] الاتجاه والطول، text: label هو النص و size=[حجم الخط 0.2-0.6].
-استخدم 12 إلى 35 جسمًا بألوان واقعية، و5 إلى 7 خطوات تُظهر الأجسام تدريجيًا، و3 أسئلة اختيار من متعدد. كل النصوص بالعربية الفصحى المناسبة للصف.`;
+استخدم 12 إلى 35 جسمًا بألوان واقعية، و5 إلى 7 خطوات تُظهر الأجسام تدريجيًا، و5 أسئلة اختيار من متعدد مع "explain" (سبب الإجابة) لكل سؤال.
+شروط الدقة (إلزامية):
+- كل معلومة يجب أن تكون صحيحة علميًا وشرعيًا ومتوافقة مع المناهج العمانية؛ إن لم تكن متأكدًا من رقم أو معلومة فلا تذكرها.
+- اجعل شكل كل جسم وموقعه ونسبه قريبة من الواقع قدر الإمكان (الأجزاء في أماكنها الصحيحة وبأحجامها النسبية الصحيحة).
+- لا ترسم وجوه البشر ولا الأنبياء ولا الأماكن المقدسة بأشكال عشوائية.
+- اربط الشرح بالمشهد: كل خطوة يجب أن تذكر في نصها أسماء الأجسام (label) التي تعرضها حرفيًا، و"show" و"focus" تشير إلى معرّفات تلك الأجسام.
+- الإجابة الصحيحة "answer" يجب أن تطابق أحد الخيارات حرفيًا. كل النصوص بالعربية الفصحى المناسبة للصف.`;
   const r = await fetch("/api/ai", {method:"POST", credentials:"same-origin", headers:{"content-type":"application/json"}, body:JSON.stringify({prompt, tier:"default", json:true})});
   const d = await r.json().catch(()=>({}));
   if(r.status===401) throw new Error("auth");
   if(!r.ok || !d.text) throw new Error(d.error||"ai");
   let s = String(d.text).replace(/```(?:json)?/gi,"").trim(); const a = s.indexOf("{"), b = s.lastIndexOf("}");
-  return JSON.parse(s.slice(a, b+1));
+  const draft = JSON.parse(s.slice(a, b+1));
+  // second pass: an expert review that corrects any factual or structural mistake
+  try{
+    $("loadingMsg").textContent = "🔎 مراجعة الدقة العلمية للمشهد والأسئلة…";
+    const rv = `أنت مراجع علمي وتربوي خبير. راجع مشهد الواقع المعزز التالي لدرس "${topic}" (${subject}، ${grade}).
+صحّح أي خطأ علمي أو شرعي أو لغوي، وأي جزء في غير مكانه الصحيح أو بحجم غير منطقي، واحذف أي معلومة غير مؤكدة، وتأكد أن كل خطوة تذكر أسماء الأجسام التي تعرضها، وأن كل "answer" يطابق أحد الخيارات حرفيًا وأنه الإجابة الصحيحة فعلًا.
+أعد JSON المصحح فقط بالبنية نفسها تمامًا:
+${JSON.stringify(draft)}`;
+    const r2 = await fetch("/api/ai", {method:"POST", credentials:"same-origin", headers:{"content-type":"application/json"}, body:JSON.stringify({prompt:rv, tier:"default", json:true})});
+    const d2 = await r2.json().catch(()=>({}));
+    if(r2.ok && d2.text){ const t2 = String(d2.text).replace(/```(?:json)?/gi,"").trim(); const fixed = JSON.parse(t2.slice(t2.indexOf("{"), t2.lastIndexOf("}")+1)); if(fixed && Array.isArray(fixed.objects) && fixed.objects.length) return fixed; }
+  }catch(e){}
+  return draft;
 }
 function num(v, d){ v = +v; return isFinite(v) ? v : d; }
 function vec(a, d){ return [0,1,2].map(i=>num(Array.isArray(a)?a[i]:undefined, d[i])); }
@@ -1577,9 +1789,8 @@ function buildAIScene(S, meta){
     (s.highlight||[]).forEach(id=>objs[id] && flash(objs[id]));
     const f = objs[s.focus]; if(f){ const p = new THREE.Vector3(); f.getWorldPosition(p); camTo([p.x+3.5, p.y+2.8, p.z+6],[p.x,p.y,p.z],1.2); } else camTo(E.home.pos.toArray(), E.home.target.toArray(), 1.2);
   }})));
-  const quiz = (Array.isArray(S.quiz)?S.quiz:[]).slice(0,5);
-  if(quiz.length){ const q = UI.sec("✅ اختبر فهمك"); q.classList.add("quiz"); let score=0, done=0;
-    quiz.forEach(it=>{ const d=document.createElement("div"); d.innerHTML = `<div class="q">${esc(it.q)}</div>`; (it.options||[]).forEach(op=>{ const b=document.createElement("button"); b.className="pill o"; b.textContent=op; b.onclick=()=>{ if(d.dataset.done) return; d.dataset.done=1; done++; const ok = String(op).trim()===String(it.answer).trim(); if(ok) score++; b.classList.add(ok?"good":"bad"); if(!ok) [...d.querySelectorAll(".o")].forEach(x=>{ if(x.textContent.trim()===String(it.answer).trim()) x.classList.add("good"); }); if(done===quiz.length) toast(`نتيجتك ${score} من ${quiz.length}`); }; d.appendChild(b); }); q.appendChild(d); }); }
+  const quiz = (Array.isArray(S.quiz)?S.quiz:[]).slice(0,6).map(it=>{ const ops = (it.options||[]).map(String), ans = String(it.answer||"").trim(); const ok = ops.find(o=>o.trim()===ans); return ok ? [String(it.q||""), [ok, ...ops.filter(o=>o!==ok)].slice(0,4), String(it.explain||"")] : null; }).filter(Boolean);
+  UI.quiz(quiz);
   const m = matchBuiltin(meta.topic + " " + (S.title||"")); if(m){ const tip = UI.sec("💡 تجربة جاهزة ذات صلة"); UI.buttons(tip, [{t:m.icon+" "+m.t, on:()=>openXP(m.id)}]); }
 }
 
@@ -1590,15 +1801,17 @@ let filter = "all";
 function renderHome(){
   const chips = [["all","الكل"],...Object.entries(SUBJ).map(([k,v])=>[k,v.n])];
   $("chips").innerHTML = chips.map(([k,n])=>`<button class="chip ${filter===k?"on":""}" data-f="${k}">${n}</button>`).join("");
-  $("grid").innerHTML = XP.filter(x=>filter==="all"||x.s===filter||x.s2===filter||(x.ss||[]).includes(filter)).map(x=>`<div class="xp" data-x="${x.id}"><span class="ar">AR</span><div class="ic" style="background:${SUBJ[x.s].c}">${x.icon}</div><h3>${esc(x.t)}</h3><p>${esc(x.d)}</p><div class="meta"><span>${SUBJ[x.s].n}</span><span>${esc(x.g)}</span></div></div>`).join("");
+  $("grid").innerHTML = XP.filter(x=>filter==="all"||x.s===filter||x.s2===filter||(x.ss||[]).includes(filter)).map(x=>`<div class="xp" data-x="${x.id}"><span class="ar">AR</span><div class="ic" style="background:${SUBJ[x.s].c}">${x.icon}</div><h3>${esc(x.t)}</h3><p>${esc(x.d)}</p><div class="meta"><span>${SUBJ[x.s].n}</span><span>${esc(x.g)}</span>${QUIZ[x.id]?`<span>🎯 ${QUIZ[x.id].length} أسئلة</span>`:""}</div></div>`).join("");
 }
 $("chips").addEventListener("click", e=>{ const c=e.target.closest("[data-f]"); if(c){ filter=c.dataset.f; renderHome(); } });
 $("grid").addEventListener("click", e=>{ const c=e.target.closest("[data-x]"); if(c) openXP(c.dataset.x); });
 function showStage(on){ $("home").style.display = on?"none":""; $("stage").classList.toggle("on", on); $("backHome").hidden = !on; window.dispatchEvent(new Event("resize")); }
-function openXP(id){ const x = XP.find(q=>q.id===id); if(!x) return; showStage(true); clearScene(); E.scene.background = null; if(window.speechSynthesis) speechSynthesis.cancel(); x.build(); history.replaceState(null,"","#"+id); }
+function openXP(id){ const x = XP.find(q=>q.id===id); if(!x) return; showStage(true); clearScene(); E.scene.background = null; if(window.speechSynthesis) speechSynthesis.cancel(); x.build(); UI.quiz(QUIZ[id]); history.replaceState(null,"","#"+id); }
 $("backHome").onclick = ()=>{ if(window.speechSynthesis) speechSynthesis.cancel(); clearScene(); showStage(false); history.replaceState(null,"",location.pathname+location.search.replace(/[?&]ai=1[^#]*/,"")); };
 async function runAI(subject, grade, topic){
   if(!topic){ toast("اكتب عنوان الدرس"); return; }
+  const built = matchBuiltin(topic);
+  if(built){ openXP(built.id); toast("✔ فُتحت المحاكاة الدقيقة الجاهزة لهذا الدرس"); return; }
   showStage(true); clearScene(); UI.reset(topic, subject+" — "+grade);
   $("loading").classList.add("on"); $("loadingMsg").textContent = "✨ الذكاء الاصطناعي يصمم المشهد ثلاثي الأبعاد… (10–30 ثانية)";
   const m = matchBuiltin(topic);
@@ -1616,6 +1829,7 @@ $("aiGo").onclick = ()=>runAI($("aiSubject").value, $("aiGrade").value, $("aiTop
 $("aiTopic").addEventListener("keydown", e=>{ if(e.key==="Enter") $("aiGo").click(); });
 
 /* toolbar */
+$("bQuiz").onclick = ()=>{ const q = $("quizBox"); if(q) q.scrollIntoView({behavior:"smooth", block:"center"}); else toast("لا توجد أسئلة لهذا المشهد"); };
 $("bReset").onclick = ()=>camTo(E.home.pos.toArray(), E.home.target.toArray(), 1);
 $("bSpin").onclick = ()=>{ E.autoSpin = !E.autoSpin; $("bSpin").classList.toggle("on", E.autoSpin); };
 $("bShot").onclick = ()=>{ try{ let url;
@@ -1629,11 +1843,11 @@ $("bFull").onclick = ()=>{ const el = $("stage"); if(document.fullscreenElement)
 /* AR camera mode (works on any phone/laptop with a camera) */
 let camStream = null;
 $("bAR").onclick = async ()=>{
-  if(E.ar){ E.ar=false; if(camStream){ camStream.getTracks().forEach(t=>t.stop()); camStream=null; } $("view").classList.remove("ar"); $("bAR").classList.remove("on"); E.floor.visible = E.grid.visible = true; E.scene.background = null; E.scene.fog = null; return; }
+  if(E.ar){ E.ar=false; E.root.traverse(o=>{ if(o.isSprite){ o.scale.multiplyScalar(1/1.3); if(o.userData.base) o.userData.base.multiplyScalar(1/1.3); } }); if(camStream){ camStream.getTracks().forEach(t=>t.stop()); camStream=null; } $("view").classList.remove("ar"); $("bAR").classList.remove("on"); E.floor.visible = E.grid.visible = true; E.scene.background = null; E.scene.fog = null; return; }
   try{
     camStream = await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:"environment"}, width:{ideal:1920}, height:{ideal:1080}}, audio:false});
     $("cam").srcObject = camStream; await $("cam").play().catch(()=>{});
-    E.ar = true; $("view").classList.add("ar"); $("bAR").classList.add("on"); E.floor.visible = false; E.grid.visible = false; E.scene.background = null; E.scene.fog = null;
+    E.ar = true; E.root.traverse(o=>{ if(o.isSprite){ o.scale.multiplyScalar(1.3); if(o.userData.base) o.userData.base.multiplyScalar(1.3); } }); $("view").classList.add("ar"); $("bAR").classList.add("on"); E.floor.visible = false; E.grid.visible = false; E.scene.background = null; E.scene.fog = null;
     toast("📷 الواقع المعزز: وجّه الكاميرا، واسحب لتدوير المجسّم وقرّب بإصبعين");
   }catch(e){ toast(e && e.name==="NotAllowedError" ? "اسمح للمتصفح باستخدام الكاميرا لتفعيل الواقع المعزز" : "لا توجد كاميرا متاحة على هذا الجهاز"); }
 };
