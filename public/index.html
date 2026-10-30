@@ -499,6 +499,7 @@
   .lrc-legend{display:flex; gap:14px; flex-wrap:wrap; margin-top:10px; font-size:12px; color:var(--text-muted);}
   .lrc-legend .lg{display:inline-block; width:12px; height:12px; border-radius:3px; margin-inline-end:5px; vertical-align:-2px;}
   .lg.free{background:color-mix(in srgb, var(--success) 25%, transparent);} .lg.pend{background:color-mix(in srgb, var(--warning) 35%, transparent);} .lg.ok{background:var(--primary-tint); border:1px solid color-mix(in srgb, var(--primary) 35%, transparent);}
+  .lrc-exp-btns{display:flex; gap:6px; flex-wrap:wrap;}
   #lrcProjRow .chip.busy{opacity:.45; text-decoration:line-through; cursor:not-allowed;}
   .tbl-wrap{overflow-x:auto; border:1px solid var(--border); border-radius:var(--radius-s);}
   table.datatable{width:100%; border-collapse:collapse; font-size:13px; min-width:520px;}
@@ -1331,6 +1332,25 @@
         <p class="lrc-hint" id="lrcDayLabel"></p>
         <div class="tbl-wrap"><table class="datatable lrc-grid" id="lrcGrid"></table></div>
         <div class="lrc-legend"><span><i class="lg free"></i>متاح</span><span><i class="lg pend"></i>بانتظار الموافقة</span><span><i class="lg ok"></i>محجوز</span></div>
+      </div>
+
+      <div class="lrc-block" id="lrcExportCard">
+        <div class="lrc-block-head"><h3>⬇️ تنزيل بيانات الحجوزات</h3></div>
+        <div class="row" style="align-items:flex-end;">
+          <div class="field"><label>الفترة</label><select id="lrcExpRange">
+            <option value="day">اليوم المعروض في الجدول</option>
+            <option value="week">أسبوع اليوم المعروض (الأحد–الخميس)</option>
+            <option value="month">شهر اليوم المعروض</option>
+            <option value="all">كل الحجوزات</option>
+          </select></div>
+          <div class="field"><label>الحالة</label><select id="lrcExpStatus">
+            <option value="active">الموافق عليها وبانتظار الموافقة</option>
+            <option value="approved">الموافق عليها فقط</option>
+            <option value="all">الكل (مع المرفوض والملغى)</option>
+          </select></div>
+          <div class="field lrc-exp-btns" style="flex:0 0 auto; min-width:0;"><button class="btn" id="lrcExportBtn">📊 Excel</button><button class="btn" id="lrcPdfBtn">📄 PDF</button><button class="btn ghost" id="lrcPrintBtn">🖨️ طباعة</button></div>
+        </div>
+        <p class="lrc-hint" id="lrcExpHint" style="margin:6px 0 0;"></p>
       </div>
 
       <div class="lrc-block" id="lrcFormCard">
@@ -6224,6 +6244,7 @@ ${points?("نقاط يجب تضمينها صراحة: "+points+"."):""}
         if(!b) return `<td><div class="lrc-cell ${canBook?"free":"off"}" ${canBook?`data-pick="${p}|${r.key}" title="اضغط للحجز"`:""}>${canBook?"+ احجز":"متاح"}</div></td>`;
         return `<td><div class="lrc-cell ${b.status==="approved"?"ok":"pend"}"><b>${escapeHTML(b.teacherName)}</b>${b.type==="projector"?`<span>HDMI نوع ${AR_NUM(b.hdmi)}</span>`:""}<span>${b.status==="approved"?"محجوز":"بانتظار الموافقة"}</span></div></td>`;
       }).join("")}</tr>`).join("")}</tbody>`;
+    lrcUpdateExportHint();
     // form + my bookings (anyone with a teacher record; admins only view)
     document.getElementById("lrcFormCard").hidden = !canBook;
     document.getElementById("lrcMineCard").hidden = !canBook;
@@ -6236,6 +6257,114 @@ ${points?("نقاط يجب تضمينها صراحة: "+points+"."):""}
         || `<tr><td colspan="5" style="text-align:center; color:var(--text-muted); padding:18px;">لا توجد حجوزات بعد</td></tr>`}</tbody>`;
     }
   }
+  function lrcExportRows(){
+    const day = document.getElementById("lrcDate").value || lrcToday();
+    const range = document.getElementById("lrcExpRange").value, st = document.getElementById("lrcExpStatus").value;
+    let from = "", to = "";
+    if(range==="day"){ from = to = day; }
+    else if(range==="week"){ const d=new Date(day+"T12:00:00"); d.setDate(d.getDate()-d.getDay()); from=d.toISOString().slice(0,10); d.setDate(d.getDate()+4); to=d.toISOString().slice(0,10); }
+    else if(range==="month"){ from = day.slice(0,7)+"-01"; to = day.slice(0,7)+"-31"; }
+    const me = meTeacher(), mgr = isLrcManager(), isAdminUser = currentUser && currentUser.role==="admin";
+    return lrcBookings
+      .filter(b=> mgr || isAdminUser || (me && b.teacherId===me.id))
+      .filter(b=> !from || (b.date>=from && b.date<=to))
+      .filter(b=> st==="all" || (st==="approved" ? b.status==="approved" : lrcActive(b)))
+      .sort((a,b)=> (a.date+String(a.period)).localeCompare(b.date+String(b.period)) || (lrcResKey(a)).localeCompare(lrcResKey(b)));
+  }
+  const LRC_STATUS_AR = {pending:"بانتظار الموافقة", approved:"موافق عليه", rejected:"مرفوض", cancelled:"ملغى"};
+  function lrcUpdateExportHint(){
+    const el = document.getElementById("lrcExpHint"); if(!el) return;
+    const n = lrcExportRows().length;
+    el.textContent = n ? `سيُنزَّل ${AR_NUM(n)} حجزًا.` : "لا توجد حجوزات في هذه الفترة.";
+  }
+  ["lrcExpRange","lrcExpStatus"].forEach(id=>document.getElementById(id).addEventListener("change", lrcUpdateExportHint));
+  document.getElementById("lrcExportBtn").addEventListener("click", async ()=>{
+    await loadLrc();
+    const rows = lrcExportRows();
+    if(!rows.length){ toast("لا توجد حجوزات في هذه الفترة"); lrcUpdateExportHint(); return; }
+    if(typeof XLSX==="undefined"){ toast("تعذّر تحميل مكتبة Excel — تحقق من الاتصال"); return; }
+    const data = rows.map(b=>({
+      "التاريخ": b.date, "اليوم": (()=>{ try{ return new Date(b.date+"T12:00:00").toLocaleDateString("ar-OM",{weekday:"long"}); }catch(e){ return ""; } })(),
+      "الحصة": b.period, "الوقت": PERIOD_TIMES_DISPLAY[b.period]||"",
+      "نوع الحجز": b.type==="room" ? "قاعة مصادر التعلم" : "جهاز عرض (بروكسيما)",
+      "رقم الجهاز": b.type==="projector" ? b.projectorNo : "", "نوع HDMI": b.type==="projector" ? ("النوع "+b.hdmi) : "",
+      "اسم المعلم": b.teacherName, "الحالة": LRC_STATUS_AR[b.status]||b.status, "ملاحظة": b.note||"",
+      "تاريخ الطلب": (b.createdAt||"").slice(0,16).replace("T"," "), "القرار بواسطة": b.decidedBy||"", "سبب الرفض": b.reason||""
+    }));
+    const ws = XLSX.utils.json_to_sheet(data);
+    ws["!cols"] = [{wch:12},{wch:10},{wch:7},{wch:12},{wch:20},{wch:10},{wch:10},{wch:28},{wch:16},{wch:30},{wch:17},{wch:20},{wch:22}];
+    const wb = XLSX.utils.book_new(); wb.Workbook = {Views:[{RTL:true}]};
+    XLSX.utils.book_append_sheet(wb, ws, "حجوزات مركز المصادر");
+    const range = document.getElementById("lrcExpRange").value, day = document.getElementById("lrcDate").value || lrcToday();
+    XLSX.writeFile(wb, `حجوزات-مركز-مصادر-التعلم-${range==="all"?"الكل":range==="month"?day.slice(0,7):day}.xlsx`);
+    toast(`⬇️ تم تنزيل ${AR_NUM(rows.length)} حجزًا`);
+  });
+  function lrcRangeTitle(){
+    const range = document.getElementById("lrcExpRange").value, day = document.getElementById("lrcDate").value || lrcToday();
+    if(range==="day") return lrcDayName(day);
+    if(range==="week"){ const d=new Date(day+"T12:00:00"); d.setDate(d.getDate()-d.getDay()); const a=d.toISOString().slice(0,10); d.setDate(d.getDate()+4); return `الأسبوع من ${lrcDayName(a)} إلى ${lrcDayName(d.toISOString().slice(0,10))}`; }
+    if(range==="month"){ try{ return "شهر " + new Date(day+"T12:00:00").toLocaleDateString("ar-OM",{month:"long", year:"numeric"}); }catch(e){ return day.slice(0,7); } }
+    return "كل الحجوزات";
+  }
+  // Printable A4-landscape page(s) of bookings — used for both PDF and print.
+  function lrcReportPages(rows){
+    const per = 18, pages = [];
+    for(let i=0;i<rows.length;i+=per) pages.push(rows.slice(i,i+per));
+    const school = escapeHTML(schoolInfo.name||"");
+    return pages.map((chunk,pi)=>`<div style="background:#fff; color:#111; padding:26px 28px; direction:rtl; font-family:'IBM Plex Sans Arabic','Cairo',sans-serif; width:1100px;">
+      <div style="display:flex; justify-content:space-between; align-items:flex-end; border-bottom:3px solid #0B5457; padding-bottom:10px; margin-bottom:14px;">
+        <div><div style="font-size:12px; color:#555;">المديرية العامة للتعليم بمحافظة البريمي · ${school}</div>
+          <div style="font-family:Cairo,sans-serif; font-size:22px; font-weight:800; color:#0B5457; margin-top:4px;">حجوزات مركز مصادر التعلم</div>
+          <div style="font-size:13px; color:#333; margin-top:2px;">${escapeHTML(lrcRangeTitle())}</div></div>
+        <div style="font-size:11px; color:#777; text-align:left;">عدد الحجوزات: ${AR_NUM(rows.length)}<br>صفحة ${AR_NUM(pi+1)} من ${AR_NUM(pages.length)}</div>
+      </div>
+      <table style="width:100%; border-collapse:collapse; font-size:12.5px;">
+        <thead><tr>${["التاريخ","الحصة","الوقت","الحجز","HDMI","اسم المعلم","الحالة","ملاحظة"].map(h=>`<th style="background:#E3EFEE; color:#06393B; border:1px solid #cfd8d6; padding:7px 6px; font-weight:800;">${h}</th>`).join("")}</tr></thead>
+        <tbody>${chunk.map((b,ri)=>`<tr style="background:${ri%2?"#FBF7EE":"#fff"};">
+          <td style="border:1px solid #ddd; padding:6px; white-space:nowrap;">${escapeHTML(lrcDayName(b.date))}</td>
+          <td style="border:1px solid #ddd; padding:6px; text-align:center; font-weight:700;">${AR_NUM(b.period)}</td>
+          <td style="border:1px solid #ddd; padding:6px; text-align:center; direction:ltr;">${PERIOD_TIMES_DISPLAY[b.period]||""}</td>
+          <td style="border:1px solid #ddd; padding:6px;">${b.type==="room"?"قاعة مصادر التعلم":"بروكسيما "+AR_NUM(b.projectorNo)}</td>
+          <td style="border:1px solid #ddd; padding:6px; text-align:center;">${b.type==="projector"?"النوع "+AR_NUM(b.hdmi):"—"}</td>
+          <td style="border:1px solid #ddd; padding:6px; font-weight:700;">${escapeHTML(b.teacherName)}</td>
+          <td style="border:1px solid #ddd; padding:6px; text-align:center; color:${b.status==="approved"?"#2E7D4F":b.status==="pending"?"#A0650F":"#B23A3A"}; font-weight:700;">${LRC_STATUS_AR[b.status]||b.status}</td>
+          <td style="border:1px solid #ddd; padding:6px;">${escapeHTML(b.note||"")}${b.reason?` <span style="color:#B23A3A;">(${escapeHTML(b.reason)})</span>`:""}</td></tr>`).join("")}</tbody>
+      </table>
+      <div style="display:flex; justify-content:space-between; margin-top:22px; font-size:12px; color:#333;">
+        <div>أخصائية مصادر التعلم: ............................</div><div>التوقيع: ............................</div>
+      </div>
+      <div style="margin-top:10px; font-size:10px; color:#999; text-align:center;">صادر من منصة المعلّم الذكية · ${new Date().toLocaleDateString("ar-OM")}</div>
+    </div>`);
+  }
+  document.getElementById("lrcPdfBtn").addEventListener("click", async ()=>{
+    await loadLrc();
+    const rows = lrcExportRows();
+    if(!rows.length){ toast("لا توجد حجوزات في هذه الفترة"); lrcUpdateExportHint(); return; }
+    if(typeof window.jspdf==="undefined" || typeof html2canvas==="undefined"){ toast("⚠️ تعذّر تحميل PDF حاليًا — جرّب Excel أو الطباعة"); return; }
+    const btn = document.getElementById("lrcPdfBtn"); btn.disabled = true; btn.textContent = "⏳ جارٍ التجهيز...";
+    try{
+      const { jsPDF } = window.jspdf;
+      const pdf = new jsPDF({orientation:"landscape", unit:"pt", format:"a4"});
+      const pages = lrcReportPages(rows);
+      for(let i=0;i<pages.length;i++) await renderHolderToPdfPage(pdf, pages[i], i===0);
+      const range = document.getElementById("lrcExpRange").value, day = document.getElementById("lrcDate").value || lrcToday();
+      downloadBlob(`حجوزات-مركز-مصادر-التعلم-${range==="all"?"الكل":range==="month"?day.slice(0,7):day}.pdf`, pdf.output("blob"));
+      toast(`✅ تم تنزيل PDF (${AR_NUM(rows.length)} حجزًا)`);
+    }catch(err){ toast("⚠️ تعذّر إنشاء ملف PDF — جرّب Excel أو الطباعة"); }
+    btn.disabled = false; btn.textContent = "📄 PDF";
+  });
+  document.getElementById("lrcPrintBtn").addEventListener("click", async ()=>{
+    await loadLrc();
+    const rows = lrcExportRows();
+    if(!rows.length){ toast("لا توجد حجوزات في هذه الفترة"); return; }
+    const w = window.open("", "_blank");
+    if(!w){ toast("اسمح بالنوافذ المنبثقة للطباعة"); return; }
+    w.document.write(`<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><title>حجوزات مركز مصادر التعلم</title>
+      <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@700;800&family=IBM+Plex+Sans+Arabic:wght@400;700&display=swap" rel="stylesheet">
+      <style>@page{size:A4 landscape; margin:10mm;} body{margin:0;} .pg{page-break-after:always;} .pg:last-child{page-break-after:auto;} .pg>div{width:auto !important;}</style></head>
+      <body>${lrcReportPages(rows).map(h=>`<div class="pg">${h}</div>`).join("")}<script>window.onload=function(){setTimeout(function(){window.print();},400);};<\/script></body></html>`);
+    w.document.close();
+  });
   function lrcRenderFormChips(){
     const date = document.getElementById("lrcFormDate").value, period = +document.getElementById("lrcFormPeriod").value;
     document.querySelectorAll("#lrcTypeRow [data-lrctype]").forEach(c=>c.classList.toggle("selected", c.dataset.lrctype===lrcForm.type));
