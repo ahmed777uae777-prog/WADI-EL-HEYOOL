@@ -483,6 +483,31 @@
   .btn.danger{background:var(--danger); color:#fff;} .btn.danger:hover{filter:brightness(.92);}
   .btn.ghost.danger-text{color:var(--danger);}
   /* learning resources centre */
+  /* المبادرات والإنجازات */
+  .pf-chips{display:flex; gap:6px; flex-wrap:wrap; margin:8px 0 4px;}
+  .pf-chip{display:inline-flex; align-items:center; gap:6px; max-width:100%; padding:5px 10px; border-radius:999px; background:var(--primary-tint); color:var(--primary-strong); font-size:12px; font-weight:700; border:1px solid color-mix(in srgb, var(--primary) 25%, transparent); text-decoration:none;}
+  .pf-chip span{overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:320px; direction:ltr;}
+  .pf-chip button{border:0; background:none; color:var(--danger); cursor:pointer; font-size:13px; padding:0;}
+  .pf-drop{display:flex; flex-direction:column; align-items:center; gap:4px; padding:18px; border:2px dashed color-mix(in srgb, var(--primary) 35%, var(--border)); border-radius:var(--radius-m); background:var(--surface-2); cursor:pointer; text-align:center; font-weight:700; color:var(--primary-strong);}
+  .pf-drop small{font-weight:500; color:var(--text-muted);}
+  .pf-drop.drag{background:var(--primary-tint);}
+  .pf-uploads{display:flex; flex-direction:column; gap:6px; margin:10px 0;}
+  .pf-up{display:flex; align-items:center; gap:10px; font-size:12.5px; padding:6px 10px; border:1px solid var(--border); border-radius:8px; background:var(--surface);}
+  .pf-up .bar{flex:1; height:6px; border-radius:6px; background:var(--surface-3); overflow:hidden;} .pf-up .bar i{display:block; height:100%; background:var(--primary); width:0;}
+  .pf-up.done .bar i{background:var(--success);} .pf-up.err{border-color:var(--danger);}
+  .pf-card{border:1px solid var(--border); border-radius:var(--radius-m); padding:16px; margin-bottom:12px; background:var(--surface); box-shadow:var(--shadow);}
+  .pf-card-head{display:flex; justify-content:space-between; gap:10px; flex-wrap:wrap; align-items:flex-start;}
+  .pf-card h4{font-family:Cairo,sans-serif; font-size:16px; margin:0 0 4px;}
+  .pf-meta{font-size:12.5px; color:var(--text-muted); display:flex; gap:10px; flex-wrap:wrap;}
+  .pf-desc{white-space:pre-wrap; font-size:14px; line-height:1.85; margin:10px 0; color:var(--text);}
+  .pf-gallery{display:flex; gap:8px; flex-wrap:wrap; margin-top:8px;}
+  .pf-gallery img{width:120px; height:90px; object-fit:cover; border-radius:8px; border:1px solid var(--border); cursor:zoom-in;}
+  .pf-gallery video{width:220px; max-height:150px; border-radius:8px; background:#000;}
+  .pf-eval{margin-top:12px; padding:12px; border-radius:var(--radius-s); background:var(--accent-tint); border:1px solid color-mix(in srgb, var(--accent) 35%, var(--border));}
+  .pf-eval .row{align-items:flex-end;}
+  .pf-result{margin-top:10px; padding:10px 12px; border-radius:var(--radius-s); font-size:13.5px;}
+  .pf-result.ok{background:color-mix(in srgb, var(--success) 12%, transparent); border:1px solid color-mix(in srgb, var(--success) 35%, transparent);}
+  .pf-result.need{background:color-mix(in srgb, var(--warning) 14%, transparent); border:1px solid color-mix(in srgb, var(--warning) 40%, transparent);}
   .lrc-block{border:1px solid var(--border); border-radius:var(--radius-m); padding:16px; margin-bottom:16px; background:var(--surface);}
   .lrc-block-head{display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap; margin-bottom:12px;}
   .lrc-block-head h3{font-size:16px;}
@@ -1404,6 +1429,48 @@
     </div>
   </section>
 
+  <!-- المبادرات والإنجازات: teachers document their year's work (evidence for إجادة); leadership evaluates -->
+  <section class="view" id="view-portfolio">
+    <div class="card">
+      <div class="view-head"><h2 id="pfTitle">🏅 مبادراتي وإنجازاتي</h2><p id="pfSub">وثّق أعمالك ومبادراتك خلال العام الدراسي مع شواهدها (روابط، صور، فيديو، ملفات) لتصل للإدارة وتُقيَّم في منصة إجادة.</p></div>
+      <div class="stats-row" id="pfStats"></div>
+
+      <div class="lrc-block" id="pfFormCard" hidden>
+        <div class="lrc-block-head"><h3 id="pfFormTitle">➕ عمل جديد</h3><button class="btn ghost sm" id="pfFormCancel" hidden>إلغاء التعديل</button></div>
+        <div class="row">
+          <div class="field" style="flex:2;"><label>عنوان العمل *</label><input type="text" id="pfT" maxlength="200" placeholder="مثال: مبادرة «القارئ الصغير» لتعزيز القراءة في الصف الخامس"></div>
+          <div class="field"><label>نوع العمل</label><select id="pfType"></select></div>
+          <div class="field"><label>التاريخ</label><input type="date" id="pfDate"></div>
+        </div>
+        <div class="row">
+          <div class="field"><label>المجال / المعيار في إجادة (اختياري)</label><input type="text" id="pfDomain" maxlength="120" placeholder="مثال: التنمية المهنية، التخطيط للتعلم، المشاركة المجتمعية"></div>
+          <div class="field"><label>المستفيدون (اختياري)</label><input type="text" id="pfBen" maxlength="300" placeholder="مثال: طلاب الصف الخامس/١ (٢٤ طالبًا)"></div>
+        </div>
+        <div class="field"><label>اكتب أعمالك: وصف العمل، أهدافه، ما نفّذته، والنتائج *</label><textarea id="pfDesc" rows="6" maxlength="6000" placeholder="اكتب هنا تفاصيل العمل بلغتك..."></textarea></div>
+        <div class="step-label">🔗 الروابط (يوتيوب، Google Drive، منشور، موقع...)</div>
+        <div class="acc-inline"><input type="url" id="pfLinkIn" placeholder="https://..." dir="ltr"><button type="button" class="btn ghost sm" id="pfLinkAdd">+ إضافة رابط</button></div>
+        <div class="pf-chips" id="pfLinks"></div>
+        <div class="step-label">📎 الشواهد: صور، فيديو، PDF، Word، PowerPoint، أي ملف (حتى ٢٠ ميجابايت للملف)</div>
+        <label class="pf-drop" id="pfDrop"><input type="file" id="pfFiles" multiple hidden><span>📂 اضغط لاختيار الملفات أو اسحبها هنا</span><small>الصور تُضغط تلقائيًا. للفيديو الطويل يُفضّل رفعه على يوتيوب/Drive وإضافة رابطه.</small></label>
+        <div id="pfUploads" class="pf-uploads"></div>
+        <div id="pfMsg" class="note" hidden></div>
+        <button class="btn" id="pfSave">📤 إرسال للتقييم</button>
+      </div>
+
+      <div class="toolbar" id="pfAdminBar" hidden>
+        <div class="grp" style="flex:1; min-width:180px;"><input type="text" id="pfQ" placeholder="🔎 ابحث بالعنوان أو اسم المعلم..."></div>
+        <div class="grp"><select id="pfTeacherF" style="min-width:170px;"></select></div>
+        <div class="grp"><select id="pfStatusF"><option value="">كل الحالات</option><option value="pending">بانتظار التقييم</option><option value="evaluated">تم التقييم</option><option value="needs_info">يحتاج استكمال</option></select></div>
+        <div class="grp"><select id="pfTypeF"><option value="">كل الأنواع</option></select></div>
+      </div>
+      <div class="toolbar" style="justify-content:space-between;">
+        <strong id="pfListTitle" style="font-family:Cairo,sans-serif;">أعمالي</strong>
+        <div class="grp"><button class="btn ghost sm" id="pfRefresh">🔄 تحديث</button><button class="btn ghost sm" id="pfExport">📊 تنزيل Excel</button></div>
+      </div>
+      <div id="pfList"></div>
+    </div>
+  </section>
+
   <!-- TEACHER: absence wizard -->
   <section class="view" id="view-teacherabsence">
     <div class="card">
@@ -1640,7 +1707,8 @@
     {id:"teacherstudentabsence", icon:"🧑‍🎓", title:"تسجيل غياب طالب", desc:"سجّل غياب طالب لإرساله لاعتماد المدير وإشعار ولي الأمر"},
     {id:"teacherschedule", icon:"📅", title:"جدولي الأسبوعي", desc:"جدولك وسجل طلباتك السابقة"},
     {id:"teachersubs", icon:"🔄", title:"حصصي الاحتياطية", desc:"الحصص التي كُلّفت بتغطيتها"},
-    {id:"lrc", icon:"🏛️", title:"مركز مصادر التعلم", desc:"حجز قاعة المصادر وأجهزة العرض لحصتك"}
+    {id:"lrc", icon:"🏛️", title:"مركز مصادر التعلم", desc:"حجز قاعة المصادر وأجهزة العرض لحصتك"},
+    {id:"portfolio", icon:"🏅", title:"مبادراتي وإنجازاتي", desc:"وثّق أعمالك خلال السنة مع الشواهد لتقييمها في إجادة", accent:true}
   ];
   const ADMIN_TILES = [
     {id:"admindash", icon:"📊", title:"لوحة التحكم", desc:"إحصائيات المدرسة العامة", accent:true},
@@ -1656,10 +1724,12 @@
     {id:"adminteachers", icon:"👥", title:"سجل ومعلمو المدرسة", desc:"سجل الكادر التعليمي الكامل، وإدارة حسابات الدخول"},
     {id:"lrc", icon:"🏛️", title:"مركز مصادر التعلم", desc:"جدول حجوزات القاعة وأجهزة العرض"},
     {id:"absinbox", icon:"📥", title:"الغياب الوارد", desc:"غياب الطلاب كما يصل لأخصائي قواعد البيانات، وحالة إدخاله"},
+    {id:"portfolio", icon:"🏅", title:"مبادرات وإنجازات المعلمين", desc:"مراجعة أعمال المعلمين وشواهدها وتقييمها لإجادة", accent:true},
     {id:"adminaccounts", icon:"🗄️", title:"قاعدة بيانات المعلمين", desc:"إنشاء حسابات المعلمين وتعديلها وتعطيلها وحذفها من مكان واحد", accent:true}
   ];
 
   const ICON_PATHS = {
+    portfolio: '<circle cx="12" cy="9" r="5"/><path d="m9 13.5-1.5 7L12 18l4.5 2.5-1.5-7"/><path d="m10.3 9 1.2 1.2 2.3-2.4"/>',
     absinbox: '<path d="M4 13h4l1.5 2.5h5L16 13h4"/><path d="M5.5 6h13L20 13v5a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 4 18v-5z"/><path d="M12 3v6M9.5 6.5 12 9l2.5-2.5"/>',
     lrc: '<path d="M3 9.5 12 4l9 5.5"/><path d="M5 10v8M9.5 10v8M14.5 10v8M19 10v8"/><path d="M3 20.5h18"/>',
     adminaccounts: '<ellipse cx="12" cy="5.5" rx="7" ry="2.6"/><path d="M5 5.5v6.5c0 1.4 3.1 2.6 7 2.6s7-1.2 7-2.6V5.5"/><path d="M5 12v6.5c0 1.4 3.1 2.6 7 2.6s7-1.2 7-2.6V12"/>',
@@ -1771,6 +1841,8 @@
   function tileHTML(it){
     let badge = 0;
     if(it.id==="adminabsencehub") badge = absences.filter(a=>a.status==="بانتظار الاعتماد").length + subs.filter(s=>subStatusCode(s)==="PENDING").length + studentAbsences.filter(a=>a.status==="بانتظار اعتماد المدير" || a.status==="يحتاج إعادة اعتماد").length;
+    else if(it.id==="portfolio" && currentUser && currentUser.role==="admin") badge = pfList.filter(e=>e.status==="pending").length;
+    else if(it.id==="portfolio") badge = pfList.filter(e=>e.status==="needs_info").length;
     else if(it.id==="absinbox") badge = studentAbsences.filter(a=>!a.recordedAt && a.status!=="مرفوض").length;
     else if(it.id==="lrc" && isLrcManager()) badge = lrcBookings.filter(b=>b.status==="pending").length;
     else if(it.id==="teachersubs" && currentUser) badge = subs.filter(s=>s.subTeacher===currentUser.name && s.seen===false).length;
@@ -1783,6 +1855,7 @@
     </button>`;
   }
   function renderDashboardTiles(){
+    if(currentUser && window.__serverAuth && !pfLoaded && !window.__pfLoading){ window.__pfLoading = true; pfLoad().then(ok=>{ if(ok) renderDashboardTiles(); }).finally(()=>{ window.__pfLoading = false; }); }
     if(currentUser && !lrcLoaded && !window.__lrcLoading){ window.__lrcLoading = true; refreshLrcQuiet().finally(()=>{ window.__lrcLoading = false; }); }
     let items = [];
     if(currentUser && currentUser.role==="admin") items = ADMIN_TILES;
@@ -1920,6 +1993,7 @@
     if(id==="adminaccounts" && currentUser && currentUser.role==="admin") renderAdminAccounts();
     if(id==="lrc" && currentUser) renderLrc(true);
     if(id==="absinbox" && currentUser) renderAbsInbox(true);
+    if(id==="portfolio" && currentUser) renderPortfolio(true);
     document.getElementById("crumbWrap").hidden = (id==="dashboard" || id==="identify" || (id==="absinbox" && currentUser && currentUser.role==="teacher"));
     window.scrollTo({top:0, behavior:"smooth"});
   }
@@ -6637,6 +6711,206 @@ ${points?("نقاط يجب تضمينها صراحة: "+points+"."):""}
     const ws = XLSX.utils.json_to_sheet(data); ws["!cols"]=[{wch:30},{wch:16},{wch:8},{wch:12},{wch:8},{wch:18},{wch:24},{wch:20},{wch:24},{wch:18},{wch:14},{wch:20}];
     const wb = XLSX.utils.book_new(); wb.Workbook={Views:[{RTL:true}]}; XLSX.utils.book_append_sheet(wb, ws, "الغياب الوارد");
     XLSX.writeFile(wb, `الغياب-الوارد-${document.getElementById("aiAllDates").checked?"الكل":document.getElementById("aiDate").value}.xlsx`);
+  });
+
+  /* ---------------- المبادرات والإنجازات ---------------- */
+  let pfList = [], pfLoaded = false, pfTypes = [];
+  let pfDraft = {links:[], files:[], editing:null};
+  const PF_STATUS = {pending:["wait","بانتظار التقييم"], evaluated:["ok","تم التقييم"], needs_info:["bad","يحتاج استكمال"]};
+  const pfIsAdmin = ()=> !!(currentUser && currentUser.role==="admin");
+  const fmtSize = n => n>1048576 ? (n/1048576).toFixed(1)+" م.ب" : Math.max(1,Math.round(n/1024))+" ك.ب";
+  async function pfLoad(){
+    try{ const r = await fetch("/api/portfolio", {cache:"no-store", credentials:"same-origin"}); if(!r.ok) return false;
+      const d = await r.json(); pfList = d.list||[]; pfTypes = d.types||[]; pfLoaded = true; return true; }catch(e){ return false; }
+  }
+  function pfFileIcon(f){ return /^image\//.test(f.type)?"🖼️":/^video\//.test(f.type)?"🎬":/pdf/.test(f.type)?"📕":/word|document/.test(f.type)?"📘":/sheet|excel/.test(f.type)?"📗":/presentation|powerpoint/.test(f.type)?"📙":"📎"; }
+  function pfEvidenceHTML(e){
+    const imgs = (e.files||[]).filter(f=>/^image\/(png|jpe?g|gif|webp|bmp)/i.test(f.type));
+    const vids = (e.files||[]).filter(f=>/^video\//.test(f.type));
+    const others = (e.files||[]).filter(f=>!imgs.includes(f) && !vids.includes(f));
+    return `${imgs.length||vids.length?`<div class="pf-gallery">${imgs.map(f=>`<a href="/api/files/${encodeURIComponent(f.id)}" target="_blank" rel="noopener"><img loading="lazy" src="/api/files/${encodeURIComponent(f.id)}" alt="${escapeHTML(f.name)}"></a>`).join("")}${vids.map(f=>`<video controls preload="metadata" src="/api/files/${encodeURIComponent(f.id)}"></video>`).join("")}</div>`:""}
+      ${others.length||(e.links||[]).length?`<div class="pf-chips">${others.map(f=>`<a class="pf-chip" href="/api/files/${encodeURIComponent(f.id)}?download=1">${pfFileIcon(f)} <span style="direction:rtl;">${escapeHTML(f.name)}</span> <small>${fmtSize(f.size)}</small></a>`).join("")}${(e.links||[]).map(u=>`<a class="pf-chip" href="${escapeHTML(u)}" target="_blank" rel="noopener noreferrer">🔗 <span>${escapeHTML(u)}</span></a>`).join("")}</div>`:""}`;
+  }
+  async function renderPortfolio(reload){
+    if(reload || !pfLoaded){ document.getElementById("pfList").innerHTML = `<p class="empty-hint">جارٍ التحميل...</p>`; await schoolDataReady; await pfLoad(); }
+    const admin = pfIsAdmin();
+    document.getElementById("pfTitle").textContent = admin ? "🏅 مبادرات وإنجازات المعلمين" : "🏅 مبادراتي وإنجازاتي";
+    document.getElementById("pfSub").textContent = admin ? "أعمال المعلمين ومبادراتهم خلال العام مع شواهدها — راجعها وقيّمها، أو اطلب استكمالها، تمهيدًا لإدخالها في منصة إجادة." : "وثّق أعمالك ومبادراتك خلال العام الدراسي مع شواهدها (روابط، صور، فيديو، ملفات) لتصل للمدير ومساعدته وتُقيَّم في منصة إجادة.";
+    document.getElementById("pfFormCard").hidden = admin;
+    document.getElementById("pfAdminBar").hidden = !admin;
+    document.getElementById("pfListTitle").textContent = admin ? "أعمال المعلمين" : "أعمالي";
+    const typeSel = document.getElementById("pfType");
+    if(!typeSel.options.length && pfTypes.length){ typeSel.innerHTML = pfTypes.map(t=>`<option>${escapeHTML(t)}</option>`).join(""); document.getElementById("pfTypeF").innerHTML = `<option value="">كل الأنواع</option>`+pfTypes.map(t=>`<option>${escapeHTML(t)}</option>`).join(""); }
+    if(!document.getElementById("pfDate").value) document.getElementById("pfDate").value = todayISO();
+    if(admin){
+      const tSel = document.getElementById("pfTeacherF"), cur = tSel.value;
+      const names = [...new Map(pfList.map(e=>[e.teacherId, e.teacherName])).entries()].sort((a,b)=>a[1].localeCompare(b[1],"ar"));
+      tSel.innerHTML = `<option value="">كل المعلمين (${names.length})</option>` + names.map(([id,n])=>`<option value="${escapeHTML(id)}">${escapeHTML(n)} (${pfList.filter(e=>e.teacherId===id).length})</option>`).join("");
+      tSel.value = cur;
+    }
+    const c = k => pfList.filter(e=>e.status===k).length;
+    document.getElementById("pfStats").innerHTML = `
+      <div class="stat-tile"><div class="stat-ic">${iconSVG("portfolio")}</div><div class="num">${pfList.length}</div><div class="lbl">${admin?"إجمالي الأعمال":"أعمالي"}</div></div>
+      <div class="stat-tile"><div class="stat-ic">${iconSVG("portfolio")}</div><div class="num" style="color:${c("pending")?'var(--warning)':'inherit'};">${c("pending")}</div><div class="lbl">بانتظار التقييم</div></div>
+      <div class="stat-tile"><div class="stat-ic">${iconSVG("portfolio")}</div><div class="num">${c("evaluated")}</div><div class="lbl">تم تقييمها</div></div>
+      ${admin?`<div class="stat-tile"><div class="stat-ic">${iconSVG("adminteachers")}</div><div class="num">${new Set(pfList.map(e=>e.teacherId)).size}</div><div class="lbl">معلمون مشاركون</div></div>`:`<div class="stat-tile"><div class="stat-ic">${iconSVG("portfolio")}</div><div class="num" style="color:${c("needs_info")?'var(--danger)':'inherit'};">${c("needs_info")}</div><div class="lbl">مطلوب استكمالها</div></div>`}`;
+    pfRenderDraft();
+    pfRenderList();
+  }
+  function pfFiltered(){
+    if(!pfIsAdmin()) return pfList;
+    const q = document.getElementById("pfQ").value.trim().toLowerCase(), t = document.getElementById("pfTeacherF").value, st = document.getElementById("pfStatusF").value, ty = document.getElementById("pfTypeF").value;
+    return pfList.filter(e=> (!t||e.teacherId===t) && (!st||e.status===st) && (!ty||e.type===ty) && (!q || (e.title||"").toLowerCase().includes(q) || (e.teacherName||"").toLowerCase().includes(q) || (e.description||"").toLowerCase().includes(q)));
+  }
+  function pfRenderList(){
+    const admin = pfIsAdmin(), list = pfFiltered();
+    document.getElementById("pfList").innerHTML = list.map(e=>{
+      const [cls,label] = PF_STATUS[e.status]||PF_STATUS.pending;
+      const ev = e.evaluation;
+      return `<div class="pf-card" data-pf="${escapeHTML(e.id)}">
+        <div class="pf-card-head"><div><h4>${escapeHTML(e.title)}</h4>
+          <div class="pf-meta">${admin?`<span>👤 <b>${escapeHTML(e.teacherName||"")}</b>${e.subject?" — "+escapeHTML(e.subject):""}</span>`:""}<span>🏷️ ${escapeHTML(e.type||"")}</span><span>📅 ${escapeHTML(e.date||"")}</span>${e.domain?`<span>🎯 ${escapeHTML(e.domain)}</span>`:""}${e.beneficiaries?`<span>👥 ${escapeHTML(e.beneficiaries)}</span>`:""}</div></div>
+          <div class="acc-actions"><span class="pill ${cls}">${label}${ev&&ev.rating?" — "+escapeHTML(ev.rating):""}</span>
+            ${!admin && e.status!=="evaluated" ? `<button class="btn ghost sm" data-pfa="edit">✏️ تعديل</button><button class="btn ghost sm danger-text" data-pfa="del">🗑️</button>` : ""}
+            ${admin ? `<button class="btn ghost sm danger-text" data-pfa="del" title="حذف">🗑️</button>` : ""}</div></div>
+        ${e.description?`<div class="pf-desc">${escapeHTML(e.description)}</div>`:""}
+        ${pfEvidenceHTML(e)}
+        ${ev && (ev.note||ev.rating) ? `<div class="pf-result ${e.status==="evaluated"?"ok":"need"}"><b>${e.status==="evaluated"?"✅ التقييم":"↩︎ مطلوب استكمال"}${ev.rating?": "+escapeHTML(ev.rating):""}</b>${ev.note?`<div style="margin-top:4px; white-space:pre-wrap;">${escapeHTML(ev.note)}</div>`:""}<div style="font-size:11.5px; color:var(--text-muted); margin-top:4px;">${escapeHTML(ev.by||"")} · ${escapeHTML((ev.at||"").slice(0,10))}</div></div>` : ""}
+        ${admin ? `<div class="pf-eval"><div class="row">
+            <div class="field" style="flex:0 0 170px;"><label>التقدير</label><select class="pf-rate"><option value="">— اختر —</option>${["ممتاز","جيد جدًا","جيد","مقبول"].map(r=>`<option ${ev&&ev.rating===r?"selected":""}>${r}</option>`).join("")}</select></div>
+            <div class="field" style="flex:1;"><label>ملاحظات المقيّم</label><input type="text" class="pf-note" maxlength="2000" value="${escapeHTML(ev&&ev.note||"")}" placeholder="ملاحظة للمعلم (اختياري)"></div>
+            <div class="field lrc-exp-btns" style="flex:0 0 auto;"><button class="btn sm" data-pfa="eval">✓ اعتماد التقييم</button><button class="btn ghost sm" data-pfa="need">↩︎ طلب استكمال</button></div>
+          </div></div>` : ""}
+      </div>`;
+    }).join("") || `<p class="empty-hint">${admin ? "لا توجد أعمال مطابقة بعد." : "لم تضف أي عمل بعد — ابدأ من النموذج أعلاه."}</p>`;
+  }
+  function pfRenderDraft(){
+    document.getElementById("pfLinks").innerHTML = pfDraft.links.map((u,i)=>`<span class="pf-chip">🔗 <span>${escapeHTML(u)}</span><button type="button" data-rmlink="${i}" title="إزالة">✕</button></span>`).join("");
+    const done = pfDraft.files.filter(f=>f.id);
+    document.getElementById("pfUploads").innerHTML = pfDraft.files.map((f,i)=>`<div class="pf-up ${f.id?"done":""} ${f.err?"err":""}">${pfFileIcon(f)} <span style="min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:260px;">${escapeHTML(f.name)}</span><small>${f.size?fmtSize(f.size):""}</small><span class="bar"><i style="width:${f.id?100:(f.pct||0)}%"></i></span>${f.err?`<small style="color:var(--danger);">${escapeHTML(f.err)}</small>`:""}<button type="button" class="btn ghost sm" data-rmfile="${i}" title="إزالة">✕</button></div>`).join("");
+    document.getElementById("pfFormTitle").textContent = pfDraft.editing ? "✏️ تعديل العمل" : "➕ عمل جديد";
+    document.getElementById("pfFormCancel").hidden = !pfDraft.editing;
+    document.getElementById("pfSave").textContent = pfDraft.editing ? "💾 حفظ وإعادة الإرسال للتقييم" : "📤 إرسال للتقييم";
+  }
+  function pfMsg(t, bad){ const el=document.getElementById("pfMsg"); el.textContent=t; el.hidden=!t; el.classList.toggle("warn",!!bad); }
+  function pfResetForm(){
+    pfDraft = {links:[], files:[], editing:null};
+    ["pfT","pfDomain","pfBen","pfDesc","pfLinkIn"].forEach(id=>document.getElementById(id).value="");
+    document.getElementById("pfDate").value = todayISO();
+    pfMsg(""); pfRenderDraft();
+  }
+  async function pfCompress(file){
+    if(!/^image\/(jpeg|png|webp)$/.test(file.type) || file.size < 600*1024) return file;
+    try{
+      const bmp = await createImageBitmap(file);
+      const scale = Math.min(1, 1800/Math.max(bmp.width, bmp.height));
+      const cv = document.createElement("canvas"); cv.width = Math.round(bmp.width*scale); cv.height = Math.round(bmp.height*scale);
+      cv.getContext("2d").drawImage(bmp, 0, 0, cv.width, cv.height);
+      const blob = await new Promise(r=>cv.toBlob(r, "image/jpeg", 0.82));
+      return blob && blob.size < file.size ? new File([blob], file.name.replace(/\.(png|webp)$/i,".jpg"), {type:"image/jpeg"}) : file;
+    }catch(e){ return file; }
+  }
+  function pfUpload(file, rec){
+    return new Promise(resolve=>{
+      const xhr = new XMLHttpRequest();
+      xhr.open("POST", "/api/files?name="+encodeURIComponent(file.name));
+      xhr.setRequestHeader("content-type", file.type || "application/octet-stream");
+      xhr.upload.onprogress = ev=>{ if(ev.lengthComputable){ rec.pct = Math.round(ev.loaded/ev.total*100); pfRenderDraft(); } };
+      xhr.onload = ()=>{ try{ const d = JSON.parse(xhr.responseText); if(xhr.status===200 && d.file){ Object.assign(rec, d.file, {pct:100}); } else rec.err = d.error==="too_large" ? "أكبر من ٢٠ م.ب" : "تعذّر الرفع"; }catch(e){ rec.err = "تعذّر الرفع"; } pfRenderDraft(); resolve(); };
+      xhr.onerror = ()=>{ rec.err = "انقطع الاتصال"; pfRenderDraft(); resolve(); };
+      xhr.send(file);
+    });
+  }
+  async function pfAddFiles(fileList){
+    const files = Array.from(fileList||[]);
+    for(const f0 of files){
+      if(pfDraft.files.length >= 20){ pfMsg("الحد الأقصى ٢٠ ملفًا للعمل الواحد.", true); break; }
+      const rec = {name:f0.name, type:f0.type, size:f0.size, pct:0};
+      pfDraft.files.push(rec); pfRenderDraft();
+      if(f0.size > 20*1024*1024 && !/^image\//.test(f0.type)){ rec.err = "أكبر من ٢٠ م.ب — ارفعه على Drive/يوتيوب وأضف رابطه"; pfRenderDraft(); continue; }
+      const f = await pfCompress(f0); rec.size = f.size; rec.type = f.type;
+      await pfUpload(f, rec);
+    }
+  }
+  document.getElementById("pfFiles").addEventListener("change", e=>{ pfAddFiles(e.target.files); e.target.value=""; });
+  const pfDrop = document.getElementById("pfDrop");
+  ["dragenter","dragover"].forEach(ev=>pfDrop.addEventListener(ev, e=>{ e.preventDefault(); pfDrop.classList.add("drag"); }));
+  ["dragleave","drop"].forEach(ev=>pfDrop.addEventListener(ev, e=>{ e.preventDefault(); pfDrop.classList.remove("drag"); }));
+  pfDrop.addEventListener("drop", e=>pfAddFiles(e.dataTransfer && e.dataTransfer.files));
+  document.getElementById("pfLinkAdd").addEventListener("click", ()=>{
+    const el = document.getElementById("pfLinkIn"); let u = el.value.trim(); if(!u) return;
+    if(!/^https?:\/\//i.test(u)) u = "https://"+u;
+    if(!/^https?:\/\/\S+\.\S+/i.test(u)){ pfMsg("الرابط غير صحيح.", true); return; }
+    if(pfDraft.links.length>=15){ pfMsg("الحد الأقصى ١٥ رابطًا.", true); return; }
+    pfDraft.links.push(u); el.value=""; pfMsg(""); pfRenderDraft();
+  });
+  document.getElementById("pfLinkIn").addEventListener("keydown", e=>{ if(e.key==="Enter"){ e.preventDefault(); document.getElementById("pfLinkAdd").click(); } });
+  document.getElementById("pfFormCard").addEventListener("click", e=>{
+    const l = e.target.closest("[data-rmlink]"); if(l){ pfDraft.links.splice(+l.dataset.rmlink,1); pfRenderDraft(); return; }
+    const f = e.target.closest("[data-rmfile]"); if(f){ pfDraft.files.splice(+f.dataset.rmfile,1); pfRenderDraft(); }
+  });
+  document.getElementById("pfFormCancel").addEventListener("click", pfResetForm);
+  document.getElementById("pfSave").addEventListener("click", async ()=>{
+    const body = {title:document.getElementById("pfT").value.trim(), type:document.getElementById("pfType").value, date:document.getElementById("pfDate").value,
+      domain:document.getElementById("pfDomain").value.trim(), beneficiaries:document.getElementById("pfBen").value.trim(), description:document.getElementById("pfDesc").value.trim(),
+      links:pfDraft.links.slice(), files:pfDraft.files.filter(f=>f.id).map(f=>({id:f.id}))};
+    const pendingLink = document.getElementById("pfLinkIn").value.trim();
+    if(pendingLink){ pfMsg("لديك رابط مكتوب لم تضغط «إضافة رابط» له.", true); return; }
+    if(!body.title){ pfMsg("اكتب عنوان العمل.", true); return; }
+    if(!body.description){ pfMsg("اكتب وصف العمل وما قمت به.", true); return; }
+    if(pfDraft.files.some(f=>!f.id && !f.err)){ pfMsg("انتظر حتى يكتمل رفع الملفات.", true); return; }
+    const btn = document.getElementById("pfSave"); btn.disabled = true;
+    try{
+      const r = await fetch(pfDraft.editing ? "/api/portfolio?id="+encodeURIComponent(pfDraft.editing) : "/api/portfolio", {method: pfDraft.editing?"PUT":"POST", credentials:"same-origin", headers:{"content-type":"application/json"}, body:JSON.stringify(body)});
+      const d = await r.json().catch(()=>({}));
+      if(!r.ok){ pfMsg(d.error==="locked" ? "تم تقييم هذا العمل ولا يمكن تعديله." : "تعذّر الحفظ — حاول مرة أخرى.", true); btn.disabled=false; return; }
+      logAction(pfDraft.editing ? "تعديل عمل في المبادرات والإنجازات" : "إضافة عمل في المبادرات والإنجازات", {title:body.title});
+      toast(pfDraft.editing ? "✅ تم حفظ التعديل وإعادة إرساله للتقييم" : "✅ تم إرسال العمل للإدارة للتقييم");
+      pfResetForm(); await renderPortfolio(true);
+    }catch(e){ pfMsg("تعذّر الاتصال — حاول مرة أخرى.", true); }
+    btn.disabled = false;
+  });
+  document.getElementById("pfList").addEventListener("click", async e=>{
+    const b = e.target.closest("[data-pfa]"); if(!b) return;
+    const card = b.closest("[data-pf]"); const id = card.dataset.pf; const entry = pfList.find(x=>x.id===id); if(!entry) return;
+    const act = b.dataset.pfa;
+    if(act==="edit"){
+      pfDraft = {links:(entry.links||[]).slice(), files:(entry.files||[]).map(f=>({...f, pct:100})), editing:id};
+      document.getElementById("pfT").value = entry.title||""; document.getElementById("pfType").value = entry.type||""; document.getElementById("pfDate").value = entry.date||"";
+      document.getElementById("pfDomain").value = entry.domain||""; document.getElementById("pfBen").value = entry.beneficiaries||""; document.getElementById("pfDesc").value = entry.description||"";
+      pfMsg(""); pfRenderDraft(); document.getElementById("pfFormCard").scrollIntoView({behavior:"smooth"}); return;
+    }
+    let req;
+    if(act==="del"){
+      if(!window.confirm(`حذف «${entry.title}» وكل ملفاته نهائيًا؟`)) return;
+      req = fetch("/api/portfolio?id="+encodeURIComponent(id), {method:"DELETE", credentials:"same-origin"});
+    } else {
+      const rating = card.querySelector(".pf-rate").value, note = card.querySelector(".pf-note").value.trim();
+      if(act==="eval" && !rating){ toast("اختر التقدير أولًا"); return; }
+      if(act==="need" && !note){ toast("اكتب في الملاحظات ما المطلوب استكماله"); card.querySelector(".pf-note").focus(); return; }
+      req = fetch("/api/portfolio?id="+encodeURIComponent(id), {method:"PUT", credentials:"same-origin", headers:{"content-type":"application/json"}, body:JSON.stringify({evaluate:true, status: act==="eval"?"evaluated":"needs_info", rating, note})});
+    }
+    b.disabled = true;
+    const r = await req.catch(()=>null);
+    if(!r || !r.ok){ b.disabled=false; toast("⚠️ تعذّر الحفظ — حاول مرة أخرى"); return; }
+    logAction(act==="del" ? "حذف عمل من المبادرات والإنجازات" : act==="eval" ? "تقييم عمل معلم" : "طلب استكمال عمل معلم", {teacher:entry.teacherName, title:entry.title});
+    toast(act==="del" ? "🗑️ تم الحذف" : act==="eval" ? `✅ تم تقييم عمل ${entry.teacherName}` : `↩︎ أُرسل طلب الاستكمال إلى ${entry.teacherName}`);
+    await renderPortfolio(true); renderDashboardTiles();
+  });
+  ["pfQ","pfTeacherF","pfStatusF","pfTypeF"].forEach(id=>document.getElementById(id).addEventListener(id==="pfQ"?"input":"change", pfRenderList));
+  document.getElementById("pfRefresh").addEventListener("click", ()=>renderPortfolio(true));
+  document.getElementById("pfExport").addEventListener("click", ()=>{
+    const list = pfFiltered();
+    if(!list.length){ toast("لا توجد بيانات للتنزيل"); return; }
+    if(typeof XLSX==="undefined"){ toast("تعذّر تحميل مكتبة Excel — تحقق من الاتصال"); return; }
+    const base = location.origin;
+    const data = list.map(e=>({"المعلم":e.teacherName||"", "المادة/الوظيفة":e.subject||"", "عنوان العمل":e.title, "النوع":e.type, "التاريخ":e.date, "المجال في إجادة":e.domain||"", "المستفيدون":e.beneficiaries||"", "الوصف":e.description||"",
+      "الروابط":(e.links||[]).join("\n"), "عدد الشواهد":(e.files||[]).length, "روابط الشواهد":(e.files||[]).map(f=>`${f.name}: ${base}/api/files/${f.id}`).join("\n"),
+      "الحالة":(PF_STATUS[e.status]||PF_STATUS.pending)[1], "التقدير":e.evaluation&&e.evaluation.rating||"", "ملاحظات المقيّم":e.evaluation&&e.evaluation.note||"", "المقيّم":e.evaluation&&e.evaluation.by||""}));
+    const ws = XLSX.utils.json_to_sheet(data);
+    ws["!cols"]=[{wch:26},{wch:18},{wch:36},{wch:18},{wch:12},{wch:22},{wch:22},{wch:60},{wch:40},{wch:10},{wch:50},{wch:14},{wch:12},{wch:30},{wch:20}];
+    const wb = XLSX.utils.book_new(); wb.Workbook={Views:[{RTL:true}]}; XLSX.utils.book_append_sheet(wb, ws, "المبادرات والإنجازات");
+    XLSX.writeFile(wb, pfIsAdmin() ? "مبادرات-وإنجازات-المعلمين.xlsx" : `مبادراتي-وإنجازاتي-${(currentUser&&currentUser.name)||""}.xlsx`);
   });
 
   function generatePassword(len){

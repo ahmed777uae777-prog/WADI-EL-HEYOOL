@@ -24,6 +24,9 @@ async function ensureSchema(db) {
     db.prepare("CREATE TABLE IF NOT EXISTS sessions (token TEXT PRIMARY KEY, data TEXT NOT NULL, expires INTEGER NOT NULL)"),
     db.prepare("CREATE TABLE IF NOT EXISTS sys (k TEXT PRIMARY KEY, v TEXT NOT NULL)"),
     db.prepare("CREATE TABLE IF NOT EXISTS login_fail (k TEXT PRIMARY KEY, n INTEGER NOT NULL, until INTEGER NOT NULL)"),
+    db.prepare("CREATE TABLE IF NOT EXISTS portfolio (id TEXT PRIMARY KEY, teacher_id TEXT NOT NULL, data TEXT NOT NULL, created INTEGER NOT NULL, updated INTEGER NOT NULL)"),
+    db.prepare("CREATE TABLE IF NOT EXISTS file_meta (id TEXT PRIMARY KEY, owner TEXT NOT NULL, name TEXT NOT NULL, type TEXT NOT NULL, size INTEGER NOT NULL, chunks INTEGER NOT NULL, created INTEGER NOT NULL)"),
+    db.prepare("CREATE TABLE IF NOT EXISTS file_chunks (id TEXT NOT NULL, idx INTEGER NOT NULL, data BLOB NOT NULL, PRIMARY KEY (id, idx))"),
   ]);
   schemaReady = true;
 }
@@ -235,6 +238,126 @@ async function handleDoc(db, request, user) {
   return json({ error: "method_not_allowed" }, 405);
 }
 
+
+/* ---------------- المبادرات والإنجازات (portfolio) + evidence files ----------------
+   Entries live in their own table so the server can enforce ownership: a teacher reads/edits
+   only their own entries (and only until they are evaluated); admins read everything and
+   evaluate. Files are stored in D1 in 1.5 MB chunks and served only to the owner or admins. */
+const FILE_MAX = 20 * 1024 * 1024, CHUNK = 1536 * 1024;
+const PF_TYPES = ["مبادرة", "إنجاز", "مشاركة أو مسابقة", "ورشة أو تدريب قدّمته", "تدريب حضرته", "درس تطبيقي أو بحث إجرائي", "خدمة مجتمع", "عمل آخر"];
+const clip = (v, n) => String(v == null ? "" : v).slice(0, n);
+function cleanLinks(arr) {
+  return (Array.isArray(arr) ? arr : []).map((u) => clip(u, 600).trim()).filter((u) => /^https?:\/\/\S+$/i.test(u)).slice(0, 15);
+}
+async function handleFiles(db, request, user, url) {
+  if (!user) return json({ error: "unauthorized" }, 401);
+  const id = url.pathname.split("/")[3] || "";
+  if (request.method === "POST" && !id) {
+    if (!user.teacherId && user.role !== "admin") return json({ error: "forbidden" }, 403);
+    const buf = await request.arrayBuffer();
+    if (!buf.byteLength) return json({ error: "empty" }, 400);
+    if (buf.byteLength > FILE_MAX) return json({ error: "too_large" }, 413);
+    const fid = "f" + randHex(12);
+    const name = clip(decodeURIComponent(url.searchParams.get("name") || "ملف"), 200);
+    const type = clip(request.headers.get("content-type") || "application/octet-stream", 120);
+    const chunks = Math.ceil(buf.byteLength / CHUNK);
+    const stmts = [];
+    for (let i = 0; i < chunks; i++) stmts.push(db.prepare("INSERT INTO file_chunks (id, idx, data) VALUES (?, ?, ?)").bind(fid, i, buf.slice(i * CHUNK, (i + 1) * CHUNK)));
+    stmts.push(db.prepare("INSERT INTO file_meta (id, owner, name, type, size, chunks, created) VALUES (?, ?, ?, ?, ?, ?, ?)").bind(fid, user.teacherId || "admin", name, type, buf.byteLength, chunks, Date.now()));
+    await db.batch(stmts);
+    return json({ ok: true, file: { id: fid, name, type, size: buf.byteLength } });
+  }
+  if (request.method === "GET" && id) {
+    const meta = await db.prepare("SELECT * FROM file_meta WHERE id = ?").bind(id).first();
+    if (!meta) return json({ error: "not_found" }, 404);
+    if (user.role !== "admin" && meta.owner !== user.teacherId) return json({ error: "forbidden" }, 403);
+    const rows = (await db.prepare("SELECT data FROM file_chunks WHERE id = ? ORDER BY idx").bind(id).all()).results || [];
+    const parts = rows.map((r) => new Uint8Array(r.data));
+    const out = new Uint8Array(parts.reduce((n, p) => n + p.length, 0));
+    let o = 0; for (const p of parts) { out.set(p, o); o += p.length; }
+    // Only passive media and PDF may open in the browser; anything else (html, svg, scripts…)
+    // is forced to download so an uploaded file can never run code on this site.
+    const safeInline = /^(image\/(png|jpe?g|gif|webp|bmp)|video\/|audio\/|application\/pdf)/i.test(meta.type);
+    const dl = url.searchParams.get("download") === "1" || !safeInline;
+    return new Response(out, { headers: { "content-type": safeInline ? meta.type : "application/octet-stream", "cache-control": "private, no-store",
+      "content-disposition": `${dl ? "attachment" : "inline"}; filename*=UTF-8''${encodeURIComponent(meta.name)}`, "x-content-type-options": "nosniff" } });
+  }
+  return json({ error: "method_not_allowed" }, 405);
+}
+async function deleteFiles(db, ids) {
+  for (const id of ids || []) {
+    await db.batch([db.prepare("DELETE FROM file_chunks WHERE id = ?").bind(id), db.prepare("DELETE FROM file_meta WHERE id = ?").bind(id)]);
+  }
+}
+async function handlePortfolio(db, request, user, url) {
+  if (!user) return json({ error: "unauthorized" }, 401);
+  const isAdmin = user.role === "admin";
+  const id = url.searchParams.get("id") || "";
+  const rowToEntry = (r) => ({ ...JSON.parse(r.data), id: r.id, teacherId: r.teacher_id, created: r.created, updated: r.updated });
+  if (request.method === "GET") {
+    const rows = isAdmin
+      ? (await db.prepare("SELECT * FROM portfolio ORDER BY created DESC").all()).results
+      : (await db.prepare("SELECT * FROM portfolio WHERE teacher_id = ? ORDER BY created DESC").bind(user.teacherId || "-").all()).results;
+    return json({ list: (rows || []).map(rowToEntry), types: PF_TYPES });
+  }
+  const body = request.method === "DELETE" ? {} : await request.json().catch(() => ({}));
+  const ownFiles = async (files) => {
+    const list = (Array.isArray(files) ? files : []).slice(0, 20);
+    const ok = [];
+    for (const f of list) {
+      const m = await db.prepare("SELECT id, name, type, size, owner FROM file_meta WHERE id = ?").bind(String(f.id || "")).first();
+      if (m && (m.owner === user.teacherId || isAdmin)) ok.push({ id: m.id, name: m.name, type: m.type, size: m.size });
+    }
+    return ok;
+  };
+  const fields = async (b) => ({
+    title: clip(b.title, 200).trim(), type: PF_TYPES.includes(b.type) ? b.type : "عمل آخر", date: clip(b.date, 10),
+    domain: clip(b.domain, 120).trim(), description: clip(b.description, 6000).trim(), beneficiaries: clip(b.beneficiaries, 300).trim(),
+    links: cleanLinks(b.links), files: await ownFiles(b.files),
+  });
+  if (request.method === "POST") {
+    if (!user.teacherId) return json({ error: "forbidden" }, 403);
+    const f = await fields(body);
+    if (!f.title) return json({ error: "title_required" }, 400);
+    const teachers = (await getDoc(db, "school/teachers"))?.list || [];
+    const t = teachers.find((x) => x.id === user.teacherId);
+    const entry = { ...f, teacherName: t ? t.name : user.name, subject: t ? (t.title || t.subject || "") : "", status: "pending", evaluation: null };
+    const eid = "pf" + randHex(8), now = Date.now();
+    await db.prepare("INSERT INTO portfolio (id, teacher_id, data, created, updated) VALUES (?, ?, ?, ?, ?)").bind(eid, user.teacherId, JSON.stringify(entry), now, now).run();
+    return json({ ok: true, id: eid });
+  }
+  const row = id ? await db.prepare("SELECT * FROM portfolio WHERE id = ?").bind(id).first() : null;
+  if (!row) return json({ error: "not_found" }, 404);
+  const cur = JSON.parse(row.data);
+  const mine = row.teacher_id === user.teacherId;
+  if (request.method === "PUT") {
+    let next;
+    if (body.evaluate) {
+      if (!isAdmin) return json({ error: "forbidden" }, 403);
+      const RATINGS = ["ممتاز", "جيد جدًا", "جيد", "مقبول"];
+      const status = body.status === "needs_info" ? "needs_info" : "evaluated";
+      next = { ...cur, status, evaluation: { rating: status === "evaluated" && RATINGS.includes(body.rating) ? body.rating : "", note: clip(body.note, 2000).trim(), by: user.name, at: new Date().toISOString() } };
+    } else {
+      if (!mine) return json({ error: "forbidden" }, 403);
+      if (cur.status === "evaluated") return json({ error: "locked" }, 409);
+      const f = await fields(body);
+      if (!f.title) return json({ error: "title_required" }, 400);
+      const removed = (cur.files || []).filter((x) => !f.files.some((y) => y.id === x.id)).map((x) => x.id);
+      await deleteFiles(db, removed);
+      next = { ...cur, ...f, status: "pending" };
+    }
+    await db.prepare("UPDATE portfolio SET data = ?, updated = ? WHERE id = ?").bind(JSON.stringify(next), Date.now(), id).run();
+    return json({ ok: true });
+  }
+  if (request.method === "DELETE") {
+    if (!isAdmin && !(mine && cur.status !== "evaluated")) return json({ error: "forbidden" }, 403);
+    await deleteFiles(db, (cur.files || []).map((x) => x.id));
+    await db.prepare("DELETE FROM portfolio WHERE id = ?").bind(id).run();
+    return json({ ok: true });
+  }
+  return json({ error: "method_not_allowed" }, 405);
+}
+
 /* ---------------- optional site-wide Basic Auth ---------------- */
 function basicAuthorized(request, env) {
   const h = request.headers.get("authorization") || "";
@@ -279,7 +402,10 @@ export default {
             return json({ user: u });
           }
           case "/api/doc": return handleDoc(db, request, await currentUser(db, request));
-          default: return json({ error: "not_found" }, 404);
+          case "/api/portfolio": return handlePortfolio(db, request, await currentUser(db, request), url);
+          default:
+            if (url.pathname === "/api/files" || url.pathname.startsWith("/api/files/")) return handleFiles(db, request, await currentUser(db, request), url);
+            return json({ error: "not_found" }, 404);
         }
       } catch (err) {
         return json({ error: "server_error" }, 500);
