@@ -481,6 +481,25 @@
   .acc-actions .btn{padding:6px 10px;}
   .btn.danger{background:var(--danger); color:#fff;} .btn.danger:hover{filter:brightness(.92);}
   .btn.ghost.danger-text{color:var(--danger);}
+  /* learning resources centre */
+  .lrc-block{border:1px solid var(--border); border-radius:var(--radius-m); padding:16px; margin-bottom:16px; background:var(--surface);}
+  .lrc-block-head{display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap; margin-bottom:12px;}
+  .lrc-block-head h3{font-size:16px;}
+  .lrc-date{display:flex; align-items:center; gap:6px;} .lrc-date input{width:auto; min-width:150px;}
+  .lrc-hint{margin:-4px 0 10px; font-size:13px; color:var(--text-muted); font-weight:500;}
+  .lrc-grid th, .lrc-grid td{text-align:center !important; min-width:96px;}
+  .lrc-grid td.per{font-weight:800; color:var(--primary-strong); white-space:nowrap;} .lrc-grid td.per small{display:block; font-weight:500; color:var(--text-muted); font-size:10.5px;}
+  .lrc-cell{border-radius:8px; padding:6px 4px; font-size:11.5px; line-height:1.4; min-height:40px; display:flex; flex-direction:column; justify-content:center;}
+  .lrc-cell.free{background:color-mix(in srgb, var(--success) 10%, transparent); color:var(--success); cursor:pointer; font-weight:700; border:1px dashed color-mix(in srgb, var(--success) 40%, transparent);}
+  .lrc-cell.free:hover{background:color-mix(in srgb, var(--success) 20%, transparent);}
+  .lrc-cell.pend{background:color-mix(in srgb, var(--warning) 16%, transparent); color:var(--text);}
+  .lrc-cell.ok{background:var(--primary-tint); color:var(--primary-strong);}
+  .lrc-cell b{font-weight:800;} .lrc-cell span{font-size:10.5px; color:var(--text-muted);}
+  .lrc-cell.off{background:var(--surface-2); color:var(--text-muted);}
+  .lrc-legend{display:flex; gap:14px; flex-wrap:wrap; margin-top:10px; font-size:12px; color:var(--text-muted);}
+  .lrc-legend .lg{display:inline-block; width:12px; height:12px; border-radius:3px; margin-inline-end:5px; vertical-align:-2px;}
+  .lg.free{background:color-mix(in srgb, var(--success) 25%, transparent);} .lg.pend{background:color-mix(in srgb, var(--warning) 35%, transparent);} .lg.ok{background:var(--primary-tint); border:1px solid color-mix(in srgb, var(--primary) 35%, transparent);}
+  #lrcProjRow .chip.busy{opacity:.45; text-decoration:line-through; cursor:not-allowed;}
   .tbl-wrap{overflow-x:auto; border:1px solid var(--border); border-radius:var(--radius-s);}
   table.datatable{width:100%; border-collapse:collapse; font-size:13px; min-width:520px;}
   table.datatable th, table.datatable td{padding:11px 14px; border-bottom:1px solid var(--border); text-align:right; vertical-align:middle;}
@@ -1295,6 +1314,57 @@
     </div>
   </section>
 
+  <!-- LEARNING RESOURCES CENTRE: room + projector bookings, approved by the LRC specialist -->
+  <section class="view" id="view-lrc">
+    <div class="card">
+      <div class="view-head"><h2>🏛️ مركز مصادر التعلم</h2><p id="lrcSub">احجز قاعة مصادر التعلم أو جهاز عرض لحصتك — يصل الطلب لأخصائية مصادر التعلم للموافقة.</p></div>
+
+      <div id="lrcApprovalsCard" class="lrc-block" hidden>
+        <div class="lrc-block-head"><h3>📥 طلبات بانتظار الموافقة</h3><span class="pill wait" id="lrcPendingCount">0</span></div>
+        <div class="tbl-wrap"><table class="datatable" id="lrcPendingTable"></table></div>
+      </div>
+
+      <div class="lrc-block">
+        <div class="lrc-block-head"><h3>🗓️ جدول الحجوزات</h3>
+          <div class="lrc-date"><button class="btn ghost sm" id="lrcPrevDay" aria-label="اليوم السابق">→</button><input type="date" id="lrcDate"><button class="btn ghost sm" id="lrcNextDay" aria-label="اليوم التالي">←</button><button class="btn ghost sm" id="lrcRefresh">🔄 تحديث</button></div>
+        </div>
+        <p class="lrc-hint" id="lrcDayLabel"></p>
+        <div class="tbl-wrap"><table class="datatable lrc-grid" id="lrcGrid"></table></div>
+        <div class="lrc-legend"><span><i class="lg free"></i>متاح</span><span><i class="lg pend"></i>بانتظار الموافقة</span><span><i class="lg ok"></i>محجوز</span></div>
+      </div>
+
+      <div class="lrc-block" id="lrcFormCard">
+        <div class="lrc-block-head"><h3>➕ حجز جديد</h3></div>
+        <div class="step-label">نوع الحجز</div>
+        <div class="chip-row" id="lrcTypeRow">
+          <button type="button" class="chip selected" data-lrctype="room">🏫 قاعة مصادر التعلم</button>
+          <button type="button" class="chip" data-lrctype="projector">📽️ جهاز عرض (بروكسيما)</button>
+        </div>
+        <div id="lrcProjWrap" hidden>
+          <div class="step-label">رقم الجهاز</div>
+          <div class="chip-row" id="lrcProjRow"></div>
+          <div class="step-label">نوع وصلة HDMI</div>
+          <div class="chip-row" id="lrcHdmiRow">
+            <button type="button" class="chip selected" data-lrchdmi="1">🔌 النوع ١</button>
+            <button type="button" class="chip" data-lrchdmi="2">🔌 النوع ٢</button>
+          </div>
+        </div>
+        <div class="row" style="margin-top:14px;">
+          <div class="field"><label>التاريخ</label><input type="date" id="lrcFormDate"></div>
+          <div class="field"><label>الحصة</label><select id="lrcFormPeriod"></select></div>
+        </div>
+        <div class="field"><label>ملاحظة (اختياري)</label><input type="text" id="lrcFormNote" placeholder="مثال: الصف السابع/١ — عرض تقديمي عن الطاقة"></div>
+        <div id="lrcFormMsg" class="note" hidden></div>
+        <button class="btn" id="lrcSubmitBtn">إرسال طلب الحجز</button>
+      </div>
+
+      <div class="lrc-block" id="lrcMineCard">
+        <div class="lrc-block-head"><h3>📋 حجوزاتي</h3></div>
+        <div class="tbl-wrap"><table class="datatable" id="lrcMineTable"></table></div>
+      </div>
+    </div>
+  </section>
+
   <!-- TEACHER: absence wizard -->
   <section class="view" id="view-teacherabsence">
     <div class="card">
@@ -1508,7 +1578,8 @@
     {id:"teacherabsence", icon:"🗓️", title:"تسجيل غياب / استئذان", desc:"إرسال طلب مباشرة لمدير المدرسة", accent:true},
     {id:"teacherstudentabsence", icon:"🧑‍🎓", title:"تسجيل غياب طالب", desc:"سجّل غياب طالب لإرساله لاعتماد المدير وإشعار ولي الأمر"},
     {id:"teacherschedule", icon:"📅", title:"جدولي الأسبوعي", desc:"جدولك وسجل طلباتك السابقة"},
-    {id:"teachersubs", icon:"🔄", title:"حصصي الاحتياطية", desc:"الحصص التي كُلّفت بتغطيتها"}
+    {id:"teachersubs", icon:"🔄", title:"حصصي الاحتياطية", desc:"الحصص التي كُلّفت بتغطيتها"},
+    {id:"lrc", icon:"🏛️", title:"مركز مصادر التعلم", desc:"حجز قاعة المصادر وأجهزة العرض لحصتك"}
   ];
   const ADMIN_TILES = [
     {id:"admindash", icon:"📊", title:"لوحة التحكم", desc:"إحصائيات المدرسة العامة", accent:true},
@@ -1522,10 +1593,12 @@
     {id:"adminstudents", icon:"👨‍🎓", title:"سجل الطلاب", desc:"سجل الطلاب حسب الصف والشعبة، وبيانات أولياء الأمور"},
     {id:"adminai", icon:"✨", title:"الذكاء الاصطناعي", desc:"مولّد المستندات والمراسلات الإدارية"},
     {id:"adminteachers", icon:"👥", title:"سجل ومعلمو المدرسة", desc:"سجل الكادر التعليمي الكامل، وإدارة حسابات الدخول"},
+    {id:"lrc", icon:"🏛️", title:"مركز مصادر التعلم", desc:"جدول حجوزات القاعة وأجهزة العرض"},
     {id:"adminaccounts", icon:"🗄️", title:"قاعدة بيانات المعلمين", desc:"إنشاء حسابات المعلمين وتعديلها وتعطيلها وحذفها من مكان واحد", accent:true}
   ];
 
   const ICON_PATHS = {
+    lrc: '<path d="M3 9.5 12 4l9 5.5"/><path d="M5 10v8M9.5 10v8M14.5 10v8M19 10v8"/><path d="M3 20.5h18"/>',
     adminaccounts: '<ellipse cx="12" cy="5.5" rx="7" ry="2.6"/><path d="M5 5.5v6.5c0 1.4 3.1 2.6 7 2.6s7-1.2 7-2.6V5.5"/><path d="M5 12v6.5c0 1.4 3.1 2.6 7 2.6s7-1.2 7-2.6V12"/>',
     subjects: '<rect x="4" y="5" width="16" height="14" rx="1.5"/><line x1="12" y1="5" x2="12" y2="19"/><line x1="7" y1="9" x2="9.5" y2="9"/><line x1="14.5" y1="9" x2="17" y2="9"/>',
     students: '<path d="M3 9l9-4 9 4-9 4-9-4Z"/><path d="M7 11v4c0 1.1 2.2 2 5 2s5-.9 5-2v-4"/><line x1="20" y1="9" x2="20" y2="14.5"/>',
@@ -1635,6 +1708,7 @@
   function tileHTML(it){
     let badge = 0;
     if(it.id==="adminabsencehub") badge = absences.filter(a=>a.status==="بانتظار الاعتماد").length + subs.filter(s=>subStatusCode(s)==="PENDING").length + studentAbsences.filter(a=>a.status==="بانتظار اعتماد المدير" || a.status==="يحتاج إعادة اعتماد").length;
+    else if(it.id==="lrc" && isLrcManager()) badge = lrcBookings.filter(b=>b.status==="pending").length;
     else if(it.id==="teachersubs" && currentUser) badge = subs.filter(s=>s.subTeacher===currentUser.name && s.seen===false).length;
     return `<button class="tile${it.accent?" accent":""}" data-goto="${it.id}"${it.presetTab?` data-preset-tab="${escapeHTML(it.presetTab)}"`:""}>
       ${badge>0 ? `<span class="tile-badge">${badge}</span>` : ""}
@@ -1645,6 +1719,7 @@
     </button>`;
   }
   function renderDashboardTiles(){
+    if(currentUser && !lrcLoaded && !window.__lrcLoading){ window.__lrcLoading = true; refreshLrcQuiet().finally(()=>{ window.__lrcLoading = false; }); }
     let items = [];
     if(currentUser && currentUser.role==="admin") items = ADMIN_TILES;
     else if(currentUser && currentUser.role==="teacher") items = TEACHER_SCHOOL_TILES.concat(TEACHER_TOOL_TILES);
@@ -1699,6 +1774,7 @@
   }
   async function pollForLiveUpdates(){
     if(!db || !currentUser) return;
+    refreshLrcQuiet();
     try{
       if(currentUser.role==="teacher"){
         const snap = await withTimeout(db.doc("school/substitutes").get(), 10000);
@@ -1768,6 +1844,7 @@
     else document.getElementById("view-dashboard").classList.add("active");
     if(id==="dashboard") renderDashboardTiles();
     if(id==="adminaccounts" && currentUser && currentUser.role==="admin") renderAdminAccounts();
+    if(id==="lrc" && currentUser) renderLrc(true);
     document.getElementById("crumbWrap").hidden = (id==="dashboard" || id==="identify");
     window.scrollTo({top:0, behavior:"smooth"});
   }
@@ -6057,6 +6134,190 @@ ${points?("نقاط يجب تضمينها صراحة: "+points+"."):""}
     const wb = XLSX.utils.book_new(); wb.Workbook = {Views:[{RTL:true}]}; XLSX.utils.book_append_sheet(wb, ws, "المعلمون");
     XLSX.writeFile(wb, "قاعدة-بيانات-المعلمين.xlsx");
     toast("⚠️ الملف يحتوي كلمات مرور — احفظه في مكان آمن");
+  });
+
+  /* ---------------- مركز مصادر التعلم ---------------- */
+  // One shared document school/lrcBookings = {list:[...]}. A slot (date, period, resource) is taken
+  // while a booking for it is pending or approved; the LRC specialist approves/rejects.
+  const LRC_PERIODS = [1,2,3,4,5,6,7];
+  const LRC_RESOURCES = [{key:"room", label:"قاعة المصادر"}, {key:"proj1", label:"بروكسيما ١"}, {key:"proj2", label:"بروكسيما ٢"}, {key:"proj3", label:"بروكسيما ٣"}, {key:"proj4", label:"بروكسيما ٤"}];
+  const AR_NUM = n => String(n).replace(/\d/g, d=>"٠١٢٣٤٥٦٧٨٩"[d]);
+  let lrcBookings = [], lrcLoaded = false;
+  let lrcForm = {type:"room", proj:1, hdmi:1};
+  function meTeacher(){
+    if(!currentUser || !currentUser.teacherId && currentUser.role!=="teacher") return null;
+    return teachers.find(t=>t.id===currentUser.teacherId) || teachers.find(t=>t.name===currentUser.name) || null;
+  }
+  function isLrcManager(){
+    const t = meTeacher();
+    return !!(t && (t.lrcManager || /مصادر التعلم/.test(t.title||"")));
+  }
+  function lrcResKey(b){ return b.type==="room" ? "room" : ("proj"+b.projectorNo); }
+  function lrcActive(b){ return b.status==="pending" || b.status==="approved"; }
+  function lrcSlot(date, period, key){ return lrcBookings.find(b=>lrcActive(b) && b.date===date && b.period===period && lrcResKey(b)===key) || null; }
+  function lrcToday(){ const d=new Date(); d.setMinutes(d.getMinutes()-d.getTimezoneOffset()); return d.toISOString().slice(0,10); }
+  function lrcDayName(dateStr){ try{ return new Date(dateStr+"T12:00:00").toLocaleDateString("ar-OM",{weekday:"long", day:"numeric", month:"long"}); }catch(e){ return dateStr; } }
+  function lrcIsWeekend(dateStr){ const d=new Date(dateStr+"T12:00:00").getDay(); return d===5 || d===6; }
+  function lrcItemLabel(b){ return b.type==="room" ? "🏫 قاعة المصادر" : `📽️ بروكسيما ${AR_NUM(b.projectorNo)} · HDMI نوع ${AR_NUM(b.hdmi)}`; }
+  function lrcStatusPill(b){
+    return b.status==="approved" ? `<span class="pill ok">موافق عليه ✓</span>` : b.status==="rejected" ? `<span class="pill bad">مرفوض ✗</span>` : b.status==="cancelled" ? `<span class="pill neutral">ملغى</span>` : `<span class="pill wait">بانتظار الموافقة ⏳</span>`;
+  }
+  async function loadLrc(){
+    if(!db) return false;
+    try{ const snap = await withTimeout(db.doc("school/lrcBookings").get(), 10000);
+      lrcBookings = (snap && snap.exists && Array.isArray(snap.data().list)) ? cloneList(snap.data().list) : [];
+      lrcLoaded = true; return true; }catch(e){ return false; }
+  }
+  async function saveLrc(){ if(!db) return false; try{ await withTimeout(db.doc("school/lrcBookings").set({list:lrcBookings}), 15000); return true; }catch(e){ return false; } }
+  let lrcNotifiedDecided = new Set(), lrcNotifiedPending = new Set(), lrcFirstPoll = true;
+  async function refreshLrcQuiet(){
+    if(!await loadLrc()) return;
+    const me = meTeacher();
+    if(isLrcManager()){
+      const fresh = lrcBookings.filter(b=>b.status==="pending" && !lrcNotifiedPending.has(b.id));
+      fresh.forEach(b=>lrcNotifiedPending.add(b.id));
+      if(fresh.length && !lrcFirstPoll) toast(`🏛️ ${fresh.length===1?"طلب حجز جديد":fresh.length+" طلبات حجز جديدة"} في مركز مصادر التعلم`);
+    }
+    if(me){
+      const decided = lrcBookings.filter(b=>b.teacherId===me.id && (b.status==="approved"||b.status==="rejected") && !lrcNotifiedDecided.has(b.id));
+      decided.forEach(b=>lrcNotifiedDecided.add(b.id));
+      if(!lrcFirstPoll) decided.forEach(b=> toast(b.status==="approved" ? `✅ تمت الموافقة على حجزك: ${b.type==="room"?"قاعة المصادر":"بروكسيما "+AR_NUM(b.projectorNo)} — الحصة ${AR_NUM(b.period)}` : `❌ رُفض حجزك للحصة ${AR_NUM(b.period)} (${b.date})`));
+    }
+    lrcFirstPoll = false;
+    if(document.getElementById("view-dashboard")?.classList.contains("active")) renderDashboardTiles();
+    if(document.getElementById("view-lrc")?.classList.contains("active")) renderLrc(false);
+  }
+  async function renderLrc(reload){
+    const view = document.getElementById("view-lrc"); if(!view) return;
+    const dateEl = document.getElementById("lrcDate"), fDate = document.getElementById("lrcFormDate");
+    if(!dateEl.value) dateEl.value = lrcToday();
+    if(!fDate.value) fDate.value = dateEl.value;
+    const perSel = document.getElementById("lrcFormPeriod");
+    if(!perSel.options.length) perSel.innerHTML = LRC_PERIODS.map(p=>`<option value="${p}">الحصة ${AR_NUM(p)} (${PERIOD_TIMES_DISPLAY[p]||""})</option>`).join("");
+    if(reload || !lrcLoaded){
+      document.getElementById("lrcGrid").innerHTML = `<tbody><tr><td style="padding:20px; color:var(--text-muted);">جارٍ تحميل الحجوزات...</td></tr></tbody>`;
+      await schoolDataReady; await loadLrc();
+      if(isLrcManager()) lrcBookings.filter(b=>b.status==="pending").forEach(b=>lrcNotifiedPending.add(b.id));
+    }
+    const mgr = isLrcManager(), me = meTeacher(), isAdminUser = currentUser && currentUser.role==="admin";
+    document.getElementById("lrcSub").textContent = mgr ? "أنتِ مسؤولة مركز مصادر التعلم: راجعي الطلبات ووافقي عليها أو ارفضيها، وتابعي جدول القاعة وأجهزة العرض."
+      : isAdminUser ? "جدول حجوزات قاعة مصادر التعلم وأجهزة العرض. الموافقة على الطلبات من قِبل أخصائية مصادر التعلم."
+      : "احجز قاعة مصادر التعلم أو جهاز عرض لحصتك — يصل الطلب لأخصائية مصادر التعلم للموافقة.";
+    // approvals (manager acts; admins see read-only)
+    const pending = lrcBookings.filter(b=>b.status==="pending").sort((a,b)=> (a.date+a.period).localeCompare(b.date+b.period));
+    const apCard = document.getElementById("lrcApprovalsCard");
+    apCard.hidden = !(mgr || isAdminUser);
+    document.getElementById("lrcPendingCount").textContent = AR_NUM(pending.length);
+    document.getElementById("lrcPendingTable").innerHTML = `<thead><tr><th>المعلم</th><th>الحجز</th><th>التاريخ</th><th>الحصة</th><th>ملاحظة</th><th></th></tr></thead><tbody>${
+      pending.map(b=>`<tr data-bid="${escapeHTML(b.id)}"><td style="font-weight:700;">${escapeHTML(b.teacherName)}</td><td>${lrcItemLabel(b)}</td><td>${escapeHTML(lrcDayName(b.date))}</td><td>${AR_NUM(b.period)}</td><td>${escapeHTML(b.note||"—")}</td>
+        <td>${mgr ? `<div class="acc-actions"><button class="btn sm" data-lrcact="approve">✓ موافقة</button><button class="btn ghost sm danger-text" data-lrcact="reject">✗ رفض</button></div>` : `<span class="pill wait">بانتظار الأخصائية</span>`}</td></tr>`).join("")
+      || `<tr><td colspan="6" style="text-align:center; color:var(--text-muted); padding:18px;">لا توجد طلبات بانتظار الموافقة 👍</td></tr>`}</tbody>`;
+    // day grid
+    const day = dateEl.value;
+    const weekend = lrcIsWeekend(day);
+    document.getElementById("lrcDayLabel").textContent = lrcDayName(day) + (weekend ? " — عطلة نهاية الأسبوع" : "");
+    const canBook = !!me && !isAdminUser;
+    document.getElementById("lrcGrid").innerHTML = `<thead><tr><th>الحصة</th>${LRC_RESOURCES.map(r=>`<th>${r.label}</th>`).join("")}</tr></thead><tbody>${
+      LRC_PERIODS.map(p=>`<tr><td class="per">الحصة ${AR_NUM(p)}<small>${PERIOD_TIMES_DISPLAY[p]||""}</small></td>${LRC_RESOURCES.map(r=>{
+        if(weekend) return `<td><div class="lrc-cell off">—</div></td>`;
+        const b = lrcSlot(day, p, r.key);
+        if(!b) return `<td><div class="lrc-cell ${canBook?"free":"off"}" ${canBook?`data-pick="${p}|${r.key}" title="اضغط للحجز"`:""}>${canBook?"+ احجز":"متاح"}</div></td>`;
+        return `<td><div class="lrc-cell ${b.status==="approved"?"ok":"pend"}"><b>${escapeHTML(b.teacherName)}</b>${b.type==="projector"?`<span>HDMI نوع ${AR_NUM(b.hdmi)}</span>`:""}<span>${b.status==="approved"?"محجوز":"بانتظار الموافقة"}</span></div></td>`;
+      }).join("")}</tr>`).join("")}</tbody>`;
+    // form + my bookings (anyone with a teacher record; admins only view)
+    document.getElementById("lrcFormCard").hidden = !canBook;
+    document.getElementById("lrcMineCard").hidden = !canBook;
+    if(canBook){
+      lrcRenderFormChips();
+      const mine = lrcBookings.filter(b=>b.teacherId===me.id).sort((a,b)=> (b.date+b.period).localeCompare(a.date+a.period)).slice(0,40);
+      document.getElementById("lrcMineTable").innerHTML = `<thead><tr><th>الحجز</th><th>التاريخ</th><th>الحصة</th><th>الحالة</th><th></th></tr></thead><tbody>${
+        mine.map(b=>`<tr data-bid="${escapeHTML(b.id)}"><td>${lrcItemLabel(b)}${b.note?`<br><span style="font-size:11.5px; color:var(--text-muted);">${escapeHTML(b.note)}</span>`:""}</td><td>${escapeHTML(lrcDayName(b.date))}</td><td>${AR_NUM(b.period)}</td><td>${lrcStatusPill(b)}${b.status==="rejected"&&b.reason?`<br><span style="font-size:11.5px; color:var(--danger);">${escapeHTML(b.reason)}</span>`:""}</td>
+          <td>${lrcActive(b) && b.date>=lrcToday() ? `<button class="btn ghost sm danger-text" data-lrcact="cancel">إلغاء</button>` : ""}</td></tr>`).join("")
+        || `<tr><td colspan="5" style="text-align:center; color:var(--text-muted); padding:18px;">لا توجد حجوزات بعد</td></tr>`}</tbody>`;
+    }
+  }
+  function lrcRenderFormChips(){
+    const date = document.getElementById("lrcFormDate").value, period = +document.getElementById("lrcFormPeriod").value;
+    document.querySelectorAll("#lrcTypeRow [data-lrctype]").forEach(c=>c.classList.toggle("selected", c.dataset.lrctype===lrcForm.type));
+    document.getElementById("lrcProjWrap").hidden = lrcForm.type!=="projector";
+    document.getElementById("lrcProjRow").innerHTML = [1,2,3,4].map(n=>{
+      const busy = !!lrcSlot(date, period, "proj"+n);
+      return `<button type="button" class="chip${lrcForm.proj===n?" selected":""}${busy?" busy":""}" data-lrcproj="${n}" ${busy?'title="محجوز في هذه الحصة"':""}>📽️ بروكسيما ${AR_NUM(n)}${busy?" — محجوز":""}</button>`;
+    }).join("");
+    document.querySelectorAll("#lrcHdmiRow [data-lrchdmi]").forEach(c=>c.classList.toggle("selected", +c.dataset.lrchdmi===lrcForm.hdmi));
+  }
+  function lrcMsg(text, bad){ const el=document.getElementById("lrcFormMsg"); el.textContent=text; el.hidden=!text; el.classList.toggle("warn", !!bad); }
+  document.getElementById("lrcTypeRow").addEventListener("click", e=>{ const c=e.target.closest("[data-lrctype]"); if(!c) return; lrcForm.type=c.dataset.lrctype; lrcMsg(""); lrcRenderFormChips(); });
+  document.getElementById("lrcProjRow").addEventListener("click", e=>{ const c=e.target.closest("[data-lrcproj]"); if(!c || c.classList.contains("busy")) return; lrcForm.proj=+c.dataset.lrcproj; lrcRenderFormChips(); });
+  document.getElementById("lrcHdmiRow").addEventListener("click", e=>{ const c=e.target.closest("[data-lrchdmi]"); if(!c) return; lrcForm.hdmi=+c.dataset.lrchdmi; lrcRenderFormChips(); });
+  ["lrcFormDate","lrcFormPeriod"].forEach(id=>document.getElementById(id).addEventListener("change", ()=>{ lrcMsg(""); lrcRenderFormChips(); }));
+  document.getElementById("lrcDate").addEventListener("change", ()=>{ document.getElementById("lrcFormDate").value = document.getElementById("lrcDate").value; renderLrc(false); });
+  function lrcShiftDay(delta){
+    const el=document.getElementById("lrcDate"); const d=new Date((el.value||lrcToday())+"T12:00:00");
+    do{ d.setDate(d.getDate()+delta); }while(d.getDay()===5 || d.getDay()===6);
+    el.value = d.toISOString().slice(0,10); document.getElementById("lrcFormDate").value = el.value; renderLrc(false);
+  }
+  document.getElementById("lrcPrevDay").addEventListener("click", ()=>lrcShiftDay(-1));
+  document.getElementById("lrcNextDay").addEventListener("click", ()=>lrcShiftDay(1));
+  document.getElementById("lrcRefresh").addEventListener("click", ()=>renderLrc(true));
+  document.getElementById("lrcGrid").addEventListener("click", e=>{
+    const c=e.target.closest("[data-pick]"); if(!c) return;
+    const [p,key]=c.dataset.pick.split("|");
+    lrcForm.type = key==="room" ? "room" : "projector";
+    if(key!=="room") lrcForm.proj = +key.replace("proj","");
+    document.getElementById("lrcFormDate").value = document.getElementById("lrcDate").value;
+    document.getElementById("lrcFormPeriod").value = p;
+    lrcMsg(""); lrcRenderFormChips();
+    document.getElementById("lrcFormCard").scrollIntoView({behavior:"smooth", block:"center"});
+  });
+  document.getElementById("lrcSubmitBtn").addEventListener("click", async ()=>{
+    const me = meTeacher(); if(!me){ lrcMsg("هذه الميزة متاحة لحسابات المعلمين.", true); return; }
+    const date = document.getElementById("lrcFormDate").value, period = +document.getElementById("lrcFormPeriod").value;
+    const note = document.getElementById("lrcFormNote").value.trim();
+    if(!date){ lrcMsg("اختر التاريخ.", true); return; }
+    if(date < lrcToday()){ lrcMsg("لا يمكن الحجز في تاريخ سابق.", true); return; }
+    if(lrcIsWeekend(date)){ lrcMsg("التاريخ المختار يوم عطلة (الجمعة أو السبت).", true); return; }
+    const btn = document.getElementById("lrcSubmitBtn"); btn.disabled = true;
+    await loadLrc(); // re-check against the latest bookings before writing
+    const b = {id:"lrc"+Date.now().toString(36)+Math.random().toString(36).slice(2,6), type:lrcForm.type, projectorNo: lrcForm.type==="projector"?lrcForm.proj:null, hdmi: lrcForm.type==="projector"?lrcForm.hdmi:null,
+      teacherId:me.id, teacherName:me.name, date, period, note, status:"pending", createdAt:new Date().toISOString()};
+    const clash = lrcSlot(date, period, lrcResKey(b));
+    if(clash){ btn.disabled=false; lrcMsg(`عذرًا، ${b.type==="room"?"القاعة":"هذا الجهاز"} محجوز${b.type==="room"?"ة":""} في هذه الحصة لـ ${clash.teacherName}. اختر حصة أو جهازًا آخر.`, true); renderLrc(false); return; }
+    const mineSame = lrcBookings.find(x=>lrcActive(x) && x.teacherId===me.id && x.date===date && x.period===period && x.type===b.type);
+    if(mineSame){ btn.disabled=false; lrcMsg("لديك حجز من نفس النوع في هذه الحصة بالفعل.", true); return; }
+    lrcBookings.push(b);
+    const ok = await saveLrc(); btn.disabled = false;
+    if(!ok){ lrcBookings = lrcBookings.filter(x=>x.id!==b.id); lrcMsg("تعذّر إرسال الطلب — تحقق من الاتصال وحاول مرة أخرى.", true); return; }
+    lrcNotifiedDecided.delete(b.id);
+    logAction("طلب حجز مركز مصادر التعلم", {teacher:me.name, item: lrcItemLabel(b), date, period});
+    document.getElementById("lrcFormNote").value = "";
+    lrcMsg("✅ تم إرسال الطلب — سيظهر «موافق عليه» بعد موافقة أخصائية مصادر التعلم.", false);
+    document.getElementById("lrcDate").value = date;
+    renderLrc(false);
+  });
+  document.getElementById("view-lrc").addEventListener("click", async e=>{
+    const a = e.target.closest("[data-lrcact]"); if(!a) return;
+    const id = a.closest("tr").dataset.bid;
+    await loadLrc();
+    const b = lrcBookings.find(x=>x.id===id); if(!b){ renderLrc(false); return; }
+    const me = meTeacher();
+    if(a.dataset.lrcact==="cancel"){
+      if(!me || b.teacherId!==me.id) return;
+      if(!window.confirm("إلغاء هذا الحجز؟")) return;
+      b.status = "cancelled"; b.decidedAt = new Date().toISOString();
+    } else {
+      if(!isLrcManager()) return;
+      if(b.status!=="pending"){ toast("تمت معالجة هذا الطلب مسبقًا"); renderLrc(false); return; }
+      if(a.dataset.lrcact==="approve"){ b.status="approved"; }
+      else { const r = window.prompt("سبب الرفض (اختياري):", ""); if(r===null) return; b.status="rejected"; b.reason = r.trim(); }
+      b.decidedAt = new Date().toISOString(); b.decidedBy = me ? me.name : "";
+    }
+    a.disabled = true;
+    const ok = await saveLrc();
+    if(!ok){ toast("⚠️ تعذّر الحفظ — حاول مرة أخرى"); await loadLrc(); renderLrc(false); return; }
+    logAction(b.status==="approved"?"موافقة على حجز مصادر التعلم":b.status==="rejected"?"رفض حجز مصادر التعلم":"إلغاء حجز مصادر التعلم", {teacher:b.teacherName, date:b.date, period:b.period});
+    toast(b.status==="approved"?`تمت الموافقة على حجز ${b.teacherName}`:b.status==="rejected"?`تم رفض حجز ${b.teacherName}`:"تم إلغاء الحجز");
+    renderLrc(false); renderDashboardTiles();
   });
 
   function generatePassword(len){
