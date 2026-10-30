@@ -1398,6 +1398,7 @@
         <div class="grp"><select id="aiGrade" style="min-width:140px;"></select></div>
         <button class="btn ghost sm" id="aiRefresh">🔄 تحديث</button>
         <button class="btn ghost sm" id="aiExport">📊 تنزيل Excel</button>
+        <button class="btn ghost sm danger-text" id="aiDeleteSel" hidden>🗑️ حذف المحدد (<span id="aiSelCount">0</span>)</button>
       </div>
       <div class="tbl-wrap"><table class="datatable" id="aiTable"></table></div>
     </div>
@@ -6566,8 +6567,13 @@ ${points?("نقاط يجب تضمينها صراحة: "+points+"."):""}
       <div class="stat-tile"><div class="stat-ic">${iconSVG("absinbox")}</div><div class="num">${dayList.length-todo}</div><div class="lbl">تم إدخاله</div></div>`;
     const rows = aiFiltered();
     const canMark = !!(currentUser && (isDataSpecialist() || currentUser.role==="admin"));
-    document.getElementById("aiTable").innerHTML = `<thead><tr><th>الطالب</th><th>الصف / الشعبة</th><th>التاريخ</th><th>الحصة</th><th>النوع</th><th>السبب / ملاحظات</th><th>أرسله</th><th>اعتماد المدير</th><th>الإدخال في النظام</th></tr></thead><tbody>${
+    const sel = window.__aiSel || (window.__aiSel = new Set());
+    [...sel].forEach(id=>{ if(!rows.some(a=>a.id===id)) sel.delete(id); });
+    document.getElementById("aiDeleteSel").hidden = !canMark || !sel.size;
+    document.getElementById("aiSelCount").textContent = sel.size;
+    document.getElementById("aiTable").innerHTML = `<thead><tr>${canMark?`<th style="width:34px;"><input type="checkbox" id="aiSelAll" ${rows.length && rows.every(a=>sel.has(a.id))?"checked":""} title="تحديد الكل"></th>`:""}<th>الطالب</th><th>الصف / الشعبة</th><th>التاريخ</th><th>الحصة</th><th>النوع</th><th>السبب / ملاحظات</th><th>أرسله</th><th>اعتماد المدير</th><th>الإدخال في النظام</th>${canMark?"<th></th>":""}</tr></thead><tbody>${
       rows.map(a=>`<tr data-aid="${escapeHTML(a.id)}">
+        ${canMark?`<td><input type="checkbox" class="ai-sel" ${sel.has(a.id)?"checked":""}></td>`:""}
         <td style="font-weight:700;">${escapeHTML(a.studentName||"")}</td>
         <td>${escapeHTML(gradeNameOf(a.gradeId))} / ${escapeHTML(sectionShort(a.sectionId))}</td>
         <td style="white-space:nowrap;">${escapeHTML(a.date||"")}</td>
@@ -6578,15 +6584,39 @@ ${points?("نقاط يجب تضمينها صراحة: "+points+"."):""}
         <td>${aiApprovalPill(a)}</td>
         <td>${a.recordedAt ? `<span class="pill ok">✓ تم الإدخال</span><br><span style="font-size:11px; color:var(--text-muted);">${escapeHTML(a.recordedBy||"")}</span>${canMark?` <button class="btn ghost sm" data-ai="undo" title="إلغاء العلامة">↩︎</button>`:""}`
           : canMark ? `<button class="btn sm" data-ai="mark">✓ تم الإدخال</button>` : `<span class="pill wait">لم يُدخل</span>`}</td>
-      </tr>`).join("") || `<tr><td colspan="9" style="text-align:center; color:var(--text-muted); padding:22px;">لا توجد حالات غياب مطابقة</td></tr>`}</tbody>`;
+        ${canMark?`<td><button class="btn ghost sm danger-text" data-ai="delete" title="حذف">🗑️</button></td>`:""}
+      </tr>`).join("") || `<tr><td colspan="11" style="text-align:center; color:var(--text-muted); padding:22px;">لا توجد حالات غياب مطابقة</td></tr>`}</tbody>`;
   }
   ["aiStatus","aiGrade","aiAllDates","aiDate"].forEach(id=>document.getElementById(id).addEventListener("change", ()=>renderAbsInbox(false)));
   function aiShift(delta){ const el=document.getElementById("aiDate"); const d=new Date((el.value||todayISO())+"T12:00:00"); do{ d.setDate(d.getDate()+delta); }while(d.getDay()===5||d.getDay()===6); el.value=d.toISOString().slice(0,10); document.getElementById("aiAllDates").checked=false; renderAbsInbox(false); }
   document.getElementById("aiPrev").addEventListener("click", ()=>aiShift(-1));
   document.getElementById("aiNext").addEventListener("click", ()=>aiShift(1));
   document.getElementById("aiRefresh").addEventListener("click", ()=>renderAbsInbox(true));
+  async function aiDelete(ids){
+    await refreshStudentAbsencesFromRemote();
+    const victims = studentAbsences.filter(a=>ids.includes(a.id));
+    if(!victims.length){ renderAbsInbox(false); return; }
+    const msg = victims.length===1 ? `حذف غياب الطالب «${victims[0].studentName}» بتاريخ ${victims[0].date} نهائيًا؟` : `حذف ${victims.length} حالات غياب نهائيًا؟`;
+    if(!window.confirm(msg + "\nلا يمكن التراجع عن الحذف.")) return;
+    const snapshot = studentAbsences.slice();
+    const gone = new Set(victims.map(a=>a.id));
+    studentAbsences = studentAbsences.filter(a=>!gone.has(a.id));
+    const ok = await saveStudentAbsences();
+    if(!ok){ studentAbsences = snapshot; toast("⚠️ تعذّر الحذف — حاول مرة أخرى"); renderAbsInbox(false); return; }
+    victims.forEach(a=> logAction("حذف غياب طالب", {student:a.studentName, date:a.date, period:a.period}));
+    gone.forEach(id=> window.__aiSel && window.__aiSel.delete(id));
+    toast(victims.length===1 ? `🗑️ تم حذف غياب ${victims[0].studentName}` : `🗑️ تم حذف ${victims.length} حالات غياب`);
+    renderAbsInbox(false); renderDashboardTiles();
+  }
+  document.getElementById("aiDeleteSel").addEventListener("click", ()=> aiDelete([...(window.__aiSel||[])]));
+  document.getElementById("aiTable").addEventListener("change", e=>{
+    const sel = window.__aiSel || (window.__aiSel = new Set());
+    if(e.target.id==="aiSelAll"){ document.querySelectorAll("#aiTable tbody tr[data-aid]").forEach(tr=> e.target.checked ? sel.add(tr.dataset.aid) : sel.delete(tr.dataset.aid)); renderAbsInbox(false); return; }
+    if(e.target.classList.contains("ai-sel")){ const id = e.target.closest("tr").dataset.aid; e.target.checked ? sel.add(id) : sel.delete(id); document.getElementById("aiSelCount").textContent = sel.size; document.getElementById("aiDeleteSel").hidden = !sel.size; }
+  });
   document.getElementById("aiTable").addEventListener("click", async e=>{
     const b = e.target.closest("[data-ai]"); if(!b) return;
+    if(b.dataset.ai==="delete"){ aiDelete([b.closest("tr").dataset.aid]); return; }
     const id = b.closest("tr").dataset.aid;
     b.disabled = true;
     await refreshStudentAbsencesFromRemote();
