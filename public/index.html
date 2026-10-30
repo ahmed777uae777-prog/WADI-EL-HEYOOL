@@ -356,6 +356,7 @@
   .result-box.empty{color:var(--text-muted); font-style:normal;}
   .result-actions{display:flex; gap:8px; margin-top:10px; flex-wrap:wrap;}
 
+  .moe-books{margin:4px 0 0; padding-inline-start:18px; line-height:2;} .moe-books a{font-weight:700;}
   .book-result{
     display:flex; gap:14px; align-items:flex-start; background:var(--primary-tint);
     border:1px solid color-mix(in srgb, var(--primary) 30%, var(--border)); border-radius:var(--radius-m); padding:16px;
@@ -894,7 +895,13 @@
 
   <section class="view" id="view-cards">
     <div class="card">
-      <div class="view-head"><h2>🃏 بطاقات الطالب المخفي</h2><p>اضغط على بطاقة لكشف تحدٍّ أو سؤال عشوائي.</p></div>
+      <div class="view-head"><h2>🃏 بطاقات الطالب المخفي</h2><p>اختر الصف والشعبة، فتختبئ أسماء طلابها داخل البطاقات — اضغط بطاقة لتكشف الطالب وتحدّيه.</p></div>
+      <div class="row">
+        <div class="field"><label>الصف</label><select id="cardGrade"></select></div>
+        <div class="field"><label>الشعبة</label><select id="cardSection"></select></div>
+        <div class="field" style="flex:0 0 auto; align-self:flex-end;"><button class="btn ghost sm" id="cardShuffle" style="height:41px;">🔀 خلط البطاقات</button></div>
+      </div>
+      <p class="lrc-hint" id="cardInfo" style="margin:2px 0 10px;"></p>
       <div class="row">
         <div class="field"><label>المادة/الموضوع (لتوليد تحديات مناسبة)</label><input type="text" id="cardTopic" placeholder="مثال: قواعد اللغة العربية"></div>
         <button class="btn ghost sm" id="cardGenBtn" style="flex:none; align-self:flex-end; height:41px;">✨ توليد تحديات جديدة</button>
@@ -1721,8 +1728,7 @@
     {id:"qr", icon:"🔲", title:"مولّد QR Code", desc:"لمشاركة أي رابط أو نص"},
     {id:"cards", icon:"🃏", title:"بطاقات الطالب المخفي", desc:"تحديات وأسئلة عشوائية"},
     {id:"highlighter", icon:"🖍️", title:"مضلل النص", desc:"ظلّل أي جزء من نص بألوان مختلفة"},
-    {id:"whiteboard", icon:"🖥️", title:"السبورة الذكية", desc:"ارسم واشرح مباشرة على سبورة رقمية"},
-    {id:"photo", icon:"🖼️", title:"محرر الصور", desc:"فلاتر، قص، تدوير، ونص فوق الصورة"}
+    {id:"whiteboard", icon:"🖥️", title:"السبورة الذكية", desc:"ارسم واشرح مباشرة على سبورة رقمية"}
   ];
   const TEACHER_SCHOOL_TILES = [
     {id:"teacherabsence", icon:"🗓️", title:"تسجيل غياب / استئذان", desc:"إرسال طلب مباشرة لمدير المدرسة", accent:true},
@@ -2103,6 +2109,77 @@
     renderSubjectChips(); saveCatalog();
   });
 
+  /* Real book list of مكتبة المناهج العمانية (ict.moe.gov.om/book), taken from the site's own
+     catalogue (16 grade lists). A trailing "*" marks books served from the /mobile/ viewer.
+     URL = https://ict.moe.gov.om/book/PDF/{grade}/{name}/index.html  (or /mobile/index.html). */
+  const MOE_BOOKS = {"1":[["ديني حياتي",["dini_hiati_cls1_p1_f1","dini_hiati_cls1_p1_f2","dini_hiati_cls1_p2_f1","dini_hiati_cls1_p2_f2"]],["أحب لغتي",["cls1_4_guide_arabic_for_parent*","cls1_Arabic_F1P1","cls1_Arabic_F1P2","cls1_Arabic_F2P1","cls1_Arabic_F2P2"]],["English",["cls1_Class_book_1A","cls1_Class_book_1A_eBooks","cls1_Activity_Book_A1","cls1_Activity_Book_A1_eBooks","cls1_Sounds_And_Spelling_book_A1","cls1_Sounds_And_Spelling_book_A1_eBooks","cls1_ClassBook_1B","cls1_ClassBook_1B_eBooks","cls1_ActivityBook_1B","cls1_ActivityBook_1B_eBooks","cls1_1B_SS","cls1_1B_SS_eBooks"]],["سلاسل الرياضيات",["cls1_4_guide_math_for_parent*","cls1_Math_Tahia_p1","Math Telmith class1 p1","Math nashat class1 p1","cls1_MathStudent_S2*","cls1_Math_Nashat_p2"]],["سلاسل العلوم",["ScienceTahia class1 p1*","Science Nashat class1 p1","cls1_SciStudent_P2","cls1_SciActiv_P2*"]],["الهوية و المواطنة",["cls1_Identity_Citizenship_P1","cls1_HM_P2"]],["تقنية المعلومات",["cls1_IT_p1","cls1_IT_p2"]]],"2":[["ديني حياتي",["dini_hiati_cls2_p1_f1","dini_hiati_cls2_p1_f2","cls2_p2_islamic_dinihiatif1","cls2_Islamic_S2P2"]],["أحب لغتي",["cls1_4_guide_arabic_for_parent*","cls2_uhboolughati_p1_f1","cls2_uhboolughati_p1_f2","cls2_S2_P1_Arabic","cls2_S2_P2_Arabic"]],["English",["cls2_Class_book_2A","cls2_Class_book_2A_eBooks","cls2_Activity_Book_2A","cls2_Activity_Book_2A_eBooks","cls2_Sounds_And_Spelling_book_2A","cls2_Sounds_And_Spelling_book_2A_eBooks","cls2_Class_book_2B","cls2_Class_book_2B_eBooks","cls2_ActivityBook_2B","cls2_ActivityBook_2B_eBooks","cls2_Sounds_And_Spelling_book_2B","cls2_Sounds_And_Spelling_book_2B_eBooks"]],["سلاسل الرياضيات",["cls1_4_guide_math_for_parent*","cls2_Math_Nashat_p1","Math Telmith class2 p1","cls2_MathActiv_P2","cls2_MathStudent_P2"]],["سلاسل العلوم",["Science Nashat class2 p1","Science Talmith class2 p1","cls2_SciActiv_P2*","cls2_SciStudent_P2"]],["الهوية و المواطنة",["cls2_Identity_Citizenship_P1","cls2_HM_P2"]],["تقنية المعلومات",["cls2_IT_p1","cls2_IT_p2"]]],"3":[["التربية الإسلامية",["cls3_dinihiati_p1_f1","cls3_dinihiati_p1_f2","cls3_S2_P1_Islamic","cls3_S2_P2_Islamic"]],["أحب لغتي",["cls1_4_guide_arabic_for_parent*","cls3_Arabic_S1P1*","cls3_Arabic_S1P2","cls3_Arabic_S2P1*","cls3_Arabic_S2P2"]],["class book",["cls3_3A_CB","cls3_3A_CB_eBooks","cls3_3A_AB","cls3_3A_AB_eBooks","cls3_3B_CB","cls3_3B_CB_eBooks","cls3_3B_AB","cls3_3B_AB_eBooks"]],["سلاسل الرياضيات",["cls1_4_guide_math_for_parent*","cls3_Math_S1_book","cls3_Math_S2_book","cls3_9_didas_P1","cls3_9_didas_P2","cls3_9_fit_Math_P1","cls3_9_fit_Math_P2","cls3_9_fit_Math_P3"]],["سلاسل العلوم",["Science Nashat class3 p1","Science Talmith class3 p1","cls3_SciActiv_P2","cls3_SciStudent_P2"]],["الهوية و المواطنة",["cls3_Identity_Citizenship_P1","cls3_HM_P2"]],["عالمي الرقمي",["cls3_IT_p1","cls3_IT_P2"]]],"4":[["التربية الإسلامية",["cls4_S1P1_dinihyati","cls4_S1P2_dinihyati","cls4_Islamic_S2P1","cls4_Islamic_S2P2"]],["أحب لغتي",["cls1_4_guide_arabic_for_parent*","cls4_Arabic_S1P1","cls4_Arabic_S1P2","cls4_arabic_S2P1","cls4_arabic_S2P2"]],["English",["cls4_4A_CB","cls4_4A_CB_eBooks","cls4_4A_AB","cls4_4A_AB_eBooks","cls4_4B_CB","cls4_4B_CB_eBooks","cls4_4B_AB","cls4_4B_AB_eBooks"]],["سلاسل الرياضيات",["cls1_4_guide_math_for_parent*","cls4_Math_Talmith_P1","cls4_Math_Talmith_P2","cls4_Math_Nashat_P2"]],["سلاسل العلوم",["Science Nashat class 4 p1","Science Talmith class 4 p1","cls4_SciActiv_P2*","cls4_SciStudent_P2"]],["الهوية و المواطنة",["cls4_Identity_Citizenship_P1","cls4_HM_P2"]],["عالمي الرقمي",["cls4_IT_p1","cls4_IT_P2"]]],"5":[["التربية الإسلامية",["cls5_Islamic_P1","cls5_Islamic_P2"]],["لغتي الجميلة",["cls5_Arabic_P1","cls5_Arabic_P2"]],["class book",["cls5_cb_5A","cls5_cb_5A_eBooks","cls5_Activity_5A","cls5_Activity_5A_eBooks","cls5_CB_5B","cls5_cb_5B_eBooks","cls5B_AB","cls5_Activity_5B_eBooks"]],["الرياضيات",["Math Talib cls5 p1","cls5_Math_AB_P1","cls5_Math_SB_P2","cls5_Math_AB_P2","cls5_Math_HearingP2"]],["العلوم",["cls5_SciStudent_P1","cls5_SciActivity_P1","cls5_F2_Science_StudentBook","cls5_Sci_AB_P2"]],["الدراسات الإجتماعية",["cls5_Social_P1","cls5_Social_P2"]],["المهارات الحياتية",["maharat_g5_Classical"]],["تقنية المعلومات",["cls5_IT_P1","cls5_IT_P2"]]],"6":[["التربية الإسلامية",["cls6_Islamic_P1","cls6_IslamicP2"]],["اللغة العربية",["cls6_Arabic_P1","cls6_Arabic_P2"]],["English",["cls6_cb_6A","cls6_cb_6A_eBooks","cls6_Activity_Book_6A","cls6_Activity_Book_6A_eBooks","cls2B_CB","cls6_cb_6B_eBooks","cls6B_WB","cls6_Activity_Book_6B_eBooks"]],["الرياضيات",["cls6_MathStudent_P1","cls6_F2_Math_StudentBook","Math_Nashat_cls6_p1","cls6_F2_Math_ExBook","cls6_Math_HearingP2"]],["الدراسات الإجتماعية",["cls6_Social_P1","cls6_Social_P2"]],["المهارات الحياتية",["maharat_g6_Classical"]],["العلوم",["cls6_SciStudent_P1","Science_Nashat_cls6_p1","cls6_F2_Science_StudentBook","cls6_F2_Science_ExBook"]],["تقنية المعلومات",["cls6_IT_P1","cls6_IT_P2"]]],"7":[["التربية الإسلامية",["cls7_Islamic_P1","cls7_Islamic_P2"]],["لغتي الجميلة",["lugati_jamila_g7p1_Classical","cls7_Arabic_P2"]],["class book",["cls7_cb_7A","cls7_Class_book_7A_eBooks","cls7_7B_CB","cls7_Class_book_7B_eBooks"]],["skills book",["cls7_sb_7A","cls7_ActivityBook_7A_eBooks","cls7_7B_Act","cls7_ActivityBook_7B_eBooks"]],["الرياضيات",["cls7_Math_nashat_p1","cls7_Math_talib_p1","cls7_MathSkills_P2","cls7_S2_mathStudent","cls7_Math_HearingP2"]],["الدراسات الإجتماعية",["cls7_Social_Studies_P1","cls7_Social_Studies_P2"]],["المهارات الحياتية",["maharat_g7_Classical"]],["العلوم",["cls7_Science_nashat_p1","cls7_Science_talib_p1","cls7_P2_ScienceSkills","cls7_P2_ScienceStudent"]],["تقنية المعلومات",["cls7_IT_P1","it_g7p2_Classical*"]],["الدليل الإرشادي للسبورة التفاعلية",["cls7_11_Interactive_Whiteboard_Clever_Math","cls7_11_Interactive_Whiteboard_Open_Board"]]],"8":[["لغتي الجميلة",["cls8_Arabic_P1","cls8_Arabic_P2"]],["التربية الإسلامية",["cls8_Islamic_P1","cls8_Islamic_P2"]],["class book",["cls8_cb_8A","cls8_Class_book_8A_eBooks","cls8_8B_CB","cls8_Class_book_8B_eBooks"]],["skills book",["Team_Together_Oman_8A_Activity_Book","cls8_ActivityBook_8A_eBooks","cls8_8B_Act","cls8_ActivityBook_8B_eBooks"]],["الرياضيات",["cls8_Math_nashat_p1","cls8_Math_talib_p1","cls8_P2_mathSkills*","cls8_P2_mathStudent*","cls8_Math_HearingP2"]],["العلوم",["cls8_Science_nashat_p1","cls8_Sci_SB_P1","cls8_SciSkills_P2","cls8_Sci_SB_P2"]],["الدراسات الإجتماعية",["cls8_Social_Studies_P1","cls8_Social_Studies_P2"]],["المهارات الحياتية",["maharat_g8_Classical"]],["تقنية المعلومات",["IT_cls8_p1","cls8_IT_P2"]]],"9":[["التربية الإسلامية",["cls9_Islamic_S1_book","cls9_Islamic_S2_book"]],["لغتي الجميلة",["lugati_jamila_g9p1_Classical","lugati_jamila_g9p2_Classical*"]],["class book",["Gold_Gxperience_Oman_StudentBook_9A","Gold Experience Oman_G9A_SB_Digital_Final","Gold_XP_Oman_G9A_Phonetic_Chart","cls9_cb_9B*"]],["skills book",["Gold_Gxperience_Oman_WorkBook_9A","Gold Experience Oman_G9A_WB_Digital_Final","cls9_sb_9B*"]],["الرياضيات",["cls9_math_ActivityBook_S1","cls9_Math_Student_S1_book","cls9_MathSkills_P2","cls9_Math_Student_S2_book","cls9_Math_HearingP2","cls3_9_didas_P1","cls3_9_didas_P2","cls3_9_fit_Math_P1","cls3_9_fit_Math_P2","cls3_9_fit_Math_P3"]],["العلوم",["cls9_Activity_P1_bio*","cls9_Student_P1_bio","cls9_Activity_P1_chemistry","cls9_Student_P1_chemistry","cls9_Activity_P1_physics","cls9_Student_P1_physics","cls9_Bio_P2_Act*","cls9_Bio_P2_Student","cls9_Chem_P2_Act*","cls9_Chem_P2_Student*","cls9_Phys_P2_Act*","cls9_Phys_P2_Student*"]],["الدراسات الإجتماعية",["cls9_Social_Studies_P1","cls9_Social_Studies_P2"]],["المهارات الحياتية",["cls9_Skills"]],["كراسة المهارات الموسيقية",["Karas Maharat Al Musiqiya Class 9_Classical"]],["تقنية المعلومات",["cls9_IT","cls9_it_p1"]],["الرياضة مدرسية",["Sports Class 9_Classical"]]],"10":[["التربية الإسلامية",["Islamic_g10p1_Classical","Islamic_g10p2*"]],["لغتي الجميلة",["lugati_jamila_g10p1_Classical","lugati_jamila_g10p2_Classical*"]],["class book",["cls10_cb_10A","classBook_cls10b*"]],["skills book",["cls10_sb_10A","english_sb_g10p2_Classical*"]],["story reader",["G10 story reader_Classical*"]],["الرياضيات",["cls10_Math_AB_P1","cls10_Math_S1_book","cls10_Math_AB_P2","cls10_Math_SB_P2","cls10_Math_HearingP2"]],["العلوم",["cls10_Bio_AB_P1","cls10_Bio_SB_P1","cls10_Chem_AB_P1","cls10_Chem_SB_P1","cls10_Phys_AB_P1","cls10_Phys_SB_P1","cls10_Bio_AB_P2","cls10_Bio_Talib_P2","cls10_Chem_AB_P2","cls10_Chem_SB_P2","cls10_Physics_Nshat_P2","cls10_Physics_Talib_P2"]],["الدراسات الإجتماعية",["cls10_Social_P1","cls10_Social_P2"]],["المهارات الحياتية",["cls10_Skills","cls10_Skills_SB"]],["كراسة المهارات الموسيقية",["Karas Nashat Al Maharat Al Musiqi Class 10_Classical"]],["كراسة الفنون التشكيلية",["cls10_Art"]],["الرياضة مدرسية",["Sports Class 10_Classical"]],["مسارك المهني",["cls10_msarakAlmehani*","cls10_Tawjeh*"]],["تقنية المعلومات",["cls10_IT_P1","cls10_IT_P2"]]],"11":[["التربية الإسلامية",["cls11_p1_islamic","Islamic_g11p2_Classical*"]],["المؤنس",["muunis_g11p1_vol1_Classical","cls11_ArabicMunes_P2"]],["المفيد",["mufeed_g11_Classical"]],["class book",["english_courseb_g11p1_Classical","english_courseb_g11p2_Classical*"]],["skills book",["english_workb_g11p1_Classical","cls11_wb_11B*"]],["story reader",["G11 story reader_Classical*"]],["insights2",["cls11_Insights2_SB*","cls11_Insights2_WB*"]],["الرياضيات الأساسية",["cls11_MathBasicStd_P1","cls11_MathBasicWB_P1","cls11_MathBasicStd_P2","cls11_MathBasicWB_P2"]],["الرياضيات المتقدمة",["cls11_MathAdvanceStd_P1","cls11_MathAdvanceWB_P1","cls11_MathAdvanceStd_P2","cls11_MathAdvanceWB_P2"]],["الأحياء",["cls11_Bio_P1","cls11_BioWB_P1","cls11_Bio_P2","cls11_BioWB_P2"]],["كيمياء",["cls11_ChemCB_P1","cls11_ChemWB_P1","cls11_ChemCB_P2","cls11_ChemWB_P2"]],["فيزياء",["cls11_Phys_P1","cls11_PhysWB_P1","cls11_Phys_P2","cls11_PhysWB_P2"]],["العلوم و البيئة",["cls11_Student_Science_Environment","cls11_EnvironmentSciences_Practical_Experiments_Activities_S1_book","cls11_Student_Science_Environment_P2","cls11_EnvironmentSciences_Practical_Experiments_Activities_S2_book"]],["هذا وطني",["cls11_Watani"]],["جغرافيا اقتصادية",["geograp_iktisad_g11_Classical"]],["الحضارة الاسلامية",["cls11_hadhara_Alislamia"]],["كراسة نشاط مهارات موسيقية",["karas nshat music_Classical"]],["تقنية المعلومات",["cls11_IT_P1","cls11_IT_P2"]],["الفنون التشكيلية",["cls11_Art"]],["الرياضة المدرسية",["sport cls11"]],["مسارك المهني",["cls11_msarakAlmehani*"]],["الدليل الإرشادي للسبورة التفاعلية",["cls7_11_Interactive_Whiteboard_Clever_Math","cls7_11_Interactive_Whiteboard_Open_Board"]]],"12":[["التربية الإسلامية",["cls12_islamiya_p1","Islamic_g12p2_Classical*"]],["المفيد",["cls12_Almufeed"]],["المؤنس",["cls12_Muunis_P1","cls12_Muunis_P2"]],["class book",["cls12_cb_12A","english_courseb_g12p2_Classical*"]],["work book",["cls12_wb_12A","english_workb_g12p2_Classical*"]],["insights3",["cls12_Insights3_SB*","cls12_Insights3_WB*"]],["الرياضيات البحتة",["cls12_MathAdvanceStd_P1","cls12_MathAdvanceWB_P1","cls12_MathAdvanceCB_P2","cls12_MathAdvanceWB_P2"]],["الرياضيات التطبيقية",["cls12_MathBasicStd_P1","cls12_MathBasicWB_P1","cls12_MathBasicStd_P2","cls12_MathBasicWB_P2"]],["الفيزياء",["cls12_Phys_P1","cls12_PhysWB_P1","cls12_Phys_P2","cls12_PhysWB_P2"]],["الكيمياء",["cls12_Chem_P1","cls12_ChemWB_P1","cls12_Chem_P2","cls12_ChemWB_P2"]],["الاحياء",["cls12_Bio_P1","cls12_BioWB_P1","cls12_Bio_P2","cls12_BioWB_P2","cls12_SciStd_P1","cls12_SciAct_P1","cls12_SciStd_P2","cls12_SciAct_P2"]],["الجغرافيا و التقنيات الحديثة",["cls12_Social_It"]],["العالم من حولي",["cls12_alaalm_hawli"]],["هذا وطني",["cls12_Watani","alatlas_class1_12*"]],["مسارك المهني",["cls12_Masarak"]],["الفنون التشكيلية",["cls12_artBook"]],["الرياضة المدرسية",["sport cls12"]],["تقنية المعلومات",["cls12_IT_P1","cls12_IT_P2"]]]};
+  const MOE_SUBJECT_ALIASES = [
+    [["تقنية المعلومات","حاسوب","الحاسب"], ["تقنية المعلومات","عالمي الرقمي"]],
+    [["التربية الإسلامية","التربية الاسلامية","إسلامية"], ["التربية الإسلامية","ديني حياتي"]],
+    [["اللغة العربية","العربية","لغتي"], ["أحب لغتي","لغتي الجميلة","اللغة العربية","المؤنس","المفيد"]],
+    [["اللغة الإنجليزية","الانجليزية","الإنجليزية","English"], ["English","class book","skills book","work book","story reader","insights"]],
+    [["الرياضيات الأساسية","الرياضيات التطبيقية"], ["الرياضيات الأساسية","الرياضيات التطبيقية"]],
+    [["الرياضيات المتقدمة","الرياضيات البحتة"], ["الرياضيات المتقدمة","الرياضيات البحتة"]],
+    [["الرياضيات"], ["الرياضيات"]],
+    [["العلوم البيئية","العلوم والبيئة"], ["العلوم و البيئة"]],
+    [["الفيزياء"], ["فيزياء","الفيزياء","العلوم"]],
+    [["الكيمياء"], ["كيمياء","الكيمياء","العلوم"]],
+    [["الأحياء","الاحياء"], ["الأحياء","الاحياء","العلوم"]],
+    [["العلوم"], ["العلوم"]],
+    [["الدراسات الاجتماعية","الاجتماعيات","الجغرافيا","التاريخ"], ["الدراسات الإجتماعية","هذا وطني","جغرافيا اقتصادية","الجغرافيا و التقنيات الحديثة","العالم من حولي","الحضارة الاسلامية"]],
+    [["المهارات الحياتية"], ["المهارات الحياتية"]],
+    [["الهوية والمواطنة","الهوية"], ["الهوية و المواطنة"]],
+    [["التربية الفنية","الفنون التشكيلية","الفنون البصرية"], ["الفنون التشكيلية","كراسة الفنون التشكيلية"]],
+    [["الموسيقى","المهارات الموسيقية","الفنون الموسيقية"], ["كراسة المهارات الموسيقية","كراسة نشاط مهارات موسيقية"]],
+    [["التربية الرياضية","الرياضة المدرسية","التربية البدنية"], ["الرياضة مدرسية","الرياضة المدرسية"]],
+    [["التوجيه المهني","مسارك المهني"], ["مسارك المهني"]],
+  ];
+  function moeSemester(n){
+    let m = n.match(/(?:^|[_\s])[FS]([12])(?=P|_|\s|$)/i) || n.match(/_S([12])P/i) || n.match(/_S([12])_/i);
+    if(!m) m = n.match(/(?:^|[_\s]|g\d{1,2})p([12])(?=$|[_\s])/i) || n.match(/P([12])(?=$|_)/);
+    if(m) return +m[1];
+    m = n.match(/\d([AB])(?=$|_)/) || n.match(/_([AB])\d/) || n.match(/cls\d+([AB])_/) || n.match(/cls\d+b\*?$/i);
+    if(m) return (m[1]||"B").toUpperCase()==="A" ? 1 : 2;
+    return 0;
+  }
+  function moeLabel(n){
+    const parts = [];
+    if(/guide.*parent/i.test(n)) parts.push("دليل ولي الأمر");
+    else if(/Hearing/i.test(n)) parts.push("كتاب ذوي الإعاقة السمعية");
+    else if(/Tahia/i.test(n)) parts.push("كتاب التهيئة");
+    else if(/story reader/i.test(n)) parts.push("كتاب القصص");
+    else if(/Phonetic/i.test(n)) parts.push("لوحة الأصوات");
+    else if(/Sounds_And_Spelling|_SS/i.test(n)) parts.push("كتاب الأصوات والتهجئة");
+    else if(/Whiteboard/i.test(n)) parts.push("دليل السبورة التفاعلية" + (/Clever/i.test(n)?" (Clever)":" (OpenBoard)"));
+    else if((/Activ|Nashat|Nshat|_AB|AB_|WB|workb|ExBook|Skills|_Act|Experiments/i.test(n) || /_sb_|english_sb/.test(n)) && !/Skills_SB$|^cls10_Skills$|^cls9_Skills$/.test(n)) parts.push("كتاب النشاط / التمارين");
+    else if(/fit_Math/i.test(n)) parts.push("كتاب «لياقة» الرياضيات");
+    else if(/didas/i.test(n)) parts.push("كتاب الرياضيات الإضافي");
+    else parts.push("كتاب الطالب");
+    if(/bio/i.test(n)) parts.push("الأحياء"); else if(/chem/i.test(n)) parts.push("الكيمياء"); else if(/phys/i.test(n)) parts.push("الفيزياء");
+    const f = n.match(/_f([12])$/i) || n.match(/F([12])P/); if(f && /dini|Arabic|uhboo/i.test(n)) parts.push("الجزء "+(f[1]==="1"?"الأول":"الثاني"));
+    if(/P3$/.test(n)) parts.push("الجزء الثالث");
+    if(/eBooks/i.test(n)) parts.push("(نسخة تفاعلية)");
+    const s = moeSemester(n); if(s) parts.push("— الفصل "+(s===1?"الأول":"الثاني"));
+    return parts.join(" ");
+  }
+  function moeBooksFor(grade, subject){
+    const groups = MOE_BOOKS[grade] || [];
+    const norm = t => String(t||"").replace(/[أإآ]/g,"ا").replace(/ة/g,"ه").replace(/\s+/g," ").trim().toLowerCase();
+    const subj = norm(subject);
+    let wanted = null;
+    for(const [names, groupKeys] of MOE_SUBJECT_ALIASES){ if(names.some(x=>subj.includes(norm(x)))){ wanted = groupKeys.map(norm); break; } }
+    const hit = groups.filter(([gname])=>{ const g = norm(gname); return wanted ? wanted.some(w=>g.includes(w)) : (g.includes(subj) || subj.includes(g)); });
+    const want = /فيزياء|كيمياء|احياء|الأحياء/.test(subject) ? (/فيزياء/.test(subject)?/phys/i:/كيمياء/.test(subject)?/chem/i:/bio|Sci(Std|Act)/i) : null;
+    const out = [];
+    const series = hit.length > 1 && !hit.every(([g])=>/book|English|insights|reader/i.test(g));
+    hit.forEach(([gname, names])=> names.forEach(raw=>{
+      const old = raw.endsWith("*"), name = old ? raw.slice(0,-1) : raw;
+      if(want && /العلوم/.test(gname) && !want.test(name)) return;
+      out.push({name, label: (series ? gname.trim()+": " : "") + moeLabel(name), sem: moeSemester(name), url: `https://ict.moe.gov.om/book/PDF/${grade}/${encodeURIComponent(name)}/${old?"mobile/":""}index.html`});
+    }));
+    return out;
+  }
+
   function renderBookResult(){
     const wrap = document.getElementById("bookResultWrap");
     const lessonCard = document.getElementById("lessonBuilderCard");
@@ -2112,13 +2189,15 @@
       lessonCard.hidden = true;
       return;
     }
-    const isIT = subject.includes("تقنية المعلومات") || subject.toLowerCase().includes("it");
+    const books = moeBooksFor(+grade, subject);
     let linkHTML;
-    if(isIT){
-      const url = `https://ict.moe.gov.om/book/PDF/${sem}/cls${grade}_IT_p${sem}/index.html`;
-      linkHTML = `<a href="${url}" target="_blank" rel="noopener">فتح الكتاب (نمط رابط تقديري)</a> <span class="badge unsure">🔎 نمط الرابط تقديري — تأكد قبل الاستخدام</span>`;
+    if(books.length){
+      const cur = books.filter(b=>!b.sem || b.sem===sem), other = books.filter(b=>b.sem && b.sem!==sem);
+      const li = b=>`<li><a href="${b.url}" target="_blank" rel="noopener">📖 ${escapeHTML(b.label)}</a> <small style="color:var(--text-muted); direction:ltr; unicode-bidi:isolate;">${escapeHTML(b.name)}</small></li>`;
+      linkHTML = `<ul class="moe-books">${cur.map(li).join("")}</ul>${other.length?`<details style="margin-top:6px;"><summary style="cursor:pointer; font-size:12.5px; color:var(--text-muted);">كتب الفصل الدراسي ${sem===1?"الثاني":"الأول"} (${arNum(other.length)})</summary><ul class="moe-books">${other.map(li).join("")}</ul></details>`:""}
+        <div style="font-size:12px; color:var(--text-muted); margin-top:6px;">المصدر: مكتبة المناهج العمانية — <a href="https://ict.moe.gov.om/book/" target="_blank" rel="noopener">ict.moe.gov.om/book</a></div>`;
     } else {
-      linkHTML = `<a href="https://ict.moe.gov.om/book/" target="_blank" rel="noopener">افتح بوابة المناهج للبحث يدويًا</a> <span class="badge unsure">⚠️ الرابط المباشر غير معروف لهذه المادة</span>`;
+      linkHTML = `<a href="https://ict.moe.gov.om/book/" target="_blank" rel="noopener">افتح مكتبة المناهج العمانية</a> <span class="badge unsure">لا يوجد كتاب لهذه المادة لهذا الصف في المكتبة</span>`;
     }
     wrap.innerHTML = `<div class="book-result">
       <div class="ic">📗</div>
@@ -2456,20 +2535,54 @@ ${points?("نقاط يجب تضمينها صراحة: "+points+"."):""}
     "⭐ قيّم فهمك للدرس من ١ إلى ٥ ووضّح لماذا"
   ];
   let cardChallenges = DEFAULT_CHALLENGES.slice();
+  // Students hidden in the cards come from the school roster for the chosen class (or, if no class
+  // is chosen, the teacher's own classroom list). One card per student, shuffled; each also carries
+  // a challenge from the current set.
+  let cardOrder = [];
+  function cardShuffleArr(a){ a = a.slice(); for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } return a; }
+  function cardFillSelects(){
+    const gSel = document.getElementById("cardGrade"), sSel = document.getElementById("cardSection");
+    if(!gSel) return;
+    const curG = gSel.value, curS = sSel.value;
+    const withStudents = new Set((schoolStudents||[]).filter(x=>x.active!==false).map(x=>x.gradeId));
+    gSel.innerHTML = `<option value="">— قائمة طلابي —</option>` + grades.slice().sort((a,b)=>a.order-b.order).filter(g=>withStudents.has(g.id)).map(g=>`<option value="${escapeHTML(g.id)}">${escapeHTML(g.name)}</option>`).join("");
+    gSel.value = [...gSel.options].some(o=>o.value===curG) ? curG : "";
+    const secs = gSel.value ? sectionsOfGrade(gSel.value).filter(sc=>sc.kind!=="elective" && (schoolStudents||[]).some(x=>x.sectionId===sc.id && x.active!==false)) : [];
+    sSel.innerHTML = secs.length ? secs.map(sc=>`<option value="${escapeHTML(sc.id)}">${escapeHTML(sectionShort(sc.id))}</option>`).join("") : `<option value="">—</option>`;
+    sSel.value = [...sSel.options].some(o=>o.value===curS) ? curS : (secs[0] ? secs[0].id : "");
+    sSel.disabled = !gSel.value;
+  }
+  function cardNames(){
+    const g = document.getElementById("cardGrade")?.value, sec = document.getElementById("cardSection")?.value;
+    if(g && sec) return (schoolStudents||[]).filter(x=>x.gradeId===g && x.sectionId===sec && x.active!==false).map(x=>x.name);
+    return students.map(x=>x.name);
+  }
+  function cardReshuffle(){
+    const names = cardShuffleArr(cardNames());
+    const ch = cardShuffleArr(cardChallenges);
+    cardOrder = names.length ? names.map((n,i)=>({who:n, ch: ch.length ? ch[i % ch.length] : ""})) : cardChallenges.map(c=>({who:"", ch:c}));
+    renderCards();
+  }
   function renderCards(){
     const grid = document.getElementById("cardsGrid");
-    const names = students.map(s=>s.name);
-    grid.innerHTML = cardChallenges.map((ch,i)=>{
-      const who = names.length ? names[i%names.length] : "";
+    if(!cardOrder.length) cardOrder = cardChallenges.map(c=>({who:"", ch:c}));
+    const g = document.getElementById("cardGrade")?.value;
+    const info = document.getElementById("cardInfo");
+    if(info) info.textContent = cardOrder.some(c=>c.who) ? `${cardOrder.length} بطاقة — كل بطاقة تخفي طالبًا${g?" من "+gradeNameOf(g)+" / "+sectionShort(document.getElementById("cardSection").value):" من قائمة طلابك"} مع تحدٍّ.` : "لا يوجد طلاب في الصف المختار بعد — البطاقات تعرض تحديات فقط.";
+    grid.innerHTML = cardOrder.map((c,i)=>{
+      const who = c.who, ch = c.ch;
       return `<div class="flip-card" data-i="${i}">
         <div class="flip-inner">
-          <div class="flip-face flip-front">🃏</div>
-          <div class="flip-face flip-back">${who?`<div>${escapeHTML(who)}</div>`:""}<div>${escapeHTML(ch)}</div></div>
+          <div class="flip-face flip-front">🃏<div style="font-size:14px; margin-top:4px; opacity:.85;">${i+1}</div></div>
+          <div class="flip-face flip-back">${who?`<div style="font-weight:800; font-size:16px; color:var(--primary-strong); margin-bottom:6px;">👤 ${escapeHTML(who)}</div>`:""}<div>${escapeHTML(ch)}</div></div>
         </div>
       </div>`;
     }).join("");
   }
   renderCards();
+  document.getElementById("cardGrade").addEventListener("change", ()=>{ cardFillSelects(); cardReshuffle(); });
+  document.getElementById("cardSection").addEventListener("change", cardReshuffle);
+  document.getElementById("cardShuffle").addEventListener("click", ()=>{ cardReshuffle(); toast("🔀 تم خلط البطاقات"); });
   document.getElementById("cardsGrid").addEventListener("click", e=>{
     const card = e.target.closest(".flip-card"); if(!card) return;
     card.classList.toggle("flipped");
@@ -2484,7 +2597,7 @@ ${points?("نقاط يجب تضمينها صراحة: "+points+"."):""}
         `أنشئ 8 تحديات/أسئلة قصيرة جدًا (٤-٨ كلمات) بالعربية الفصحى لبطاقات صفية${topic?(" عن موضوع: "+topic):""}. رد فقط بمصفوفة JSON من نصوص، بدون أي شرح.`,
         {modelTier:"quick"}
       );
-      if(Array.isArray(data) && data.length){ cardChallenges = data.map(String).slice(0,12); renderCards(); }
+      if(Array.isArray(data) && data.length){ cardChallenges = data.map(String).slice(0,12); cardReshuffle(); }
     }catch(e){ toast(sampleErrorMessage(e)); }
     finally{ btn.disabled=false; btn.textContent="✨ توليد تحديات جديدة"; }
   });
@@ -8518,6 +8631,7 @@ ${points?("نقاط يجب تضمينها صراحة: "+points+"."):""}
     const id = g.dataset.goto;
     if(id==="teacherabsence"){ twReset(); twRender(); }
     else if(id==="teacherstudentabsence"){ swReset(); swRender(); }
+    else if(id==="cards"){ cardFillSelects(); cardReshuffle(); }
     else if(id==="admindash") renderAdminDash();
     else if(id==="admintimetables"){
       if(g.dataset.presetTab) schedActiveTab = g.dataset.presetTab;
