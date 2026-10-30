@@ -885,6 +885,17 @@
     <div class="rw-modal" id="rwModal" hidden><div class="rw-sheet" id="rwSheet"></div></div>
   </section>
 
+  <section class="view" id="view-arlab">
+    <div class="card" style="padding:10px">
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:8px">
+        <h2 style="margin:0;font-family:Cairo;color:var(--primary);font-size:19px">🥽 المختبر الافتراضي</h2>
+        <span style="flex:1"></span>
+        <button class="btn ghost sm" id="arlabNewTab">↗️ فتح في نافذة كاملة (أفضل للهاتف والكاميرا)</button>
+      </div>
+      <iframe id="arlabFrame" title="المختبر الافتراضي" allow="camera; xr-spatial-tracking; fullscreen; autoplay" allowfullscreen style="width:100%;height:calc(100vh - 170px);min-height:560px;border:0;border-radius:16px;background:#FBF7EE"></iframe>
+    </div>
+  </section>
+
   <section class="view" id="view-lesson">
     <div class="card">
       <div class="view-head"><h2>🎯 مولد الدرس الكامل</h2><p>خطة كاملة على نموذج المدرسة: التهيئة ← التقويم القبلي ← التمهيد بالصور والفيديو ← الأهداف (استراتيجية + نشاط تكويني + نشاط إثرائي) ← التطبيق الموجّه والتعلم الذاتي ← النشاط الختامي.</p></div>
@@ -901,6 +912,7 @@
         <button class="btn ghost sm" id="lsCopyBtn">📋 نسخ</button>
         <button class="btn ghost sm" id="lsPrintBtn">🖨️ طباعة / PDF</button>
         <button class="btn ghost sm" id="lsWordBtn">⬇️ تنزيل Word</button>
+        <button class="btn sm" id="lsLabBtn">🥽 افتح الدرس في المختبر الافتراضي</button>
       </div>
     </div>
   </section>
@@ -1843,6 +1855,7 @@
   const TEACHER_TOOL_TILES = [
     {id:"subjects", icon:"🗂️", title:"إدارة المواد الدراسية", desc:"فرز كتب المناهج حسب الحلقة والصف والمادة"},
     {id:"students", icon:"👨‍🎓", title:"الطلاب والتعزيز", desc:"قائمة الطلاب وشارات التحفيز", accent:true},
+    {id:"arlab", icon:"🥽", title:"المختبر الافتراضي (واقع معزز)", desc:"تجارب ثلاثية الأبعاد لكل المواد + أي درس بالذكاء الاصطناعي", accent:true},
     {id:"lesson", icon:"🎯", title:"مولّد الدرس الكامل", desc:"أهداف + أنشطة + تقويم"},
     {id:"worksheet", icon:"📄", title:"مولّد أوراق العمل", desc:"أسئلة متنوعة جاهزة للطباعة"},
     {id:"game", icon:"🎮", title:"مولّد الألعاب التعليمية", desc:"لعبة HTML تفاعلية قابلة للّعب مباشرة"},
@@ -2734,6 +2747,13 @@
     const css=[...document.querySelectorAll("style")].map(s=>s.textContent).join("\n").match(/\.lp[^{]*\{[^}]*\}/g)||[];
     return `<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><title>خطة درس</title><style>body{font-family:Tahoma,Arial,sans-serif;direction:rtl;padding:18px;color:#14302F}${css.join("\n")}@media print{.lp-sec{break-inside:avoid}}</style></head><body>${box.innerHTML}</body></html>`;
   }
+  document.getElementById("arlabNewTab").addEventListener("click", ()=>{ const f=document.getElementById("arlabFrame"); let u="/lab.html"; try{ u = f.contentWindow.location.href || u; }catch(e){} window.open(u, "_blank", "noopener"); });
+  document.getElementById("lsLabBtn").addEventListener("click", ()=>{
+    const subject=document.getElementById("lsSubject").value.trim(), grade=document.getElementById("lsGrade").value.trim(), topic=(lsLast&&lsLast.d.title)||document.getElementById("lsTopic").value.trim();
+    if(!topic){ toast("اكتب موضوع الدرس"); return; }
+    const f=document.getElementById("arlabFrame"); f.dataset.home="0"; f.src="/lab.html?"+new URLSearchParams({subject, grade, topic}).toString();
+    showView("arlab");
+  });
   document.getElementById("lsCopyBtn").addEventListener("click", ()=>{ if(lsLast) copyText(lessonPlainText(lsLast.d, lsLast.meta)); });
   document.getElementById("lsPrintBtn").addEventListener("click", ()=>{
     const w=window.open("","_blank"); if(!w){ toast("اسمح بالنوافذ المنبثقة للطباعة"); return; }
@@ -9115,6 +9135,7 @@ ${fields.map(f=>GAME_SPEC[f]).join(",\n")}
     if(id==="teacherabsence"){ twReset(); twRender(); }
     else if(id==="teacherstudentabsence"){ swReset(); swRender(); }
     else if(id==="cards"){ cardFillSelects(); cardReshuffle(); }
+    else if(id==="arlab"){ const f=document.getElementById("arlabFrame"); if(!f.src || f.dataset.home!=="1"){ f.src="/lab.html"; f.dataset.home="1"; } }
     else if(id==="admindash") renderAdminDash();
     else if(id==="admintimetables"){
       if(g.dataset.presetTab) schedActiveTab = g.dataset.presetTab;

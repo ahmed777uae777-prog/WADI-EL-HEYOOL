@@ -1,0 +1,1228 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>المختبر الافتراضي</title>
+<meta name="theme-color" content="#0B5457">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@600;700;800&family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/three@0.147.0/build/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.147.0/examples/js/controls/OrbitControls.js"></script>
+<style>
+:root{--bg:#FBF7EE;--surface:#fff;--surface-2:#F6F1E6;--line:#E3DED1;--primary:#0B5457;--primary-2:#127A74;--teal:#3DB8A8;--accent:#9A6B1F;--gold:#E2B864;--text:#14302F;--muted:#3E4F4C;--danger:#B23A3A;--ok:#2E7D4F}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--text);font-family:"IBM Plex Sans Arabic","Cairo",Tahoma,sans-serif}
+button,select,input{font-family:inherit}
+h1,h2,h3{font-family:Cairo,sans-serif;margin:0}
+.top{display:flex;align-items:center;gap:12px;padding:12px 16px;background:linear-gradient(135deg,#06393B,#0E6B66);color:#FFF7E4;position:sticky;top:0;z-index:20}
+.top h1{font-size:19px}.top small{display:block;font-size:12.5px;opacity:.85;font-family:"IBM Plex Sans Arabic"}
+.top .sp{flex:1}
+.tbtn{border:1px solid rgba(231,201,138,.5);background:rgba(255,247,228,.12);color:#FFF7E4;border-radius:999px;padding:7px 14px;font-weight:700;font-size:13.5px;cursor:pointer;white-space:nowrap}
+.tbtn:hover{background:rgba(255,247,228,.24)}
+.home{max-width:1180px;margin:0 auto;padding:16px}
+.hero{display:grid;grid-template-columns:1.2fr 1fr;gap:16px;align-items:stretch;margin-bottom:16px}
+.hero .card{background:#fff;border:1px solid var(--line);border-radius:20px;padding:18px}
+.hero h2{font-size:22px;color:var(--primary);margin-bottom:6px}.hero p{margin:0;color:var(--muted);line-height:1.8}
+.ai-card{background:linear-gradient(135deg,#FFF7E4,#E3EFEE)!important;border:2px dashed var(--gold)!important}
+.ai-card .row{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}
+.ai-card input,.ai-card select{width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:12px;font-size:14.5px;background:#fff}
+.ai-card .full{grid-column:1/-1}
+.btn{border:0;background:var(--primary);color:#fff;border-radius:12px;padding:11px 18px;font-weight:800;font-size:15px;cursor:pointer}
+.btn:hover{background:var(--primary-2)}.btn:disabled{opacity:.55;cursor:default}
+.btn.ghost{background:#fff;color:var(--primary);border:1.5px solid var(--primary)}
+.btn.sm{padding:7px 12px;font-size:13.5px;border-radius:10px}
+.chips{display:flex;gap:8px;flex-wrap:wrap;margin:6px 0 14px}
+.chip{border:1.5px solid var(--line);background:#fff;border-radius:999px;padding:7px 14px;font-weight:700;font-size:14px;cursor:pointer;color:var(--text)}
+.chip.on{background:var(--primary);color:#fff;border-color:var(--primary)}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:14px}
+.xp{background:#fff;border:1px solid var(--line);border-radius:20px;padding:16px;cursor:pointer;position:relative;overflow:hidden;transition:transform .15s,box-shadow .15s}
+.xp:hover{transform:translateY(-3px);box-shadow:0 16px 30px -18px rgba(6,57,59,.55)}
+.xp .ic{width:58px;height:58px;border-radius:16px;display:grid;place-items:center;font-size:30px;margin-bottom:10px}
+.xp h3{font-size:16.5px;margin-bottom:4px}.xp p{margin:0;font-size:13.5px;color:var(--muted);line-height:1.7}
+.xp .meta{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}.xp .meta span{font-size:12px;font-weight:700;background:var(--surface-2);border-radius:999px;padding:2px 10px}
+.xp .ar{position:absolute;top:12px;left:12px;font-size:11.5px;font-weight:800;background:#E3EFEE;color:var(--primary);border-radius:999px;padding:2px 9px}
+/* stage */
+.stage{display:none;grid-template-columns:360px 1fr;height:calc(100vh - 62px);height:calc(100dvh - 62px)}
+.stage.on{display:grid}
+.panel{background:#fff;border-inline-start:1px solid var(--line);overflow:auto;padding:14px;display:flex;flex-direction:column;gap:12px}
+.panel h2{font-size:18px;color:var(--primary)}.panel .sub{font-size:13px;color:var(--muted);margin-top:2px}
+.sec{background:var(--surface-2);border-radius:14px;padding:10px 12px}
+.sec>b{display:block;font-size:13px;color:var(--accent);margin-bottom:6px}
+.ctl{margin:6px 0}.ctl label{display:flex;justify-content:space-between;font-size:13.5px;font-weight:700;margin-bottom:2px}
+.ctl label span{color:var(--primary);font-family:Cairo;direction:ltr;unicode-bidi:isolate}
+.ctl input[type=range]{width:100%;accent-color:var(--primary)}
+.ctl select{width:100%;padding:8px 10px;border:1px solid var(--line);border-radius:10px;background:#fff;font-size:14px}
+.btns{display:flex;flex-wrap:wrap;gap:6px}
+.pill{border:1.5px solid var(--line);background:#fff;border-radius:10px;padding:6px 10px;font-weight:700;font-size:13px;cursor:pointer;color:var(--text)}
+.pill:hover{border-color:var(--teal)}.pill.on{background:var(--primary);color:#fff;border-color:var(--primary)}
+.info{background:#fff;border:1px solid var(--line);border-radius:14px;padding:10px 12px;font-size:14px;line-height:1.85}
+.info .big{font-family:Cairo;font-weight:800;font-size:20px;color:var(--primary)}
+.steps{background:linear-gradient(135deg,#06393B,#0E6B66);color:#FFF7E4;border-radius:16px;padding:12px}
+.steps .hd{display:flex;align-items:center;gap:8px;font-weight:800;font-size:13px;opacity:.9}
+.steps .hd .n{margin-inline-start:auto;font-family:Cairo}
+.steps h3{font-size:16.5px;margin:6px 0 4px;color:var(--gold)}
+.steps p{margin:0;font-size:14.5px;line-height:1.85}
+.steps .nav{display:flex;gap:6px;margin-top:10px}
+.steps .nav button{flex:1;border:0;border-radius:10px;padding:8px;font-weight:800;cursor:pointer;background:rgba(255,247,228,.16);color:#FFF7E4}
+.steps .nav button.main{background:var(--gold);color:#2b1d05}
+.view{position:relative;overflow:hidden;background:radial-gradient(ellipse at 50% 30%,#FFFFFF 0%,#EDE6D6 75%)}
+.view.ar{background:#000}
+#cam{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:none}
+.view.ar #cam{display:block}
+#gl{position:absolute;inset:0;width:100%;height:100%;display:block;touch-action:none}
+.vbar{position:absolute;top:10px;right:10px;left:10px;display:flex;gap:6px;flex-wrap:wrap;z-index:5;pointer-events:none}
+.vbar button{pointer-events:auto;border:0;background:rgba(255,255,255,.92);border-radius:999px;padding:8px 13px;font-weight:800;font-size:13px;cursor:pointer;box-shadow:0 6px 14px -8px rgba(0,0,0,.4);color:var(--text)}
+.vbar button.on{background:var(--primary);color:#fff}
+.vbar .sp{flex:1}
+.hint{position:absolute;bottom:12px;left:50%;transform:translateX(-50%);background:rgba(6,57,59,.85);color:#FFF7E4;border-radius:999px;padding:6px 14px;font-size:12.5px;z-index:5;pointer-events:none;white-space:nowrap}
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#06393B;color:#FFF7E4;padding:10px 18px;border-radius:999px;font-weight:700;z-index:99;opacity:0;transition:opacity .25s;pointer-events:none}
+.toast.on{opacity:1}
+.loading{position:absolute;inset:0;display:none;place-items:center;background:rgba(251,247,238,.85);z-index:8;font-weight:800;color:var(--primary);text-align:center;padding:20px}
+.loading.on{display:grid}
+.spin{width:44px;height:44px;border:4px solid #E3EFEE;border-top-color:var(--primary);border-radius:50%;animation:sp 1s linear infinite;margin:0 auto 10px}@keyframes sp{to{transform:rotate(360deg)}}
+.quiz .q{font-weight:800;margin:6px 0}.quiz .o{display:block;width:100%;text-align:start;margin:4px 0}
+.quiz .o.good{background:#d8f3dc;border-color:var(--ok)}.quiz .o.bad{background:#fde2e1;border-color:var(--danger)}
+#xrOverlay{display:none;position:fixed;inset:0;pointer-events:none}
+#xrOverlay .xrbar{position:absolute;top:14px;right:14px;left:14px;display:flex;gap:8px;pointer-events:auto}
+#xrOverlay .xrbar button{border:0;border-radius:999px;padding:10px 16px;font-weight:800;background:rgba(255,255,255,.95)}
+#xrOverlay .xrmsg{position:absolute;bottom:30px;left:50%;transform:translateX(-50%);background:rgba(6,57,59,.9);color:#fff;border-radius:999px;padding:8px 16px;font-weight:700}
+@media(max-width:860px){
+  .hero{grid-template-columns:1fr}
+  .stage{grid-template-columns:1fr;grid-template-rows:56vh auto;height:auto}
+  .stage .view{order:1;height:56vh}.stage .panel{order:2;border:0}
+}
+</style>
+</head>
+<body>
+<header class="top">
+  <div style="font-size:28px">🥽</div>
+  <div><h1>المختبر الافتراضي</h1><small>تجارب ثلاثية الأبعاد وواقع معزز لكل المواد</small></div>
+  <div class="sp"></div>
+  <button class="tbtn" id="backHome" hidden>⬅ كل التجارب</button>
+</header>
+
+<main class="home" id="home">
+  <div class="hero">
+    <div class="card">
+      <h2>تعلّم بالمشاهدة والتجربة</h2>
+      <p>اختر تجربة جاهزة، أو اكتب أي درس ليبني الذكاء الاصطناعي له مشهدًا ثلاثي الأبعاد مع شرح خطوة بخطوة. في كل تجربة:</p>
+      <p>📷 <b>واقع معزز</b>: المجسّم يظهر فوق كاميرا الجهاز · 🥽 <b>ضعه في الغرفة</b> على الطاولة أو الأرض (أجهزة أندرويد الداعمة) · 🔊 <b>شرح صوتي</b> · ⛶ <b>عرض على السبورة</b></p>
+    </div>
+    <div class="card ai-card">
+      <h2>✨ أي درس بالذكاء الاصطناعي</h2>
+      <div class="row">
+        <select id="aiSubject">
+          <option>الرياضيات</option><option>العلوم</option><option>الفيزياء</option><option>الكيمياء</option><option>الأحياء</option><option>التربية الإسلامية</option><option>تقنية المعلومات</option><option>الدراسات الاجتماعية</option><option>اللغة العربية</option><option>اللغة الإنجليزية</option><option>المهارات الحياتية</option><option>الفنون</option>
+        </select>
+        <select id="aiGrade"><option>الصف الأول</option><option>الصف الثاني</option><option>الصف الثالث</option><option>الصف الرابع</option><option selected>الصف الخامس</option><option>الصف السادس</option><option>الصف السابع</option><option>الصف الثامن</option><option>الصف التاسع</option><option>الصف العاشر</option><option>الصف الحادي عشر</option><option>الصف الثاني عشر</option></select>
+        <input class="full" id="aiTopic" placeholder="مثال: البراكين، أجزاء الزهرة، الوضوء، الهرم الغذائي…">
+        <button class="btn full" id="aiGo">✨ ابنِ المشهد ثلاثي الأبعاد</button>
+      </div>
+    </div>
+  </div>
+  <div class="chips" id="chips"></div>
+  <div class="grid" id="grid"></div>
+</main>
+
+<section class="stage" id="stage">
+  <aside class="panel" id="panel"></aside>
+  <div class="view" id="view">
+    <video id="cam" playsinline muted autoplay></video>
+    <canvas id="gl"></canvas>
+    <div class="vbar">
+      <button id="bAR">📷 واقع معزز</button>
+      <button id="bXR" hidden>🥽 ضعه في الغرفة</button>
+      <button id="bSpin">🔄 تدوير</button>
+      <div class="sp"></div>
+      <button id="bReset">🎯 إعادة الكاميرا</button>
+      <button id="bShot">📸 لقطة</button>
+      <button id="bFull">⛶ ملء الشاشة</button>
+    </div>
+    <div class="hint" id="hint">اسحب للتدوير · قرّب بإصبعين أو بالعجلة · انقر على الأجسام</div>
+    <div class="loading" id="loading"><div><div class="spin"></div><div id="loadingMsg">جارٍ بناء المشهد…</div></div></div>
+  </div>
+</section>
+<div id="xrOverlay"><div class="xrbar"><button id="xrExit">✕ خروج</button><button id="xrPlace">📍 أعد التموضع</button></div><div class="xrmsg" id="xrMsg">حرّك الهاتف ببطء نحو سطح مستوٍ ثم المس الشاشة</div></div>
+<div class="toast" id="toast"></div>
+
+<script>
+"use strict";
+/* =====================================================================
+   Virtual Lab engine — three.js scene, labels, steps, AR camera, WebXR
+   ===================================================================== */
+const $ = id => document.getElementById(id);
+const esc = s => String(s==null?"":s).replace(/[&<>"']/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const clamp = (v,a,b)=>Math.max(a,Math.min(b,v));
+const lerp = (a,b,t)=>a+(b-a)*t;
+const ease = t=>t<.5?2*t*t:1-Math.pow(-2*t+2,2)/2;
+const D2R = Math.PI/180;
+function toast(m){ const t=$("toast"); t.textContent=m; t.classList.add("on"); clearTimeout(t._h); t._h=setTimeout(()=>t.classList.remove("on"),2600); }
+
+if(!window.THREE){ document.body.innerHTML = '<div style="padding:40px;text-align:center;font-family:Tahoma">تعذّر تحميل محرك الرسوم ثلاثية الأبعاد — تحقق من الاتصال بالإنترنت ثم أعد تحميل الصفحة.</div>'; throw new Error("three missing"); }
+
+const E = {}; // engine state
+(function initEngine(){
+  const canvas = $("gl");
+  const R = new THREE.WebGLRenderer({canvas, antialias:true, alpha:true, preserveDrawingBuffer:true});
+  R.setPixelRatio(Math.min(window.devicePixelRatio||1, 2));
+  R.outputEncoding = THREE.sRGBEncoding;
+  R.shadowMap.enabled = true; R.shadowMap.type = THREE.PCFSoftShadowMap;
+  const scene = new THREE.Scene();
+  const camera = new THREE.PerspectiveCamera(45, 1, 0.05, 500);
+  camera.position.set(0, 4, 10);
+  const controls = new THREE.OrbitControls(camera, canvas);
+  controls.enableDamping = true; controls.dampingFactor = .08; controls.maxDistance = 80; controls.minDistance = 1;
+  const hemi = new THREE.HemisphereLight(0xffffff, 0xd8cdb4, .85); scene.add(hemi);
+  const sun = new THREE.DirectionalLight(0xffffff, .85); sun.position.set(6,12,8); sun.castShadow = true;
+  sun.shadow.mapSize.set(1024,1024); Object.assign(sun.shadow.camera,{left:-14,right:14,top:14,bottom:-14,far:60}); scene.add(sun);
+  const floor = new THREE.Mesh(new THREE.CircleGeometry(16, 64), new THREE.ShadowMaterial({opacity:.16}));
+  floor.rotation.x = -Math.PI/2; floor.position.y = -0.001; floor.receiveShadow = true; scene.add(floor);
+  const grid = new THREE.PolarGridHelper(14, 16, 8, 64, 0xd9cfb9, 0xe8e0cf); grid.position.y = -0.002; scene.add(grid);
+  const world = new THREE.Group(); scene.add(world);     // scaled/placed container (XR)
+  const root = new THREE.Group(); world.add(root);         // experience content
+  Object.assign(E, {hemi, sun, R, scene, camera, controls, floor, grid, world, root, clock:new THREE.Clock(), updaters:[], clickables:[], tween:null, autoSpin:false, ar:false, xr:null, home:{pos:new THREE.Vector3(0,4,10), target:new THREE.Vector3(0,1,0)}});
+  function resize(){ const v=$("view"); const w=v.clientWidth||1, h=v.clientHeight||1; R.setSize(w,h,false); camera.aspect=w/h; camera.updateProjectionMatrix(); }
+  new ResizeObserver(resize).observe($("view")); window.addEventListener("resize", resize); resize();
+  // click picking
+  const ray = new THREE.Raycaster(), ndc = new THREE.Vector2(); let down = null;
+  canvas.addEventListener("pointerdown", e=>{ down = [e.clientX, e.clientY]; E.autoSpin && stopSpin(); });
+  canvas.addEventListener("pointerup", e=>{
+    if(!down || Math.hypot(e.clientX-down[0], e.clientY-down[1]) > 6) return;
+    const r = canvas.getBoundingClientRect(); ndc.set(((e.clientX-r.left)/r.width)*2-1, -((e.clientY-r.top)/r.height)*2+1);
+    ray.setFromCamera(ndc, camera);
+    const hit = ray.intersectObjects(E.clickables, true)[0]; if(!hit) return;
+    let o = hit.object; while(o && !o.userData.onClick) o = o.parent;
+    if(o) o.userData.onClick(o, hit);
+  });
+  R.setAnimationLoop((t, frame)=>{
+    const dt = Math.min(E.clock.getDelta(), .05), now = E.clock.elapsedTime;
+    if(E.tween){ const tw=E.tween; tw.t=Math.min(1,tw.t+dt/tw.d); const k=ease(tw.t);
+      camera.position.lerpVectors(tw.p0, tw.p1, k); controls.target.lerpVectors(tw.t0, tw.t1, k); if(tw.t>=1) E.tween=null; }
+    if(E.autoSpin && !E.xr) { const off = camera.position.clone().sub(controls.target); off.applyAxisAngle(new THREE.Vector3(0,1,0), dt*.35); camera.position.copy(controls.target).add(off); }
+    for(const u of E.updaters.slice()) { try{ u(dt, now); }catch(err){ console.error(err); } }
+    if(E.xr) xrFrame(frame); else controls.update();
+    R.render(scene, camera);
+  });
+})();
+function stopSpin(){ E.autoSpin=false; $("bSpin").classList.remove("on"); }
+function camTo(pos, target, sec){ E.tween = {p0:E.camera.position.clone(), p1:new THREE.Vector3(...pos), t0:E.controls.target.clone(), t1:new THREE.Vector3(...target), t:0, d:sec||1.4}; }
+function setHome(pos, target){ E.home = {pos:new THREE.Vector3(...pos), target:new THREE.Vector3(...target)}; E.camera.position.copy(E.home.pos); E.controls.target.copy(E.home.target); }
+
+/* ---------- materials, text labels, helpers ---------- */
+function M(color, o){ o=o||{}; return new THREE.MeshStandardMaterial(Object.assign({color:new THREE.Color(color), roughness:.55, metalness:.05}, o)); }
+function mesh(geo, mat, parent){ const m = new THREE.Mesh(geo, mat); m.castShadow = true; m.receiveShadow = true; (parent||E.root).add(m); return m; }
+function drawLabel(cv, text, o){
+  const fs = 64, pad = 26, lines = String(text).split("\n");
+  const x = cv.getContext("2d"); x.font = `800 ${fs}px Cairo, Tahoma, sans-serif`;
+  const w = Math.ceil(Math.max(...lines.map(l=>x.measureText(l).width)) + pad*2), lh = fs*1.32, h = Math.ceil(lines.length*lh + pad*1.1);
+  cv.width = w; cv.height = h;
+  x.font = `800 ${fs}px Cairo, Tahoma, sans-serif`; x.direction = "rtl"; x.textAlign = "center"; x.textBaseline = "middle";
+  if(o.bg !== "none"){ const r = Math.min(h/2, 40); x.fillStyle = o.bg || "rgba(255,255,255,.93)"; x.strokeStyle = o.border || "#0B5457"; x.lineWidth = 6;
+    x.beginPath(); x.moveTo(r,3); x.lineTo(w-r,3); x.quadraticCurveTo(w-3,3,w-3,r); x.lineTo(w-3,h-r); x.quadraticCurveTo(w-3,h-3,w-r,h-3); x.lineTo(r,h-3); x.quadraticCurveTo(3,h-3,3,h-r); x.lineTo(3,r); x.quadraticCurveTo(3,3,r,3); x.closePath(); x.fill(); x.stroke(); }
+  x.fillStyle = o.color || "#14302F";
+  if(o.bg === "none"){ x.lineWidth = 10; x.strokeStyle = "rgba(255,255,255,.95)"; lines.forEach((l,i)=>x.strokeText(l, w/2, pad*.55 + lh*(i+.5))); }
+  lines.forEach((l,i)=>x.fillText(l, w/2, pad*.55 + lh*(i+.5)));
+  return {w, h, lh};
+}
+function label(text, pos, o){
+  o = o || {}; const cv = document.createElement("canvas");
+  const tex = new THREE.CanvasTexture(cv); tex.encoding = THREE.sRGBEncoding; tex.anisotropy = 4;
+  const sp = new THREE.Sprite(new THREE.SpriteMaterial({map:tex, transparent:true, depthTest: o.depth===true, depthWrite:false}));
+  sp.renderOrder = 20; sp.center.set(.5, o.anchorBottom ? 0 : .5);
+  const size = o.size || .38;
+  sp.userData.set = t => { const d = drawLabel(cv, t, o); tex.dispose(); tex.needsUpdate = true; const k = size / 84; sp.scale.set(d.w*k, d.h*k, 1); sp.userData.text = t; };
+  sp.userData.set(text);
+  if(pos) sp.position.set(...pos);
+  (o.parent || E.root).add(sp); return sp;
+}
+function cylBetween(a, b, r, mat, parent){ const A=new THREE.Vector3(...a), B=new THREE.Vector3(...b); const len=A.distanceTo(B);
+  const m = mesh(new THREE.CylinderGeometry(r, r, len, 16), mat, parent); m.position.copy(A).add(B).multiplyScalar(.5);
+  m.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0), B.clone().sub(A).normalize()); return m; }
+function setCyl(m, a, b){ const A=new THREE.Vector3(...a), B=new THREE.Vector3(...b), len=Math.max(A.distanceTo(B),1e-4);
+  m.position.copy(A).add(B).multiplyScalar(.5); m.scale.y = len / m.geometry.parameters.height; m.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0), B.clone().sub(A).normalize()); }
+function clickable(obj, fn){ obj.userData.onClick = fn; E.clickables.push(obj); return obj; }
+function onUpdate(fn){ E.updaters.push(fn); }
+function tweenVal(from, to, sec, fn, done){ let t = 0; const u = (dt)=>{ t = Math.min(1, t + dt/sec); fn(lerp(from, to, ease(t))); if(t>=1){ E.updaters.splice(E.updaters.indexOf(u),1); done && done(); } }; E.updaters.push(u); return u; }
+function clearScene(){
+  E.updaters.length = 0; E.clickables.length = 0; E.tween = null; stopSpin();
+  E.root.traverse(o=>{ if(o.geometry) o.geometry.dispose(); if(o.material){ (Array.isArray(o.material)?o.material:[o.material]).forEach(m=>{ if(m.map) m.map.dispose(); m.dispose(); }); } });
+  E.root.clear(); E.root.position.set(0,0,0); E.root.rotation.set(0,0,0); E.root.scale.set(1,1,1);
+  E.floor.visible = !E.ar; E.grid.visible = !E.ar; E.scene.fog = null; E.hemi.intensity = .85; E.sun.intensity = .85;
+}
+
+/* ---------- speech (Arabic narration) ---------- */
+const SPEECH = { on:false, voice:null };
+function pickVoice(){ const vs = (window.speechSynthesis && speechSynthesis.getVoices()) || []; SPEECH.voice = vs.find(v=>/^ar/i.test(v.lang)) || null; }
+if(window.speechSynthesis){ pickVoice(); speechSynthesis.onvoiceschanged = pickVoice; }
+function speak(text){ if(!SPEECH.on || !window.speechSynthesis) return; speechSynthesis.cancel(); const u = new SpeechSynthesisUtterance(String(text).replace(/[^؀-ۿ\s0-9.,،؛:٪%°+\-=×÷/()]/g," ")); u.lang = (SPEECH.voice && SPEECH.voice.lang) || "ar-SA"; if(SPEECH.voice) u.voice = SPEECH.voice; u.rate = .95; speechSynthesis.speak(u); }
+
+/* ---------- side panel UI kit ---------- */
+const UI = {
+  reset(title, sub){ const p=$("panel"); p.innerHTML = `<div><h2>${esc(title)}</h2><div class="sub">${esc(sub||"")}</div></div>`; return p; },
+  sec(title){ const d=document.createElement("div"); d.className="sec"; d.innerHTML = title?`<b>${esc(title)}</b>`:""; $("panel").appendChild(d); return d; },
+  slider(parent, o){ const w=document.createElement("div"); w.className="ctl";
+    w.innerHTML = `<label>${esc(o.label)} <span></span></label><input type="range" min="${o.min}" max="${o.max}" step="${o.step||1}" value="${o.value}">`;
+    const inp = w.querySelector("input"), sp = w.querySelector("span");
+    const show = v => sp.textContent = (o.fmt ? o.fmt(+v) : v) + (o.unit||"");
+    inp.addEventListener("input", ()=>{ show(inp.value); o.onInput(+inp.value); }); show(o.value); parent.appendChild(w);
+    return { set(v, fire){ inp.value = v; show(inp.value); if(fire) o.onInput(+inp.value); }, get:()=>+inp.value, el:inp }; },
+  select(parent, label, opts, onChange, val){ const w=document.createElement("div"); w.className="ctl";
+    w.innerHTML = `${label?`<label>${esc(label)}</label>`:""}<select>${opts.map(o=>`<option value="${esc(o.v)}">${esc(o.t)}</option>`).join("")}</select>`;
+    const s=w.querySelector("select"); if(val!=null) s.value=val; s.addEventListener("change", ()=>onChange(s.value)); parent.appendChild(w); return s; },
+  buttons(parent, list, opt){ const w=document.createElement("div"); w.className="btns"; parent.appendChild(w);
+    list.forEach(b=>{ const e=document.createElement("button"); e.className="pill"; e.innerHTML=b.t; e.onclick=()=>{ if(opt&&opt.radio){ w.querySelectorAll(".pill").forEach(x=>x.classList.remove("on")); e.classList.add("on"); } b.on(e); }; if(b.on0) e.classList.add("on"); w.appendChild(e); }); return w; },
+  info(parent){ const d=document.createElement("div"); d.className="info"; (parent||$("panel")).appendChild(d); return d; },
+  steps(list){
+    if(!list || !list.length) return;
+    const box=document.createElement("div"); box.className="steps"; $("panel").insertBefore(box, $("panel").children[1]);
+    let i = -1;
+    box.innerHTML = `<div class="hd">📘 الشرح خطوة بخطوة <span class="n"></span></div><h3></h3><p></p>
+      <div class="nav"><button data-a="prev">→ السابق</button><button class="main" data-a="next">التالي ←</button><button data-a="voice" title="شرح صوتي">🔊</button></div>`;
+    const go = k => { i = clamp(k, 0, list.length-1); const s=list[i];
+      box.querySelector(".n").textContent = `${i+1} / ${list.length}`; box.querySelector("h3").textContent = s.t; box.querySelector("p").textContent = s.d;
+      box.querySelector('[data-a="next"]').textContent = i===list.length-1 ? "↺ من البداية" : "التالي ←";
+      try{ s.run && s.run(); }catch(e){ console.error(e); } speak(s.t + ". " + s.d); };
+    box.addEventListener("click", e=>{ const a=e.target.closest("button"); if(!a) return;
+      if(a.dataset.a==="prev") go(i-1); else if(a.dataset.a==="next") go(i===list.length-1?0:i+1);
+      else { SPEECH.on=!SPEECH.on; a.style.background = SPEECH.on ? "#E2B864" : ""; if(!SPEECH.on && window.speechSynthesis) speechSynthesis.cancel(); else { if(!SPEECH.voice) toast("لا يوجد صوت عربي مثبت على الجهاز — سيُستخدم الصوت الافتراضي"); speak(list[i].t+". "+list[i].d); } } });
+    go(0);
+    return { go, get i(){ return i; } };
+  }
+};
+
+/* =====================================================================
+   Built-in experiences
+   ===================================================================== */
+const SUBJ = { math:{n:"الرياضيات", c:"#E3EFEE"}, sci:{n:"العلوم", c:"#E7F3E4"}, isl:{n:"التربية الإسلامية", c:"#FFF1D6"}, it:{n:"تقنية المعلومات", c:"#E6ECF8"}, soc:{n:"الدراسات الاجتماعية", c:"#F3E6E1"} };
+const XP = [];
+function def(o){ XP.push(o); }
+
+/* ---------- 1) Angles ---------- */
+def({id:"angles", s:"math", icon:"📐", t:"الزوايا وأنواعها", g:"الصف 4–8", d:"حرّك ضلع الزاوية وشاهد القياس على المنقلة: حادة، قائمة، منفرجة، مستقيمة، منعكسة.", tags:"زاوية زوايا حادة قائمة منفرجة منعكسة مستقيمة منقلة قياس",
+ build(){
+  setHome([0,2.2,8.5],[0,1.4,0]);
+  const g = new THREE.Group(); g.position.set(0,.35,0); E.root.add(g);
+  // protractor
+  const pc = document.createElement("canvas"); pc.width = pc.height = 1024; const x = pc.getContext("2d");
+  x.translate(512,512); x.fillStyle="rgba(227,239,238,.92)"; x.beginPath(); x.arc(0,0,500,Math.PI,2*Math.PI); x.closePath(); x.fill();
+  x.strokeStyle="#0B5457"; x.lineWidth=6; x.stroke();
+  for(let d=0; d<=180; d++){ const a=-d*D2R, r1=500, r2 = d%10===0?440:(d%5===0?465:482); x.lineWidth = d%10===0?4:2;
+    x.beginPath(); x.moveTo(Math.cos(a)*r1, Math.sin(a)*r1); x.lineTo(Math.cos(a)*r2, Math.sin(a)*r2); x.stroke();
+    if(d%10===0){ x.save(); x.fillStyle="#0B5457"; x.font="700 34px Cairo"; x.textAlign="center"; x.textBaseline="middle"; x.fillText(d, Math.cos(a)*405, Math.sin(a)*405); x.restore(); } }
+  x.fillStyle="#0B5457"; x.beginPath(); x.arc(0,0,10,0,7); x.fill();
+  const ptex = new THREE.CanvasTexture(pc); ptex.encoding = THREE.sRGBEncoding;
+  const prot = new THREE.Mesh(new THREE.PlaneGeometry(6,6), new THREE.MeshBasicMaterial({map:ptex, transparent:true, side:THREE.DoubleSide, depthWrite:false}));
+  prot.position.z = -0.02; g.add(prot);
+  const L = 2.8, matA = M("#0B5457"), matB = M("#B23A3A");
+  const r0 = cylBetween([0,0,0],[L,0,0], .045, matA, g); const r1 = cylBetween([0,0,0],[L,0,0], .045, matB, g);
+  const tip0 = mesh(new THREE.ConeGeometry(.11,.28,20), matA, g); tip0.position.set(L,0,0); tip0.rotation.z = -Math.PI/2;
+  const tip1 = mesh(new THREE.ConeGeometry(.11,.28,20), matB, g);
+  const vtx = mesh(new THREE.SphereGeometry(.11, 24, 16), M("#E2B864",{metalness:.4}), g);
+  const arcMat = new THREE.MeshBasicMaterial({color:0x3DB8A8, transparent:true, opacity:.55, side:THREE.DoubleSide, depthWrite:false});
+  let arc = new THREE.Mesh(new THREE.CircleGeometry(.9, 64, 0, 1), arcMat); g.add(arc);
+  const sq = new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.PlaneGeometry(.45,.45)), new THREE.LineBasicMaterial({color:0x0B5457})); sq.position.set(.225,.225,.01); g.add(sq);
+  const lab = label("", [0, 3.55, 0], {size:.42});
+  const lv = label("الرأس", [0,-.45,0], {size:.26, parent:g}), l1 = label("ضلع", [L*.65, -.3, 0], {size:.24, parent:g}), l2 = label("ضلع", [0,0,0], {size:.24, parent:g});
+  const TYPES = [[0,0,"زاوية صفرية","#5B6B68"],[0.0001,89.9999,"زاوية حادة","#2E7D4F"],[90,90,"زاوية قائمة","#1565C0"],[90.0001,179.9999,"زاوية منفرجة","#9A6B1F"],[180,180,"زاوية مستقيمة","#7B4F9D"],[180.0001,359.9999,"زاوية منعكسة","#B23A3A"],[360,360,"زاوية كاملة","#06393B"]];
+  let ang = 50;
+  function apply(a){ ang = a; const r = a*D2R, e = [Math.cos(r)*L, Math.sin(r)*L, 0];
+    setCyl(r1, [0,0,0], e); tip1.position.set(...e); tip1.rotation.z = r - Math.PI/2;
+    l2.position.set(Math.cos(r)*L*.65 - Math.sin(r)*.3, Math.sin(r)*L*.65 + Math.cos(r)*.3, 0);
+    const ty = TYPES.find(t=>a>=t[0]-1e-9 && a<=t[1]+1e-9) || TYPES[1];
+    arc.geometry.dispose(); arc.geometry = new THREE.CircleGeometry(a>=180?.75:.9, 96, 0, Math.max(r, .0001)); arcMat.color.set(ty[3]);
+    sq.visible = Math.round(a)===90; arc.visible = !sq.visible;
+    lab.userData.set(`${Math.round(a)}° — ${ty[2]}`); info.innerHTML = `<div class="big">${Math.round(a)}°</div>${ty[2]}<br><small>${hintFor(a)}</small>`;
+  }
+  function hintFor(a){ if(a<90) return "أصغر من 90° — مثل عقربي الساعة عند الواحدة."; if(Math.round(a)===90) return "تساوي 90° تمامًا — مثل زاوية الكتاب أو الباب."; if(a<180) return "أكبر من 90° وأصغر من 180° — مثل مسند الكرسي المائل."; if(Math.round(a)===180) return "تساوي 180° — ضلعاها على استقامة واحدة."; if(a<360) return "أكبر من 180° وأصغر من 360°."; return "دورة كاملة 360°."; }
+  UI.reset(this.t, this.g);
+  const s = UI.sec("التحكّم");
+  const sl = UI.slider(s, {label:"قياس الزاوية", min:0, max:360, value:ang, unit:"°", onInput:v=>apply(v)});
+  const goTo = (v)=>{ const from = ang; tweenVal(from, v, .9, a=>{ apply(a); sl.set(Math.round(a)); }); };
+  UI.buttons(s, [{t:"حادة 45°", on:()=>goTo(45)},{t:"قائمة 90°", on:()=>goTo(90)},{t:"منفرجة 135°", on:()=>goTo(135)},{t:"مستقيمة 180°", on:()=>goTo(180)},{t:"منعكسة 270°", on:()=>goTo(270)}]);
+  UI.buttons(s, [{t:"📏 إظهار/إخفاء المنقلة", on:()=>prot.visible=!prot.visible}]);
+  const info = UI.info();
+  apply(ang);
+  UI.steps([
+    {t:"ما الزاوية؟", d:"الزاوية شكل يتكوّن من شعاعين (ضلعين) يشتركان في نقطة بداية واحدة تُسمّى رأس الزاوية، وتُقاس بالدرجات باستخدام المنقلة.", run:()=>{ goTo(50); camTo([0,2.2,8.5],[0,1.4,0]); }},
+    {t:"الزاوية الحادة", d:"قياسها أكبر من صفر وأصغر من 90 درجة.", run:()=>goTo(45)},
+    {t:"الزاوية القائمة", d:"قياسها 90 درجة تمامًا، ونرمز لها بمربع صغير عند الرأس.", run:()=>goTo(90)},
+    {t:"الزاوية المنفرجة", d:"قياسها أكبر من 90 درجة وأصغر من 180 درجة.", run:()=>goTo(130)},
+    {t:"الزاوية المستقيمة", d:"قياسها 180 درجة، ويكون ضلعاها على خط مستقيم واحد.", run:()=>goTo(180)},
+    {t:"الزاوية المنعكسة", d:"قياسها أكبر من 180 درجة وأصغر من 360 درجة.", run:()=>goTo(250)},
+    {t:"جرّب بنفسك", d:"حرّك المؤشر وصنّف كل زاوية، ثم انقر أزرار الأنواع للتأكد من إجابتك.", run:()=>goTo(70)}
+  ]);
+ }});
+
+/* ---------- 2) Triangles ---------- */
+def({id:"triangles", s:"math", icon:"🔺", t:"المثلثات ومجموع زواياها", g:"الصف 4–9", d:"غيّر زوايا المثلث، صنّفه حسب الزوايا والأضلاع، وشاهد برهانًا متحركًا أن مجموع الزوايا 180°.", tags:"مثلث مثلثات زوايا المثلث متساوي الأضلاع متطابق الضلعين مختلف قائم الزاوية منفرج حاد مجموع 180",
+ build(){
+  setHome([0,2.4,9],[0,1.6,0]);
+  const g = new THREE.Group(); g.position.set(0,.3,0); E.root.add(g);
+  const COLS = ["#B23A3A","#1565C0","#2E7D4F"];
+  const fill = new THREE.Mesh(new THREE.BufferGeometry(), new THREE.MeshBasicMaterial({color:0x3DB8A8, transparent:true, opacity:.22, side:THREE.DoubleSide, depthWrite:false})); g.add(fill);
+  const em = M("#0B5457");
+  const edges = [0,1,2].map(()=>cylBetween([0,0,0],[1,0,0], .05, em, g));
+  const verts = [0,1,2].map(i=>mesh(new THREE.SphereGeometry(.12,24,16), M(COLS[i],{metalness:.3}), g));
+  const wedges = [0,1,2].map(i=>{ const m = new THREE.Mesh(new THREE.CircleGeometry(.75,48,0,1), new THREE.MeshBasicMaterial({color:COLS[i], transparent:true, opacity:.75, side:THREE.DoubleSide, depthWrite:false})); m.position.z = .01*(i+1); g.add(m); return m; });
+  const vLab = ["أ","ب","ج"].map((n)=>label(n, [0,0,0], {size:.3, parent:g}));
+  const aLab = [0,1,2].map(i=>label("", [0,0,0], {size:.24, parent:g, color:COLS[i]}));
+  const sLab = [0,1,2].map(()=>label("", [0,0,0], {size:.22, parent:g, bg:"none", color:"#0B5457"}));
+  const title = label("", [0,4.3,0], {size:.36});
+  const line = new THREE.Mesh(new THREE.BoxGeometry(5,.03,.03), new THREE.MeshBasicMaterial({color:0x14302F})); line.position.set(0,3.35,0); line.visible=false; g.add(line);
+  let A=60, B=60, P=[], proof=null;
+  function compute(){ const C = 180-A-B, base = 4.2; const b = base*Math.sin(B*D2R)/Math.sin(C*D2R);
+    let p = [[0,0],[base,0],[b*Math.cos(A*D2R), b*Math.sin(A*D2R)]]; const cx=(p[0][0]+p[1][0]+p[2][0])/3, maxY=Math.max(...p.map(q=>q[1]));
+    const sc = maxY>3.0 ? 3.0/maxY : 1; return p.map(q=>[(q[0]-cx)*sc, q[1]*sc, 0]); }
+  function sideLen(i,j){ return Math.hypot(P[i][0]-P[j][0], P[i][1]-P[j][1]); }
+  function apply(){
+    if(proof){ E.updaters.splice(E.updaters.indexOf(proof),1); proof=null; line.visible=false; }
+    const C = 180-A-B; P = compute(); const angs=[A,B,C];
+    const pos = new Float32Array([...P[0],...P[1],...P[2]]); fill.geometry.dispose(); fill.geometry = new THREE.BufferGeometry(); fill.geometry.setAttribute("position", new THREE.BufferAttribute(pos,3));
+    [[0,1],[1,2],[2,0]].forEach(([i,j],k)=>setCyl(edges[k], P[i], P[j]));
+    const cen = [(P[0][0]+P[1][0]+P[2][0])/3, (P[0][1]+P[1][1]+P[2][1])/3];
+    for(let i=0;i<3;i++){
+      verts[i].position.set(...P[i]);
+      const a = P[(i+1)%3], c = P[(i+2)%3];
+      const d1 = Math.atan2(a[1]-P[i][1], a[0]-P[i][0]), d2 = Math.atan2(c[1]-P[i][1], c[0]-P[i][0]);
+      let st = d1, len = d2-d1; while(len<0) len+=2*Math.PI; if(len>Math.PI){ st=d2; len=2*Math.PI-len; }
+      wedges[i].geometry.dispose(); wedges[i].geometry = new THREE.CircleGeometry(.6, 48, 0, len);
+      wedges[i].position.set(P[i][0], P[i][1], .01*(i+1)); wedges[i].rotation.set(0,0,st); wedges[i].userData.home = {x:P[i][0], y:P[i][1], r:st, len};
+      const ox = P[i][0]-cen[0], oy = P[i][1]-cen[1], on = Math.hypot(ox,oy)||1;
+      vLab[i].position.set(P[i][0]+ox/on*.45, P[i][1]+oy/on*.45, 0);
+      const mid = st+len/2; aLab[i].position.set(P[i][0]+Math.cos(mid)*1.0, P[i][1]+Math.sin(mid)*1.0, .05); aLab[i].userData.set(Math.round(angs[i])+"°");
+    }
+    [[0,1],[1,2],[2,0]].forEach(([i,j],k)=>{ const mx=(P[i][0]+P[j][0])/2, my=(P[i][1]+P[j][1])/2, ox=mx-cen[0], oy=my-cen[1], on=Math.hypot(ox,oy)||1; sLab[k].position.set(mx+ox/on*.38, my+oy/on*.38, 0); sLab[k].userData.set(sideLen(i,j).toFixed(1)); });
+    const mx = Math.max(A,B,C), byA = Math.abs(mx-90)<.5 ? "قائم الزاوية" : (mx>90 ? "منفرج الزاوية" : "حاد الزوايا");
+    const s=[sideLen(0,1),sideLen(1,2),sideLen(2,0)], eq=(x,y)=>Math.abs(x-y)<.06;
+    const byS = (eq(s[0],s[1])&&eq(s[1],s[2])) ? "متساوي الأضلاع" : ((eq(s[0],s[1])||eq(s[1],s[2])||eq(s[0],s[2])) ? "متطابق الضلعين" : "مختلف الأضلاع");
+    title.userData.set(`مثلث ${byA} — ${byS}`);
+    info.innerHTML = `<div>∠أ = <b>${Math.round(A)}°</b> · ∠ب = <b>${Math.round(B)}°</b> · ∠ج = <b>${Math.round(C)}°</b></div><div class="big">المجموع = ${Math.round(A+B+C)}°</div>حسب الزوايا: <b>${byA}</b><br>حسب الأضلاع: <b>${byS}</b>`;
+  }
+  function runProof(){
+    apply(); line.visible = true; let t = 0; const L0 = [0,3.35]; let cum = 0;
+    const targets = [0,1,2].map(i=>{ const h=wedges[i].userData.home; const r = cum; cum += h.len; return {r}; });
+    proof = (dt)=>{ t = Math.min(1, t+dt/2.2); const k = ease(t);
+      wedges.forEach((w,i)=>{ const h=w.userData.home; w.position.set(lerp(h.x,L0[0],k), lerp(h.y,L0[1],k), .02*(i+1)); w.rotation.z = lerp(h.r, targets[i].r, k); });
+      if(t>=1){ E.updaters.splice(E.updaters.indexOf(proof),1); proof=null; info.innerHTML += `<div style="margin-top:6px;color:#2E7D4F;font-weight:800">✔ الزوايا الثلاث كوّنت زاوية مستقيمة = 180°</div>`; } };
+    E.updaters.push(proof);
+  }
+  UI.reset(this.t, this.g);
+  const s = UI.sec("التحكّم في الزوايا");
+  const sa = UI.slider(s, {label:"الزاوية أ", min:10, max:150, value:A, unit:"°", onInput:v=>{ A=v; if(A+B>170){ B=170-A; sb.set(B); } apply(); }});
+  const sb = UI.slider(s, {label:"الزاوية ب", min:10, max:150, value:B, unit:"°", onInput:v=>{ B=v; if(A+B>170){ A=170-B; sa.set(A); } apply(); }});
+  const preset=(a,b)=>{ A=a; B=b; sa.set(a); sb.set(b); apply(); };
+  UI.buttons(s, [{t:"متساوي الأضلاع", on:()=>preset(60,60)},{t:"قائم الزاوية", on:()=>preset(90,40)},{t:"منفرج", on:()=>preset(120,30)},{t:"متطابق الضلعين", on:()=>preset(70,70)},{t:"مختلف الأضلاع", on:()=>preset(50,75)}]);
+  UI.buttons(s, [{t:"✨ برهان: مجموع الزوايا 180°", on:runProof}]);
+  const info = UI.info(); apply();
+  UI.steps([
+    {t:"المثلث", d:"المثلث مضلع له ثلاثة أضلاع وثلاث زوايا وثلاثة رؤوس: أ، ب، ج.", run:()=>preset(60,60)},
+    {t:"التصنيف حسب الزوايا", d:"حاد الزوايا: كل زواياه أقل من 90°. قائم الزاوية: فيه زاوية 90°. منفرج الزاوية: فيه زاوية أكبر من 90°.", run:()=>preset(90,40)},
+    {t:"مثلث منفرج الزاوية", d:"لاحظ أن المثلث لا يمكن أن يحتوي إلا على زاوية منفرجة واحدة فقط.", run:()=>preset(120,30)},
+    {t:"التصنيف حسب الأضلاع", d:"متساوي الأضلاع: أضلاعه الثلاثة متساوية. متطابق الضلعين: له ضلعان متساويان. مختلف الأضلاع: أطوال أضلاعه مختلفة.", run:()=>preset(70,70)},
+    {t:"مجموع زوايا المثلث", d:"شاهد الزوايا الثلاث تنتقل وتتجاور على خط مستقيم: مجموعها دائمًا 180 درجة مهما تغيّر شكل المثلث.", run:()=>{ preset(50,75); setTimeout(runProof, 400); }}
+  ]);
+ }});
+
+/* ---------- 3) Solids & nets ---------- */
+def({id:"solids", s:"math", icon:"🧊", t:"المجسمات والشبكات", g:"الصف 3–10", d:"مكعب، متوازي مستطيلات، أسطوانة، مخروط، هرم، كرة، منشور: الأوجه والأحرف والرؤوس، الحجم والمساحة، وفرد الشبكة.", tags:"مجسم مجسمات مكعب متوازي مستطيلات أسطوانة مخروط هرم كرة منشور حجم مساحة سطح شبكة أوجه أحرف رؤوس",
+ build(){
+  setHome([5,4.5,7],[0,1.2,0]);
+  let shape = "cube", dims = {a:2, b:2.6, c:1.6, r:1, h:2.4}, showEdges = true, cur = null, net = 0, netAnim = null;
+  const faceMat = M("#3DB8A8", {transparent:true, opacity:.55, side:THREE.DoubleSide, depthWrite:false});
+  const edgeMat = new THREE.LineBasicMaterial({color:0x06393B});
+  const vMat = M("#E2B864",{metalness:.4});
+  const SH = {
+    cube:{n:"مكعب", f:6, e:12, v:8}, cuboid:{n:"متوازي مستطيلات", f:6, e:12, v:8}, cylinder:{n:"أسطوانة", f:3, e:2, v:0},
+    cone:{n:"مخروط", f:2, e:1, v:1}, pyramid:{n:"هرم رباعي", f:5, e:8, v:5}, sphere:{n:"كرة", f:1, e:0, v:0}, prism:{n:"منشور ثلاثي", f:5, e:9, v:6}
+  };
+  const title = label("", [0,4.4,0], {size:.36});
+  function build(){
+    if(cur){ cur.traverse(o=>{ if(o.geometry) o.geometry.dispose(); }); E.root.remove(cur); }
+    if(netAnim){ const k=E.updaters.indexOf(netAnim); if(k>=0) E.updaters.splice(k,1); netAnim=null; }
+    cur = new THREE.Group(); E.root.add(cur); net = 0;
+    const a=dims.a, b=dims.b, c=dims.c, r=dims.r, h=dims.h;
+    if(shape==="cube" || shape==="cuboid"){
+      const w = shape==="cube"?a:b, d = shape==="cube"?a:c, hh = a;
+      const mk = (gw,gh)=>{ const m = new THREE.Mesh(new THREE.PlaneGeometry(gw,gh), faceMat); const e = new THREE.LineSegments(new THREE.EdgesGeometry(m.geometry), edgeMat); m.add(e); m.castShadow=true; return m; };
+      const bottom = mk(w,d); bottom.rotation.x = -Math.PI/2; bottom.position.y=.002; cur.add(bottom);
+      const piv = (pos)=>{ const p=new THREE.Group(); p.position.set(...pos); cur.add(p); return p; };
+      const front = piv([0,0,d/2]); const fm = mk(w,hh); fm.position.y = hh/2; front.add(fm);
+      const back = piv([0,0,-d/2]); const bm = mk(w,hh); bm.position.y = hh/2; back.add(bm);
+      const right = piv([w/2,0,0]); const rm = mk(d,hh); rm.rotation.y = Math.PI/2; rm.position.y = hh/2; right.add(rm);
+      const left = piv([-w/2,0,0]); const lm = mk(d,hh); lm.rotation.y = Math.PI/2; lm.position.y = hh/2; left.add(lm);
+      const topP = new THREE.Group(); topP.position.y = hh; back.add(topP); const tm = mk(w,d); tm.rotation.x = -Math.PI/2; tm.position.z = d/2; topP.add(tm);
+      cur.userData.fold = u => { const q = u*Math.PI/2; front.rotation.x = q; back.rotation.x = -q; right.rotation.z = -q; left.rotation.z = q; topP.rotation.x = -q; };
+      cur.userData.dims = {w, d, h:hh};
+    } else {
+      let geo;
+      if(shape==="cylinder") geo = new THREE.CylinderGeometry(r, r, h, 64);
+      else if(shape==="cone") geo = new THREE.ConeGeometry(r, h, 64);
+      else if(shape==="pyramid"){ geo = new THREE.ConeGeometry(a/Math.SQRT2, h, 4); geo.rotateY(Math.PI/4); }
+      else if(shape==="sphere") geo = new THREE.SphereGeometry(r*1.2, 48, 32);
+      else if(shape==="prism"){ geo = new THREE.CylinderGeometry(a/Math.sqrt(3), a/Math.sqrt(3), h, 3); }
+      const m = new THREE.Mesh(geo, faceMat); m.castShadow = true; m.position.y = shape==="sphere" ? r*1.2 : h/2; cur.add(m);
+      const eg = new THREE.EdgesGeometry(geo, 25); const e = new THREE.LineSegments(eg, edgeMat); m.add(e); e.visible = showEdges;
+      if(shape==="pyramid"||shape==="prism"||shape==="cone"){ const pos = geo.attributes.position, seen = new Set();
+        for(let i=0;i<pos.count;i++){ const v = new THREE.Vector3().fromBufferAttribute(pos,i); const k = v.toArray().map(x=>x.toFixed(2)).join(","); if(seen.has(k)) continue;
+          if(shape==="cone" && v.y < h/2-0.01) continue;
+          if((shape==="pyramid"||shape==="prism") && Math.abs(v.x)<1e-3 && Math.abs(v.z)<1e-3 && Math.abs(v.y)<h/2-0.01) continue;
+          seen.add(k); const s = new THREE.Mesh(new THREE.SphereGeometry(.07,16,12), vMat); s.position.copy(v); m.add(s); } }
+    }
+    if(shape==="cube"||shape==="cuboid"){ const D = cur.userData.dims; [[-1,-1],[1,-1],[1,1],[-1,1]].forEach(([sx,sz])=>[0,D.h].forEach(y=>{ const s = new THREE.Mesh(new THREE.SphereGeometry(.07,16,12), vMat); s.position.set(sx*D.w/2, y, sz*D.d/2); s.userData.vtx=1; cur.add(s); })); }
+    title.userData.set(SH[shape].n); refresh();
+    document.querySelectorAll('#panel .pill').forEach(b=>{ if(Object.values(SH).some(v=>v.n===b.textContent)) b.classList.toggle('on', b.textContent===SH[shape].n); });
+  }
+  function fmt(x){ return (Math.round(x*100)/100).toString(); }
+  function refresh(){
+    const a=dims.a, b=dims.b, c=dims.c, r=dims.r, h=dims.h; let V="", S="";
+    switch(shape){
+      case "cube": V=`ح = ل³ = ${fmt(a)}³ = <b>${fmt(a**3)}</b>`; S=`م = 6 × ل² = <b>${fmt(6*a*a)}</b>`; break;
+      case "cuboid": V=`ح = ل × ع × ر = ${fmt(b)} × ${fmt(c)} × ${fmt(a)} = <b>${fmt(a*b*c)}</b>`; S=`م = 2(لع + لر + عر) = <b>${fmt(2*(b*c+b*a+c*a))}</b>`; break;
+      case "cylinder": V=`ح = π نق² ع = <b>${fmt(Math.PI*r*r*h)}</b>`; S=`م = 2π نق² + 2π نق ع = <b>${fmt(2*Math.PI*r*r+2*Math.PI*r*h)}</b>`; break;
+      case "cone": { const l=Math.hypot(r,h); V=`ح = ⅓ π نق² ع = <b>${fmt(Math.PI*r*r*h/3)}</b>`; S=`م = π نق² + π نق ل = <b>${fmt(Math.PI*r*r+Math.PI*r*l)}</b>`; break; }
+      case "pyramid": { const sl=Math.hypot(a/2,h); V=`ح = ⅓ × مساحة القاعدة × ع = <b>${fmt(a*a*h/3)}</b>`; S=`م = س² + 2 س ل = <b>${fmt(a*a+2*a*sl)}</b>`; break; }
+      case "sphere": { const R=r*1.2; V=`ح = 4/3 π نق³ = <b>${fmt(4/3*Math.PI*R**3)}</b>`; S=`م = 4π نق² = <b>${fmt(4*Math.PI*R*R)}</b>`; break; }
+      case "prism": V=`ح = مساحة القاعدة × ع = <b>${fmt(Math.sqrt(3)/4*a*a*h)}</b>`; S=`م = 2 × القاعدة + 3 × س × ع = <b>${fmt(Math.sqrt(3)/2*a*a+3*a*h)}</b>`; break;
+    }
+    const sh = SH[shape];
+    info.innerHTML = `<div class="big">${sh.n}</div><div>الأوجه: <b>${sh.f}</b> · الأحرف: <b>${sh.e}</b> · الرؤوس: <b>${sh.v}</b></div><div style="margin-top:6px">📦 ${V}</div><div>🎨 ${S}</div>${(shape==="cube"||shape==="cuboid"||shape==="pyramid"||shape==="prism")?`<small>تحقق أويلر: الأوجه + الرؤوس − الأحرف = ${sh.f+sh.v-sh.e}</small>`:""}`;
+    netBtn.style.display = (shape==="cube"||shape==="cuboid") ? "" : "none";
+    ctlA.el.parentElement.style.display = (shape==="cylinder"||shape==="cone"||shape==="sphere") ? "none" : "";
+    ctlB.el.parentElement.style.display = ctlC.el.parentElement.style.display = shape==="cuboid" ? "" : "none";
+    ctlR.el.parentElement.style.display = (shape==="cylinder"||shape==="cone"||shape==="sphere") ? "" : "none";
+    ctlH.el.parentElement.style.display = (shape==="cylinder"||shape==="cone"||shape==="pyramid"||shape==="prism") ? "" : "none";
+  }
+  function unfold(to){ if(!cur.userData.fold) return; const from = net; if(netAnim) E.updaters.splice(E.updaters.indexOf(netAnim),1);
+    netAnim = tweenVal(from, to, 1.8, u=>{ net=u; cur.userData.fold && cur.userData.fold(u); cur.children.forEach(c=>{ if(c.userData.vtx) c.visible = u<.03; }); }, ()=>{ netAnim=null; }); if(to>0) camTo([0,9,4],[0,0,0]); else camTo([5,4.5,7],[0,1.2,0]); }
+  UI.reset(this.t, this.g);
+  const s = UI.sec("اختر المجسّم");
+  UI.buttons(s, Object.keys(SH).map((k,i)=>({t:SH[k].n, on0:i===0, on:()=>{ shape=k; build(); camTo([5,4.5,7],[0,1.2,0]); }})), {radio:true});
+  const s2 = UI.sec("الأبعاد");
+  const ctlA = UI.slider(s2, {label:"طول الضلع / الارتفاع", min:1, max:3.4, step:.1, value:dims.a, onInput:v=>{ dims.a=v; build(); }});
+  const ctlB = UI.slider(s2, {label:"الطول", min:1, max:4, step:.1, value:dims.b, onInput:v=>{ dims.b=v; build(); }});
+  const ctlC = UI.slider(s2, {label:"العرض", min:1, max:4, step:.1, value:dims.c, onInput:v=>{ dims.c=v; build(); }});
+  const ctlR = UI.slider(s2, {label:"نصف القطر (نق)", min:.5, max:2, step:.1, value:dims.r, onInput:v=>{ dims.r=v; build(); }});
+  const ctlH = UI.slider(s2, {label:"الارتفاع (ع)", min:1, max:4, step:.1, value:dims.h, onInput:v=>{ dims.h=v; build(); }});
+  const s3 = UI.sec("عرض");
+  const netBtn = UI.buttons(s3, [{t:"📂 فرد الشبكة", on:()=>unfold(1)},{t:"📦 طيّ المجسم", on:()=>unfold(0)}]);
+  UI.buttons(s3, [{t:"👻 شفاف / مصمت", on:()=>{ faceMat.opacity = faceMat.opacity<.9 ? 1 : .55; faceMat.depthWrite = faceMat.opacity===1; }}]);
+  const info = UI.info();
+  build();
+  UI.steps([
+    {t:"المجسمات", d:"المجسم شكل له ثلاثة أبعاد: طول وعرض وارتفاع. اختر أي مجسم ودوّره بإصبعك لتراه من كل الجهات.", run:()=>{ shape="cube"; build(); }},
+    {t:"الأوجه والأحرف والرؤوس", d:"الوجه سطح مستوٍ، والحرف خط التقاء وجهين، والرأس نقطة التقاء الأحرف. للمكعب 6 أوجه و12 حرفًا و8 رؤوس.", run:()=>{ shape="cube"; build(); camTo([4,4,5],[0,1,0]); }},
+    {t:"شبكة المكعب", d:"عند فرد أوجه المكعب على سطح مستوٍ نحصل على شبكته: ستة مربعات متطابقة. مساحة سطح المكعب = مجموع مساحات الأوجه الستة.", run:()=>{ shape="cube"; build(); setTimeout(()=>unfold(1),300); }},
+    {t:"متوازي المستطيلات", d:"حجمه = الطول × العرض × الارتفاع. غيّر الأبعاد وراقب تغيّر الحجم.", run:()=>{ shape="cuboid"; build(); camTo([5,4.5,7],[0,1.2,0]); }},
+    {t:"الأسطوانة والمخروط", d:"حجم المخروط يساوي ثلث حجم أسطوانة لها نفس القاعدة والارتفاع.", run:()=>{ shape="cone"; build(); }},
+    {t:"الهرم والمنشور", d:"الهرم له قاعدة واحدة وأوجه جانبية مثلثة تلتقي في رأس، أما المنشور فله قاعدتان متطابقتان متوازيتان.", run:()=>{ shape="pyramid"; build(); }}
+  ]);
+ }});
+
+/* ---------- 4) Fractions ---------- */
+def({id:"fractions", s:"math", icon:"🍕", t:"الكسور بالدوائر والأشرطة", g:"الصف 2–6", d:"قسّم الدائرة والشريط إلى أجزاء متساوية، ولوّن البسط، وقارن الكسور المتكافئة.", tags:"كسر كسور بسط مقام نصف ربع ثلث كسور متكافئة مقارنة",
+ build(){
+  setHome([0,6.5,7],[0,.4,0]);
+  let num=3, den=8, eqk=1; const g = new THREE.Group(); E.root.add(g);
+  const lab = label("", [0,3.4,0], {size:.5});
+  function apply(){
+    g.traverse(o=>{ if(o.geometry) o.geometry.dispose(); }); g.clear();
+    const D = den*eqk, N = num*eqk;
+    for(let i=0;i<D;i++){ const len = 2*Math.PI/D, on = i<N;
+      const m = mesh(new THREE.CylinderGeometry(1.8,1.8,.35,48,1,false,i*len,len*.985), M(on?"#E2B864":"#F6F1E6",{roughness:.7}), g);
+      const mid = i*len + len/2; const off = on ? .12 : 0; m.position.set(Math.sin(mid)*off - 2.3, .18 + (on?.06:0), Math.cos(mid)*off);
+      const crust = mesh(new THREE.CylinderGeometry(1.86,1.86,.37,48,1,true,i*len,len*.985), M(on?"#C98A2E":"#DCD3BF"), g); crust.position.copy(m.position); }
+    const W = 4.2, w = W/D;
+    for(let i=0;i<D;i++){ const on = i<N; const b = mesh(new THREE.BoxGeometry(w*.96,.5,.9), M(on?"#3DB8A8":"#F6F1E6"), g); b.position.set(1.4 + (i+.5)*w - 0.0, .25, 0); }
+    lab.userData.set(eqk>1 ? `${num}/${den} = ${N}/${D}` : `${num}/${den}`);
+    const dec = num/den;
+    info.innerHTML = `<div class="big" style="direction:ltr;text-align:right">${num}/${den}${eqk>1?` = ${N}/${D}`:""}</div>البسط <b>${num}</b>: الأجزاء الملوّنة · المقام <b>${den}</b>: عدد الأجزاء المتساوية<br>الكسر العشري ≈ <b>${dec.toFixed(3)}</b> · النسبة المئوية ≈ <b>${Math.round(dec*100)}%</b><br>${num===den?"الكسر يساوي واحدًا صحيحًا":num>den/2?"أكبر من النصف":num*2===den?"يساوي النصف":"أصغر من النصف"}`;
+  }
+  UI.reset(this.t, this.g);
+  const s = UI.sec("الكسر");
+  const sd = UI.slider(s, {label:"المقام", min:1, max:12, value:den, onInput:v=>{ den=v; if(num>den){ num=den; sn.set(num); } sn.el.max = den; apply(); }});
+  const sn = UI.slider(s, {label:"البسط", min:0, max:den, value:num, onInput:v=>{ num=v; apply(); }});
+  UI.select(s, "كسر مكافئ (اضرب البسط والمقام في)", [1,2,3,4].map(k=>({v:k, t:k===1?"بدون":"× "+k})), v=>{ eqk=+v; apply(); });
+  UI.buttons(s, [{t:"½",on:()=>{den=2;num=1;sd.set(2);sn.el.max=2;sn.set(1);apply();}},{t:"¼",on:()=>{den=4;num=1;sd.set(4);sn.el.max=4;sn.set(1);apply();}},{t:"⅓",on:()=>{den=3;num=1;sd.set(3);sn.el.max=3;sn.set(1);apply();}},{t:"¾",on:()=>{den=4;num=3;sd.set(4);sn.el.max=4;sn.set(3);apply();}}]);
+  const info = UI.info(); apply();
+  UI.steps([
+    {t:"ما الكسر؟", d:"الكسر جزء من كل مقسوم إلى أجزاء متساوية. المقام عدد الأجزاء كلها، والبسط عدد الأجزاء المأخوذة.", run:()=>{ den=8;num=3;eqk=1;sd.set(8);sn.el.max=8;sn.set(3);apply(); }},
+    {t:"النصف", d:"عند تقسيم الدائرة إلى جزأين متساويين وأخذ جزء واحد نحصل على النصف ½.", run:()=>{ den=2;num=1;sd.set(2);sn.el.max=2;sn.set(1);apply(); }},
+    {t:"الكسور المتكافئة", d:"½ = 2/4 = 4/8: نضرب البسط والمقام في العدد نفسه فتبقى المساحة الملوّنة نفسها.", run:()=>{ den=2;num=1;eqk=4;sd.set(2);sn.el.max=2;sn.set(1);apply(); }},
+    {t:"قارن بنفسك", d:"غيّر البسط والمقام وقارن الشريط الملوّن بنصف الشريط لتعرف هل الكسر أكبر أم أصغر من النصف.", run:()=>{ eqk=1; apply(); }}
+  ]);
+ }});
+
+/* ---------- 5) Hajj ---------- */
+def({id:"hajj", s:"isl", icon:"🕋", t:"مناسك الحج خطوة بخطوة", g:"الصف 4–12", d:"رحلة ثلاثية الأبعاد بين المشاعر: الإحرام، منى، عرفات، مزدلفة، رمي الجمرات، الطواف والسعي — مع عدّاد الأشواط.", tags:"حج الحج مناسك عمرة طواف سعي عرفة عرفات منى مزدلفة جمرات رمي إحرام الكعبة المسجد الحرام الصفا المروة",
+ build(){
+  setHome([-6,22,27],[-6,0,0]);
+  E.scene.fog = E.ar ? null : new THREE.Fog(0xEDE6D6, 50, 110);
+  const ground = mesh(new THREE.PlaneGeometry(70,36), M("#E6D3AE",{roughness:1}), E.root); ground.rotation.x=-Math.PI/2; ground.position.y=-.02;
+  // mountains
+  const mm = M("#B98F5E",{roughness:1, flatShading:true});
+  [[-18,-12,3,4],[-12,-14,2.5,3],[10,-13,3,3.4],[18,-10,2.6,4.2],[22,6,2.2,3],[-22,8,2.4,3.2],[3,-14,2,2.6],[-4,13,2,2.4]].forEach(([x,z,r,h])=>{ const c = mesh(new THREE.ConeGeometry(r,h,7), mm, E.root); c.position.set(x,h/2,z); c.rotation.y = x; });
+  const SITES = { haram:[-20,0,2], mina:[-8,0,0], jamarat:[-11,0,-3.6], muz:[1,0,1], arafat:[11,0,0] };
+  // --- Masjid al-Haram ---
+  const H = new THREE.Group(); H.position.set(...SITES.haram); E.root.add(H);
+  const mataf = mesh(new THREE.CylinderGeometry(3.4,3.4,.06,64), M("#F8F6F0",{roughness:.3}), H); mataf.position.y=.03;
+  const colon = M("#EDE4D0"); for(let i=0;i<28;i++){ const a=i/28*Math.PI*2; const p = mesh(new THREE.BoxGeometry(.5,1.2,.5), colon, H); p.position.set(Math.cos(a)*4.4,.6,Math.sin(a)*4.4); }
+  [[4.3,4.3],[-4.3,4.3],[4.3,-4.3],[-4.3,-4.3]].forEach(([x,z])=>{ const mi = mesh(new THREE.CylinderGeometry(.18,.24,4.4,12), M("#F3EEE2"), H); mi.position.set(x,2.2,z); const tp = mesh(new THREE.ConeGeometry(.22,.6,12), M("#C9A44C",{metalness:.6}), H); tp.position.set(x,4.7,z); });
+  const kaaba = new THREE.Group(); H.add(kaaba);
+  const kb = mesh(new THREE.BoxGeometry(1.2,1.4,1.0), M("#111111",{roughness:.85}), kaaba); kb.position.y=.76;
+  const band = mesh(new THREE.BoxGeometry(1.23,.12,1.03), M("#C9A44C",{metalness:.7, roughness:.3}), kaaba); band.position.y=1.12;
+  const door = mesh(new THREE.BoxGeometry(.24,.42,.02), M("#C9A44C",{metalness:.8, roughness:.25}), kaaba); door.position.set(.18,.72,.51);
+  const stone = mesh(new THREE.SphereGeometry(.06,16,12), M("#3a2a1a",{metalness:.3}), kaaba); stone.position.set(.61,.5,.51);
+  const hijr = mesh(new THREE.TorusGeometry(.75,.06,8,40,Math.PI), M("#F3EEE2"), kaaba); hijr.rotation.x = -Math.PI/2; hijr.position.set(0,.1,-.5); hijr.rotation.z = Math.PI;
+  const maqam = mesh(new THREE.CylinderGeometry(.09,.12,.35,12), M("#C9A44C",{metalness:.7}), kaaba); maqam.position.set(-.1,.18,1.2);
+  // Safa & Marwa (mas'a) east of the mosque
+  const masa = mesh(new THREE.BoxGeometry(1.1,.05,7), M("#F3EEE2"), H); masa.position.set(5.6,.03,0);
+  const safa = mesh(new THREE.SphereGeometry(.7,16,10,0,Math.PI*2,0,Math.PI/2), M("#9C8466",{flatShading:true}), H); safa.position.set(5.6,0,-3.4);
+  const marwa = mesh(new THREE.SphereGeometry(.6,16,10,0,Math.PI*2,0,Math.PI/2), M("#9C8466",{flatShading:true}), H); marwa.position.set(5.6,0,3.4);
+  // Mina tents
+  const tentM = M("#FFFFFF",{roughness:.6});
+  for(let i=0;i<9;i++) for(let j=0;j<6;j++){ const t = mesh(new THREE.ConeGeometry(.32,.5,4), tentM, E.root); t.position.set(SITES.mina[0]-2+i*.55, .25, SITES.mina[2]-1.5+j*.6+((i%2)*.25)); t.rotation.y = Math.PI/4; }
+  // Jamarat bridge + 3 pillars (الصغرى، الوسطى، العقبة)
+  const J = new THREE.Group(); J.position.set(...SITES.jamarat); E.root.add(J);
+  const deck = mesh(new THREE.BoxGeometry(6,.18,1.6), M("#D8D2C4"), J); deck.position.y = .9;
+  [-2.6,2.6].forEach(x=>{ const l = mesh(new THREE.BoxGeometry(.3,.9,1.4), M("#CFC8B8"), J); l.position.set(x,.45,0); });
+  const pillars = [[-1.8,1.2],[0,1.35],[1.8,1.6]].map(([x,h],i)=>{ const p = mesh(new THREE.BoxGeometry(.5+i*.12,h,.35), M("#8D8478"), J); p.position.set(x,.99+h/2,0); const basin = mesh(new THREE.CylinderGeometry(.55+i*.08,.55+i*.08,.12,24,1,true), M("#B9B1A2",{side:THREE.DoubleSide}), J); basin.position.set(x,1.05,0); return p; });
+  // Muzdalifah
+  const muzP = mesh(new THREE.CircleGeometry(2.4,32), M("#D9C59C",{roughness:1}), E.root); muzP.rotation.x=-Math.PI/2; muzP.position.set(SITES.muz[0],.01,SITES.muz[2]);
+  const pebM = M("#6E6559"); for(let i=0;i<70;i++){ const p = mesh(new THREE.SphereGeometry(.05,6,5), pebM, E.root); p.position.set(SITES.muz[0]+(Math.random()-.5)*4, .04, SITES.muz[2]+(Math.random()-.5)*3.6); }
+  const mash = mesh(new THREE.CylinderGeometry(.25,.3,1.4,8), M("#EDE4D0"), E.root); mash.position.set(SITES.muz[0]+1.2,.7,SITES.muz[2]-1);
+  // Arafat
+  const rahma = mesh(new THREE.ConeGeometry(2.2,2.4,9), M("#A78559",{flatShading:true, roughness:1}), E.root); rahma.position.set(SITES.arafat[0]+1.5,1.2,SITES.arafat[2]-2);
+  const pillarR = mesh(new THREE.BoxGeometry(.18,.9,.18), M("#FFFFFF"), E.root); pillarR.position.set(SITES.arafat[0]+1.5,2.75,SITES.arafat[2]-2);
+  const namira = new THREE.Group(); namira.position.set(SITES.arafat[0]-2,0,SITES.arafat[2]+1.5); E.root.add(namira);
+  mesh(new THREE.BoxGeometry(2,.8,1.4), M("#EDE4D0"), namira).position.y=.4; const nm = mesh(new THREE.CylinderGeometry(.1,.12,1.8,10), M("#F3EEE2"), namira); nm.position.set(.8,.9,.5);
+  // road path
+  const path = new THREE.CatmullRomCurve3([[-16.4,0,2],[-8,0,1.6],[0,0,2.5],[6,0,1.5],[11,0,1]].map(p=>new THREE.Vector3(p[0],.03,p[2])));
+  mesh(new THREE.TubeGeometry(path, 120, .12, 6, false), M("#9A8F7E",{roughness:1}), E.root);
+  // labels
+  const L = (t,p)=>label(t, p, {size:.55, anchorBottom:true});
+  L("المسجد الحرام", [SITES.haram[0], 5.4, SITES.haram[2]]); L("منى", [SITES.mina[0]+.5, 1.6, SITES.mina[2]]); L("الجمرات", [SITES.jamarat[0], 3.1, SITES.jamarat[2]]);
+  L("مزدلفة", [SITES.muz[0], 1.8, SITES.muz[2]]); L("عرفات", [SITES.arafat[0], 4.2, SITES.arafat[2]]);
+  const sm = (t,p,o)=>label(t, p, Object.assign({size:.24, parent:H}, o||{}));
+  const kLabels = [sm("الكعبة المشرفة",[0,1.9,0]), sm("الحجر الأسود",[.9,.75,.9]), sm("الحِجْر",[0,.55,-1.55]), sm("مقام إبراهيم",[-.1,.7,1.55]), sm("الصفا",[5.6,1.1,-3.4]), sm("المروة",[5.6,1.0,3.4])];
+  // pilgrims
+  const pil = new THREE.Group(); E.root.add(pil);
+  const pm = M("#FFFFFF",{roughness:.5}), skin = M("#C68B59");
+  for(let i=0;i<14;i++){ const b = new THREE.Group(); const body = mesh(new THREE.CapsuleGeometry(.08,.22,4,8), pm, b); body.position.y=.2; const head = mesh(new THREE.SphereGeometry(.06,10,8), skin, b); head.position.y=.42; b.position.set((i%5)*.24-.5, 0, Math.floor(i/5)*.24-.24); pil.add(b); }
+  pil.position.set(-16.4,0,2);
+  const counter = label("", [0,0,0], {size:.42, anchorBottom:true}); counter.visible = false;
+  const say = label("", [0,0,0], {size:.36, anchorBottom:true, bg:"rgba(255,247,228,.95)", border:"#9A6B1F"}); say.visible = false;
+  let job = null;
+  function stopJob(){ if(job){ const i=E.updaters.indexOf(job); if(i>=0) E.updaters.splice(i,1); job=null; } counter.visible=false; }
+  function walkTo(target, sec, done){ stopJob(); const from = pil.position.clone(), to = new THREE.Vector3(...target); let t=0;
+    job = (dt)=>{ t=Math.min(1,t+dt/sec); pil.position.lerpVectors(from,to,ease(t)); pil.children.forEach((b,i)=>b.position.y = Math.abs(Math.sin(t*40+i))*.05); if(t>=1){ stopJob(); done&&done(); } }; E.updaters.push(job); }
+  function circuits(kind){ stopJob(); const center = new THREE.Vector3(...SITES.haram); let a = 0, n = 0; counter.visible = true;
+    const R0 = 1.25, start = kind==="tawaf" ? Math.atan2(.51, .61) : 0;
+    job = (dt)=>{ if(kind==="tawaf"){ a += dt*1.6; const ang = start + a; pil.position.set(center.x + Math.cos(ang)*R0, 0, center.z - Math.sin(ang)*R0); pil.rotation.y = ang; n = Math.min(7, Math.floor(a/(2*Math.PI))); }
+      else { a += dt*.55; const k = a % 2, seg = Math.floor(a); const z = k<1 ? lerp(-3.1,3.1,k) : lerp(3.1,-3.1,k-1); pil.position.set(center.x+5.6, 0, center.z + z); n = Math.min(7, seg); }
+      counter.position.set(pil.position.x, 1.4, pil.position.z); counter.userData.set(`الشوط ${Math.min(n+1,7)} من 7`);
+      if((kind==="tawaf" && a >= 7*2*Math.PI) || (kind==="sai" && a>=7)){ counter.userData.set("✔ اكتملت 7 أشواط"); stopJob(); counter.visible=true; } };
+    E.updaters.push(job); }
+  function stoning(which){ stopJob(); const list = which==="aqaba" ? [2] : [0,1,2]; let idx=0, cnt=0, t=0; counter.visible=true;
+    const peb = mesh(new THREE.SphereGeometry(.06,8,6), M("#4a4238"), E.root);
+    const jp = new THREE.Vector3(...SITES.jamarat); pil.position.set(jp.x + pillars[list[0]].position.x, .99, jp.z + 1.1);
+    job = (dt)=>{ t += dt*2.2; const pl = pillars[list[idx]]; const tgt = new THREE.Vector3(jp.x+pl.position.x, 1.6, jp.z);
+      const from = new THREE.Vector3(jp.x+pl.position.x, 1.3, jp.z+1.0); const k = Math.min(t,1);
+      peb.position.lerpVectors(from, tgt, k); peb.position.y += Math.sin(k*Math.PI)*.6;
+      pil.position.x = lerp(pil.position.x, jp.x+pl.position.x, .08);
+      if(t>=1){ t=0; cnt++; if(cnt>=7){ cnt=0; idx++; if(idx>=list.length){ counter.userData.set("✔ اكتمل الرمي"); E.root.remove(peb); stopJob(); counter.visible=true; return; } } }
+      counter.position.set(jp.x+pl.position.x, 3.0, jp.z+.6); counter.userData.set(`${["الجمرة الصغرى","الجمرة الوسطى","جمرة العقبة"][list[idx]]}: حصاة ${cnt+1} من 7`); };
+    E.updaters.push(job); }
+  function talbiya(text, at){ say.visible = !!text; if(text){ say.userData.set(text); say.position.set(at[0], at[1], at[2]); } }
+  UI.reset(this.t, this.g);
+  const s = UI.sec("انتقل إلى");
+  UI.buttons(s, [
+    {t:"🕋 المسجد الحرام", on:()=>camTo([SITES.haram[0]+5,8,SITES.haram[2]+9],[SITES.haram[0],0,SITES.haram[2]])},
+    {t:"⛺ منى", on:()=>camTo([SITES.mina[0],5,7],[SITES.mina[0],0,0])},
+    {t:"🪨 الجمرات", on:()=>camTo([SITES.jamarat[0],4,3.5],[SITES.jamarat[0],1,-3])},
+    {t:"🌙 مزدلفة", on:()=>camTo([SITES.muz[0],5,7],[SITES.muz[0],0,1])},
+    {t:"⛰️ عرفات", on:()=>camTo([SITES.arafat[0],6,8],[SITES.arafat[0],1,-1])},
+    {t:"🗺️ الخريطة كاملة", on:()=>camTo([-6,22,27],[-6,0,0])}]);
+  const s2 = UI.sec("محاكاة"); UI.buttons(s2, [{t:"🔁 الطواف 7 أشواط", on:()=>{ camTo([SITES.haram[0]+3.5,7.5,SITES.haram[2]+8],[SITES.haram[0],.4,SITES.haram[2]]); circuits("tawaf"); }},{t:"↔️ السعي 7 أشواط", on:()=>{ camTo([SITES.haram[0]+12,6,SITES.haram[2]+3],[SITES.haram[0]+5.6,0,SITES.haram[2]]); circuits("sai"); }},{t:"🪨 رمي الجمرات", on:()=>{ camTo([SITES.jamarat[0],4,3.5],[SITES.jamarat[0],1,-3]); stoning("all"); }}]);
+  UI.steps([
+    {t:"الحج ركن الإسلام الخامس", d:"فرضه الله على المسلم البالغ العاقل المستطيع مرة في العمر. تبدأ المناسك في الثامن من ذي الحجة. هذه خريطة المشاعر المقدسة: المسجد الحرام، منى، مزدلفة، عرفات.", run:()=>{ stopJob(); talbiya(""); pil.position.set(-16.4,0,2); camTo([-6,22,27],[-6,0,0]); }},
+    {t:"١) الإحرام", d:"يغتسل الحاج ويلبس ملابس الإحرام البيضاء، وينوي الحج ويبدأ التلبية: لبيك اللهم لبيك، لبيك لا شريك لك لبيك.", run:()=>{ stopJob(); pil.position.set(-16.4,0,2); talbiya("لبيك اللهم لبيك", [-16.4,1.2,2]); camTo([-14,4,8],[-16.4,.5,2]); }},
+    {t:"٢) يوم التروية — منى", d:"في الثامن من ذي الحجة يتوجه الحجاج إلى منى، فيصلون فيها الظهر والعصر والمغرب والعشاء وفجر التاسع قصرًا بلا جمع.", run:()=>{ talbiya(""); camTo([SITES.mina[0],6,8],[SITES.mina[0],0,0]); walkTo([SITES.mina[0]+1.5,0,1.6], 3); }},
+    {t:"٣) يوم عرفة — الوقوف بعرفات", d:"في التاسع يقف الحجاج بعرفة من الزوال حتى غروب الشمس يدعون الله ويذكرونه، وهو أعظم أركان الحج: «الحج عرفة».", run:()=>{ camTo([SITES.arafat[0],6,9],[SITES.arafat[0],1,-1]); walkTo([SITES.arafat[0]-.5,0,1.5], 4, ()=>talbiya("الحج عرفة", [SITES.arafat[0]-.5,1.2,1.5])); }},
+    {t:"٤) المبيت بمزدلفة", d:"بعد غروب الشمس ينفر الحجاج إلى مزدلفة، فيصلون المغرب والعشاء جمعًا ويبيتون فيها، ويجمعون الحصى لرمي الجمرات.", run:()=>{ talbiya(""); camTo([SITES.muz[0],5,7],[SITES.muz[0],0,1]); walkTo([SITES.muz[0],0,1.6], 3.5); }},
+    {t:"٥) يوم النحر — رمي جمرة العقبة", d:"في العاشر (يوم العيد) يرمي الحاج جمرة العقبة الكبرى بسبع حصيات متعاقبات، يكبّر مع كل حصاة.", run:()=>{ camTo([SITES.jamarat[0]+2,4,4],[SITES.jamarat[0]+1.5,1.2,-3]); stoning("aqaba"); }},
+    {t:"٦) الهدي والحلق أو التقصير", d:"بعد الرمي يذبح الحاج المتمتع والقارن الهدي، ثم يحلق رأسه أو يقصّر، فيتحلل التحلل الأول.", run:()=>{ stopJob(); camTo([SITES.mina[0],5,6],[SITES.mina[0],0,0]); walkTo([SITES.mina[0],0,1.6], 2); }},
+    {t:"٧) طواف الإفاضة", d:"يطوف الحاج حول الكعبة سبعة أشواط عكس عقارب الساعة، يبدأ كل شوط وينتهي عند الحجر الأسود، وتكون الكعبة عن يساره.", run:()=>{ camTo([SITES.haram[0]+3.5,7.5,SITES.haram[2]+8],[SITES.haram[0],.4,SITES.haram[2]]); circuits("tawaf"); }},
+    {t:"٨) السعي بين الصفا والمروة", d:"يسعى الحاج سبعة أشواط، يبدأ بالصفا وينتهي بالمروة؛ الذهاب شوط والعودة شوط.", run:()=>{ camTo([SITES.haram[0]+12,6,SITES.haram[2]+3],[SITES.haram[0]+5.6,0,SITES.haram[2]]); circuits("sai"); }},
+    {t:"٩) أيام التشريق — رمي الجمرات الثلاث", d:"في الحادي عشر والثاني عشر (والثالث عشر لمن تأخر) يبيت الحاج بمنى ويرمي الجمرات الثلاث بعد الزوال: الصغرى ثم الوسطى ثم العقبة، كل واحدة بسبع حصيات.", run:()=>{ camTo([SITES.jamarat[0],4,4],[SITES.jamarat[0],1,-3]); stoning("all"); }},
+    {t:"١٠) طواف الوداع", d:"آخر عمل للحاج قبل مغادرة مكة: يطوف بالبيت سبعة أشواط. تقبّل الله من الحجاج حجهم.", run:()=>{ camTo([SITES.haram[0]+3.5,7.5,SITES.haram[2]+8],[SITES.haram[0],.4,SITES.haram[2]]); circuits("tawaf"); }}
+  ]);
+ }});
+
+/* ---------- 6) Globe + Qibla ---------- */
+def({id:"globe", s:"soc", s2:"isl", icon:"🌍", t:"الكرة الأرضية واتجاه القبلة", g:"الصف 4–12", d:"خطوط الطول ودوائر العرض، موقع سلطنة عُمان، الليل والنهار، واتجاه القبلة من البريمي إلى مكة المكرمة.", tags:"الكرة الأرضية خطوط الطول دوائر العرض خط الاستواء جرينتش القبلة اتجاه القبلة عمان مكة الليل والنهار دوران الأرض خريطة",
+ build(){
+  setHome([0,1.6,7.5],[0,1.6,0]);
+  const Rg = 2; const g = new THREE.Group(); g.position.y = 1.7; E.root.add(g);
+  const earthMat = new THREE.MeshStandardMaterial({color:0x2a6fb0, roughness:.8});
+  new THREE.TextureLoader().load("https://cdn.jsdelivr.net/gh/mrdoob/three.js@r147/examples/textures/planets/earth_atmos_2048.jpg", t=>{ t.encoding=THREE.sRGBEncoding; earthMat.map=t; earthMat.color.set(0xffffff); earthMat.needsUpdate=true; });
+  const spin = new THREE.Group(); g.add(spin); spin.rotation.z = 23.4*D2R*0;
+  const earth = mesh(new THREE.SphereGeometry(Rg, 96, 64), earthMat, spin);
+  const ll = (lat,lon,r)=>{ const phi=(90-lat)*D2R, th=(lon+180)*D2R; return new THREE.Vector3(-(r)*Math.sin(phi)*Math.cos(th), r*Math.cos(phi), r*Math.sin(phi)*Math.sin(th)); };
+  const gridM = new THREE.LineBasicMaterial({color:0xffffff, transparent:true, opacity:.45});
+  for(let lat=-60; lat<=60; lat+=30){ const pts=[]; for(let lo=-180; lo<=180; lo+=4) pts.push(ll(lat,lo,Rg*1.003)); const l = new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts), lat===0 ? new THREE.LineBasicMaterial({color:0xE2B864}) : gridM); spin.add(l); }
+  for(let lo=-180; lo<180; lo+=30){ const pts=[]; for(let la=-90; la<=90; la+=4) pts.push(ll(la,lo,Rg*1.003)); const l = new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts), lo===0 ? new THREE.LineBasicMaterial({color:0xB23A3A}) : gridM); spin.add(l); }
+  const pin = (lat,lon,color,txt)=>{ const p = mesh(new THREE.SphereGeometry(.06,16,12), M(color,{emissive:color, emissiveIntensity:.4}), spin); p.position.copy(ll(lat,lon,Rg*1.01)); const lb = label(txt, ll(lat,lon,Rg*1.28).toArray(), {size:.2, parent:spin}); return {p, lb}; };
+  const BUR = [24.25, 55.79], MAK = [21.4225, 39.8262];
+  pin(BUR[0],BUR[1],"#E2B864",""); pin(MAK[0],MAK[1],"#111111",""); label("البريمي", ll(BUR[0]+7,BUR[1]+6,Rg*1.2).toArray(), {size:.2, parent:spin}); label("مكة المكرمة", ll(MAK[0]-8,MAK[1]-6,Rg*1.2).toArray(), {size:.2, parent:spin});
+  const eqL = label("خط الاستواء 0°", ll(0,-20,Rg*1.2).toArray(), {size:.17, parent:spin, color:"#9A6B1F"}); const grL = label("خط جرينتش 0°", ll(35,0,Rg*1.2).toArray(), {size:.17, parent:spin, color:"#B23A3A"});
+  // great-circle arc Buraimi -> Makkah
+  const A = ll(BUR[0],BUR[1],1).normalize(), B = ll(MAK[0],MAK[1],1).normalize(); const arcPts=[]; for(let i=0;i<=40;i++){ const v = new THREE.Vector3().copy(A).lerp(B,i/40).normalize().multiplyScalar(Rg*(1.01+Math.sin(i/40*Math.PI)*.08)); arcPts.push(v); }
+  const qibla = mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(arcPts), 60, .015, 6), M("#E2B864",{emissive:"#E2B864", emissiveIntensity:.5}), spin);
+  const atm = new THREE.Mesh(new THREE.SphereGeometry(Rg*1.04, 64, 48), new THREE.MeshBasicMaterial({color:0x8fc8ff, transparent:true, opacity:.12, side:THREE.BackSide})); g.add(atm);
+  // bearing
+  const brg = (()=>{ const f1=BUR[0]*D2R, f2=MAK[0]*D2R, dl=(MAK[1]-BUR[1])*D2R; const y=Math.sin(dl)*Math.cos(f2), x=Math.cos(f1)*Math.sin(f2)-Math.sin(f1)*Math.cos(f2)*Math.cos(dl); return (Math.atan2(y,x)/D2R+360)%360; })();
+  const dist = (()=>{ const f1=BUR[0]*D2R, f2=MAK[0]*D2R, df=f2-f1, dl=(MAK[1]-BUR[1])*D2R; const a=Math.sin(df/2)**2+Math.cos(f1)*Math.cos(f2)*Math.sin(dl/2)**2; return 6371*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a)); })();
+  let speed = 0; onUpdate(dt=>{ spin.rotation.y += dt*speed; });
+  const sunLight = new THREE.DirectionalLight(0xffffff, 0); E.root.add(sunLight);
+  const face = (lat,lon)=>{ speed=0; const v = ll(lat,lon,1); const target = Math.atan2(v.x, v.z); const from = spin.rotation.y % (2*Math.PI); tweenVal(from, -target, 1.4, r=>spin.rotation.y=r); };
+  UI.reset(this.t, this.g);
+  const s = UI.sec("التحكّم");
+  UI.slider(s, {label:"سرعة دوران الأرض", min:0, max:100, value:0, unit:"%", onInput:v=>speed=v/100*1.2});
+  UI.buttons(s, [{t:"🇴🇲 سلطنة عُمان", on:()=>face(22,57)},{t:"🕋 مكة المكرمة", on:()=>face(MAK[0],MAK[1])},{t:"🧭 اتجاه القبلة", on:()=>{ face(23,48); }},{t:"🌗 الليل والنهار", on:()=>{ const on = sunLight.intensity===0; sunLight.intensity = on?1.6:0; sunLight.position.set(10,1,0); E.scene.children.forEach(o=>{ if(o.isHemisphereLight) o.intensity = on?.12:.85; if(o.isDirectionalLight && o!==sunLight) o.intensity = on?0:.85; }); speed = on ? .35 : 0; }}]);
+  const info = UI.info();
+  info.innerHTML = `🧭 اتجاه القبلة من البريمي: <b>${brg.toFixed(0)}°</b> من الشمال الجغرافي (نحو الغرب مع ميل خفيف للجنوب)<br>📏 المسافة إلى مكة المكرمة ≈ <b>${Math.round(dist).toLocaleString("ar")}</b> كم<br>📍 البريمي: ${BUR[0]}° شمالًا، ${BUR[1]}° شرقًا`;
+  UI.steps([
+    {t:"الكرة الأرضية", d:"الأرض كوكب كروي الشكل تقريبًا، وتدور حول محورها مرة كل 24 ساعة فيتعاقب الليل والنهار.", run:()=>{ speed=.3; }},
+    {t:"دوائر العرض", d:"خطوط وهمية أفقية توازي خط الاستواء (باللون الذهبي) الذي يقسم الأرض إلى نصف شمالي ونصف جنوبي.", run:()=>{ face(10,20); }},
+    {t:"خطوط الطول", d:"خطوط وهمية تصل بين القطبين، وأشهرها خط جرينتش (بالأحمر) وقيمته صفر، ومنه نقيس الطول شرقًا وغربًا.", run:()=>{ face(30,0); }},
+    {t:"موقع سلطنة عُمان", d:"تقع سلطنة عُمان في جنوب شرق شبه الجزيرة العربية، بين دائرتي عرض 16° و27° شمالًا تقريبًا، وخطي طول 52° و60° شرقًا.", run:()=>face(22,57)},
+    {t:"اتجاه القبلة", d:`القبلة هي اتجاه الكعبة المشرفة في مكة المكرمة. من البريمي نتجه نحو ${brg.toFixed(0)}° تقريبًا من الشمال، أي نحو الغرب. الخط الذهبي يمثل أقصر طريق على سطح الكرة الأرضية.`, run:()=>face(23,48)},
+    {t:"الليل والنهار", d:"اضغط زر الليل والنهار: نصف الأرض المواجه للشمس نهار، والنصف الآخر ليل، ومع الدوران يتغير ذلك.", run:()=>{}}
+  ]);
+ }});
+
+/* ---------- 7) Solutions & solubility ---------- */
+def({id:"solutions", s:"sci", icon:"🧪", t:"مختبر المحاليل والذوبان", g:"الصف 4–10", d:"أضف الملح أو السكر أو كبريتات النحاس للماء، غيّر الحرارة والحجم، وراقب التركيز والتشبع ومنحنى الذوبانية.", tags:"محلول محاليل ذوبان ذائبية ذوبانية مذيب مذاب تركيز مشبع غير مشبع ملح سكر كبريتات النحاس خليط درجة الحرارة",
+ build(){
+  setHome([0,3.2,7.5],[0,1.6,0]);
+  const SOL = { salt:{n:"ملح الطعام", c:"#FFFFFF", tint:null, s:t=>35.7+0.04*t+0.0006*t*t}, sugar:{n:"السكر", c:"#FFF8E7", tint:null, s:t=>179+1.6*t+0.03*t*t},
+    cuso4:{n:"كبريتات النحاس", c:"#2F6FD0", tint:"#2F7FE0", s:t=>14.3+0.35*t+0.0035*t*t}, kmno4:{n:"برمنجنات البوتاسيوم", c:"#5B1F6B", tint:"#8A2BB0", s:t=>2.8+0.14*t+0.0015*t*t} };
+  let key="salt", mass=0, vol=150, temp=25, stir=0;
+  const bench = mesh(new THREE.BoxGeometry(9,.3,4), M("#6D4C41",{roughness:.8}), E.root); bench.position.y=-.15;
+  const glass = new THREE.MeshPhysicalMaterial({color:0xffffff, transparent:true, opacity:.22, roughness:.05, metalness:0, side:THREE.DoubleSide, depthWrite:false});
+  const bk = mesh(new THREE.CylinderGeometry(1.25,1.2,3,48,1,true), glass, E.root); bk.position.y=1.5; bk.castShadow=false;
+  const bkBottom = mesh(new THREE.CylinderGeometry(1.2,1.2,.05,48), glass, E.root); bkBottom.position.y=.025;
+  const rim = mesh(new THREE.TorusGeometry(1.25,.03,8,48), glass, E.root); rim.rotation.x=Math.PI/2; rim.position.y=3;
+  for(let i=1;i<=5;i++){ const tk = mesh(new THREE.BoxGeometry(.2,.015,.01), new THREE.MeshBasicMaterial({color:0x0B5457}), E.root); tk.position.set(-.85,i*.5,1.0); tk.rotation.y=-.7; label(i*50+" مل",[-1.5,i*.5,1.05],{size:.13,bg:"none"}); }
+  const waterMat = new THREE.MeshPhysicalMaterial({color:0x9fd3ff, transparent:true, opacity:.45, roughness:.1, depthWrite:false});
+  const water = mesh(new THREE.CylinderGeometry(1.17,1.17,1,48), waterMat, E.root); water.castShadow=false;
+  const crystals = new THREE.Group(); E.root.add(crystals);
+  const falling = []; const fallGeo = new THREE.BoxGeometry(.06,.06,.06);
+  const rod = mesh(new THREE.CylinderGeometry(.04,.04,3.6,8), glass, E.root); rod.position.set(.5,2.2,0); rod.rotation.z=.25;
+  const burner = mesh(new THREE.CylinderGeometry(.5,.6,.2,24), M("#37474F"), E.root); burner.position.set(0,-.1,0); burner.visible=false;
+  const flame = mesh(new THREE.ConeGeometry(.3,.6,16), new THREE.MeshBasicMaterial({color:0x4fa3ff, transparent:true, opacity:.7}), E.root); flame.position.set(0,-.05,0); flame.visible=false;
+  const thermo = mesh(new THREE.CylinderGeometry(.04,.04,2.6,8), M("#ffffff",{transparent:true,opacity:.6}), E.root); thermo.position.set(-.55,2.0,-.3); thermo.rotation.z=-.15;
+  const merc = mesh(new THREE.CylinderGeometry(.025,.025,1,8), M("#d32f2f",{emissive:"#d32f2f",emissiveIntensity:.3}), E.root);
+  const tLab = label("", [-1.0,3.6,-.3], {size:.22});
+  // chart
+  const cv = document.createElement("canvas"); cv.width=520; cv.height=300;
+  function waterH(){ return vol/150*1.5; }
+  function solubility(){ return SOL[key].s(temp) * vol/100; } // grams dissolvable in current volume
+  function update(){
+    const h = waterH(); water.scale.y = h; water.position.y = .05 + h/2;
+    const sat = solubility(), dissolved = Math.min(mass, sat), excess = Math.max(0, mass - sat);
+    const conc = dissolved / vol * 100;
+    const tint = SOL[key].tint;
+    if(tint){ const k = Math.min(1, conc / 25); waterMat.color.set(0x9fd3ff).lerp(new THREE.Color(tint), k); waterMat.opacity = .45 + k*.35; } else { waterMat.color.set(0x9fd3ff); waterMat.opacity = .45; }
+    // crystals heap for excess
+    const want = Math.min(160, Math.round(excess/1.2));
+    while(crystals.children.length < want){ const c = new THREE.Mesh(fallGeo, M(SOL[key].c)); const a=Math.random()*Math.PI*2, r=Math.sqrt(Math.random())*0.9; c.position.set(Math.cos(a)*r, .08+Math.random()*.08*(1-r), Math.sin(a)*r); c.rotation.set(Math.random(),Math.random(),Math.random()); crystals.add(c); }
+    while(crystals.children.length > want){ const c=crystals.children.pop(); crystals.remove(c); c.material.dispose(); }
+    merc.scale.y = .1 + temp/100*2.2; merc.position.set(-.55 - Math.sin(.15)*0, .75 + merc.scale.y/2, -.3); merc.rotation.z=-.15;
+    burner.visible = flame.visible = temp > 30; flame.scale.setScalar(.6 + temp/100);
+    tLab.userData.set(temp+" °س");
+    const state = excess > 0.05 ? "مشبع — يوجد راسب لم يذُب" : (dissolved >= sat*0.97 ? "مشبع تقريبًا" : "غير مشبع — يمكن إذابة المزيد");
+    info.innerHTML = `<div class="big">${SOL[key].n}</div>الكتلة المضافة: <b>${mass}</b> جم · حجم الماء: <b>${vol}</b> مل<br>الذائب: <b>${dissolved.toFixed(1)}</b> جم · الراسب: <b>${excess.toFixed(1)}</b> جم<br>التركيز: <b>${conc.toFixed(1)}</b> جم / 100 مل<br>أقصى ذوبان عند ${temp}°س: <b>${SOL[key].s(temp).toFixed(1)}</b> جم/100 مل<br>الحالة: <b style="color:${excess>0.05?"#B23A3A":"#2E7D4F"}">${state}</b>`;
+    drawChart();
+  }
+  function drawChart(){
+    const x = cv.getContext("2d"), W=cv.width, Hh=cv.height, f = SOL[key].s, maxS = f(100)*1.1;
+    x.clearRect(0,0,W,Hh); x.fillStyle="#fff"; x.fillRect(0,0,W,Hh);
+    const px = t=>50+t/100*(W-70), py = s=>Hh-36-(s/maxS)*(Hh-60);
+    x.strokeStyle="#E3DED1"; x.lineWidth=1; for(let t=0;t<=100;t+=20){ x.beginPath(); x.moveTo(px(t),py(0)); x.lineTo(px(t),py(maxS)); x.stroke(); }
+    x.strokeStyle="#0B5457"; x.lineWidth=4; x.beginPath(); for(let t=0;t<=100;t+=2){ const X=px(t),Y=py(f(t)); t?x.lineTo(X,Y):x.moveTo(X,Y);} x.stroke();
+    const cur = mass/vol*100; x.fillStyle = cur > f(temp) ? "#B23A3A" : "#2E7D4F"; x.beginPath(); x.arc(px(temp), py(Math.min(cur, maxS)), 9, 0, 7); x.fill();
+    x.fillStyle="#14302F"; x.font="700 20px Cairo"; x.textAlign="center"; for(let t=0;t<=100;t+=20) x.fillText(t+"°", px(t), Hh-10);
+    x.save(); x.translate(18, Hh/2); x.rotate(-Math.PI/2); x.fillText("جم / 100 مل", 0, 0); x.restore();
+    chartImg.src = cv.toDataURL();
+  }
+  function addSpoon(){ for(let i=0;i<18;i++){ const c = new THREE.Mesh(fallGeo, M(SOL[key].c)); c.position.set((Math.random()-.5)*.5, 3.6+Math.random()*.6, (Math.random()-.5)*.5); c.userData.v = 0; E.root.add(c); falling.push(c); } mass += 5; update(); }
+  onUpdate((dt,t)=>{
+    const top = .05 + waterH();
+    for(let i=falling.length-1;i>=0;i--){ const c=falling[i]; c.userData.v += dt*6; c.position.y -= c.userData.v*dt*(c.position.y<top?.25:1); c.rotation.x += dt*3;
+      if(c.position.y < top){ c.material.opacity = (c.material.opacity??1); c.material.transparent = true; c.material.opacity -= dt*1.2; }
+      if(c.position.y < .1 || c.material.opacity<=0){ E.root.remove(c); c.material.dispose(); falling.splice(i,1); } }
+    if(stir>0){ stir-=dt; rod.position.x = Math.cos(t*6)*.5; rod.position.z = Math.sin(t*6)*.5; crystals.rotation.y += dt*2; }
+    flame.scale.y = (.6+temp/100)*(1+Math.sin(t*20)*.08);
+  });
+  UI.reset(this.t, this.g);
+  const s = UI.sec("المادة المذابة");
+  UI.buttons(s, Object.keys(SOL).map((k,i)=>({t:SOL[k].n, on0:i===0, on:()=>{ key=k; mass=0; crystals.clear(); update(); }})), {radio:true});
+  UI.buttons(s, [{t:"🥄 أضف ملعقة (5 جم)", on:addSpoon},{t:"🥢 تحريك", on:()=>{ stir=2.5; }},{t:"🧽 تفريغ الكأس", on:()=>{ mass=0; crystals.clear(); update(); }}]);
+  const s2 = UI.sec("الظروف");
+  UI.slider(s2, {label:"درجة الحرارة", min:0, max:100, value:temp, unit:"°س", onInput:v=>{ temp=v; update(); }});
+  UI.slider(s2, {label:"حجم الماء", min:50, max:250, step:10, value:vol, unit:" مل", onInput:v=>{ vol=v; update(); }});
+  const info = UI.info();
+  const chartBox = UI.sec("منحنى الذوبانية (النقطة = محلولك)"); const chartImg = document.createElement("img"); chartImg.style.cssText="width:100%;border-radius:10px;display:block"; chartBox.appendChild(chartImg);
+  update();
+  UI.steps([
+    {t:"المحلول", d:"المحلول خليط متجانس يتكون من مذيب (الماء) ومذاب (مثل الملح أو السكر) ينتشر بين جزيئات الماء فلا نراه.", run:()=>{ key="salt"; mass=0; crystals.clear(); update(); }},
+    {t:"الإذابة", d:"أضف ملاعق من الملح وحرّك: تختفي الحبيبات لأنها ذابت، ويزداد تركيز المحلول.", run:()=>{ addSpoon(); setTimeout(addSpoon,500); stir=2; }},
+    {t:"المحلول المشبع", d:"لكل مادة حد أقصى يذوب في كمية معينة من الماء عند درجة حرارة معينة. إذا تجاوزناه تبقى حبيبات راسبة في القاع، ويُسمّى المحلول مشبعًا.", run:()=>{ for(let i=0;i<12;i++) setTimeout(addSpoon, i*150); }},
+    {t:"أثر درجة الحرارة", d:"ارفع درجة الحرارة وراقب الراسب: تزداد ذوبانية معظم المواد الصلبة بارتفاع الحرارة، وخاصة السكر.", run:()=>{ key="sugar"; mass=0; crystals.clear(); update(); for(let i=0;i<14;i++) setTimeout(addSpoon, i*120); }},
+    {t:"المحاليل الملوّنة", d:"كبريتات النحاس تعطي محلولًا أزرق، ويزداد اللون عمقًا كلما زاد التركيز.", run:()=>{ key="cuso4"; mass=0; crystals.clear(); update(); for(let i=0;i<4;i++) setTimeout(addSpoon, i*300); }}
+  ]);
+ }});
+
+/* ---------- 8) Acids, bases & indicator ---------- */
+def({id:"acids", s:"sci", icon:"⚗️", t:"الأحماض والقواعد والكاشف", g:"الصف 5–10", d:"اختبر الليمون والخل والصابون والمنظّف بالكاشف العام، واقرأ الرقم الهيدروجيني، وشاهد تفاعل الخل مع بيكربونات الصوديوم.", tags:"حمض أحماض قاعدة قواعد قلوي كاشف الرقم الهيدروجيني pH متعادل ليمون خل صابون تفاعل كيميائي بيكربونات ثاني أكسيد الكربون",
+ build(){
+  setHome([0,3.4,8.5],[0,1.2,0]);
+  const SUBS = [["عصير الليمون",2],["الخل",3],["المشروب الغازي",4],["الحليب",6.5],["الماء النقي",7],["صودا الخبز",9],["الصابون",10],["المنظّف (الأمونيا)",11.5]];
+  const pHcol = p=>{ const stops=[[1,"#d32f2f"],[3,"#f57c00"],[5,"#fbc02d"],[7,"#43a047"],[9,"#1e88e5"],[11,"#3949ab"],[13,"#6a1b9a"]]; for(let i=0;i<stops.length-1;i++){ if(p<=stops[i+1][0]){ const k=(p-stops[i][0])/(stops[i+1][0]-stops[i][0]); return new THREE.Color(stops[i][1]).lerp(new THREE.Color(stops[i+1][1]), clamp(k,0,1)); } } return new THREE.Color("#6a1b9a"); };
+  const bench = mesh(new THREE.BoxGeometry(11,.3,3), M("#6D4C41"), E.root); bench.position.y=-.15;
+  const rack = mesh(new THREE.BoxGeometry(9.4,.12,.7), M("#BCAAA4"), E.root); rack.position.set(0,2.05,0); [-4.6,4.6].forEach(x=>{ const leg = mesh(new THREE.BoxGeometry(.12,2.05,.6), M("#BCAAA4"), E.root); leg.position.set(x,1.02,0); });
+  const glass = new THREE.MeshPhysicalMaterial({color:0xffffff, transparent:true, opacity:.25, roughness:.05, side:THREE.DoubleSide, depthWrite:false});
+  const liqs = [], tags = [];
+  let indicator = false;
+  SUBS.forEach(([n,p],i)=>{ const x = -4.1 + i*1.17;
+    const tube = mesh(new THREE.CylinderGeometry(.22,.22,2.2,24,1,true), glass, E.root); tube.position.set(x,1.4,0); tube.castShadow=false;
+    const btm = mesh(new THREE.SphereGeometry(.22,24,12,0,Math.PI*2,Math.PI/2,Math.PI/2), glass, E.root); btm.position.set(x,.3,0);
+    const lm = new THREE.MeshStandardMaterial({color:0xe8f4ff, transparent:true, opacity:.75, roughness:.2});
+    const liq = mesh(new THREE.CylinderGeometry(.2,.2,1.1,24), lm, E.root); liq.position.set(x,.85,0); liq.userData={p, n, mat:lm};
+    const lb = mesh(new THREE.SphereGeometry(.2,24,12,0,Math.PI*2,Math.PI/2,Math.PI/2), lm, E.root); lb.position.set(x,.3,0);
+    clickable(liq, ()=>pick(i)); liqs.push(liq);
+    tags.push(label(n, [x, 2.85, 0], {size:.17}));
+  });
+  // pH scale strip
+  const scaleG = new THREE.Group(); scaleG.position.set(0,.02,1.4); E.root.add(scaleG);
+  for(let p=0;p<=14;p++){ const b = mesh(new THREE.BoxGeometry(.6,.08,.5), new THREE.MeshStandardMaterial({color:pHcol(Math.max(p,1))}), scaleG); b.position.x = (p-7)*.62; label(String(p), [(p-7)*.62,.35,1.4], {size:.15, bg:"none"}); }
+  label("حمضي", [-4.4,.75,1.4],{size:.2,color:"#d32f2f"}); label("متعادل", [0,.75,1.4],{size:.2,color:"#43a047"}); label("قاعدي", [4.4,.75,1.4],{size:.2,color:"#3949ab"});
+  // reaction flask
+  const R = new THREE.Group(); R.position.set(6.6,0,-.2); E.root.add(R);
+  const flask = mesh(new THREE.SphereGeometry(.75,32,24), glass, R); flask.position.y=.8; const neck = mesh(new THREE.CylinderGeometry(.18,.22,.8,24,1,true), glass, R); neck.position.y=1.8;
+  const vin = mesh(new THREE.SphereGeometry(.7,32,16,0,Math.PI*2,Math.PI*0.55,Math.PI*0.45), new THREE.MeshStandardMaterial({color:0xf3e9c6, transparent:true, opacity:.7}), R); vin.position.y=.8;
+  const balloon = mesh(new THREE.SphereGeometry(.3,24,16), M("#e53935",{roughness:.35}), R); balloon.position.y=2.35; balloon.scale.set(.6,.35,.6);
+  const bubbles = []; let react = 0;
+  label("الخل + بيكربونات الصوديوم", [6.6,3.4,-.2], {size:.18});
+  onUpdate((dt)=>{
+    if(react>0){ react -= dt; if(Math.random()<.6){ const b = new THREE.Mesh(new THREE.SphereGeometry(.04+Math.random()*.04,8,6), new THREE.MeshStandardMaterial({color:0xffffff, transparent:true, opacity:.8})); b.position.set(6.6+(Math.random()-.5)*.8, .3, -.2+(Math.random()-.5)*.8); E.root.add(b); bubbles.push(b); }
+      const s = clamp(balloon.scale.x + dt*.18, .6, 2.2); balloon.scale.set(s, s*.95, s); balloon.position.y = 2.2 + s*.25; }
+    for(let i=bubbles.length-1;i>=0;i--){ const b=bubbles[i]; b.position.y += dt*1.2; if(b.position.y>1.4){ E.root.remove(b); b.geometry.dispose(); b.material.dispose(); bubbles.splice(i,1); } }
+  });
+  function addIndicator(){ indicator = true; liqs.forEach((l,i)=>{ const to = pHcol(l.userData.p); const from = l.userData.mat.color.clone(); setTimeout(()=>tweenVal(0,1,.9,k=>l.userData.mat.color.copy(from).lerp(to,k)), i*180); }); info.innerHTML = "انقر على أي أنبوب لمعرفة رقمه الهيدروجيني."; }
+  function pick(i){ const l = liqs[i].userData; if(!indicator){ info.innerHTML = `<b>${l.n}</b>: أضف الكاشف العام أولًا لنعرف نوعه.`; return; }
+    const kind = l.p<6.8 ? "حمضي" : (l.p>7.2 ? "قاعدي" : "متعادل"); info.innerHTML = `<div class="big">${l.n}</div>الرقم الهيدروجيني pH ≈ <b>${l.p}</b><br>النوع: <b>${kind}</b><br><small>${kind==="حمضي"?"الأحماض طعمها لاذع وتحوّل الكاشف إلى الأحمر/البرتقالي.":kind==="قاعدي"?"القواعد ملمسها زلق وتحوّل الكاشف إلى الأزرق/البنفسجي.":"المتعادل رقمه 7 ولونه أخضر."}</small>`;
+    camTo([liqs[i].position.x,2.2,4],[liqs[i].position.x,1,0], 1); }
+  UI.reset(this.t, this.g);
+  const s = UI.sec("التجربة");
+  UI.buttons(s, [{t:"💧 أضف الكاشف العام", on:addIndicator},{t:"↺ إعادة الأنابيب", on:()=>{ indicator=false; liqs.forEach(l=>l.userData.mat.color.set(0xe8f4ff)); info.innerHTML=""; }}]);
+  UI.buttons(s, [{t:"🫧 تفاعل الخل وصودا الخبز", on:()=>{ react = 6; camTo([6.6,2.6,4.5],[6.6,1.2,0]); }},{t:"🎈 إعادة البالون", on:()=>{ react=0; balloon.scale.set(.6,.35,.6); balloon.position.y=2.35; }}]);
+  const info = UI.info();
+  UI.steps([
+    {t:"الأحماض والقواعد", d:"تُصنّف المحاليل إلى حمضية وقاعدية ومتعادلة. أمامك ثمانية أنابيب لمواد من حياتنا اليومية.", run:()=>camTo([0,3.4,8.5],[0,1.2,0])},
+    {t:"الكاشف العام", d:"الكاشف مادة يتغير لونها حسب نوع المحلول. أضفه وراقب الألوان.", run:addIndicator},
+    {t:"الرقم الهيدروجيني pH", d:"مقياس من 0 إلى 14: أقل من 7 حمضي، و7 متعادل، وأكبر من 7 قاعدي. قارن ألوان الأنابيب بالشريط الملوّن.", run:()=>camTo([0,3.5,6],[0,.4,1.4])},
+    {t:"تفاعل كيميائي", d:"عند خلط الخل (حمض) مع بيكربونات الصوديوم (قاعدة) يتصاعد غاز ثاني أكسيد الكربون فينتفخ البالون — دليل على حدوث تفاعل كيميائي.", run:()=>{ react=6; camTo([6.6,2.6,4.5],[6.6,1.2,0]); }}
+  ]);
+ }});
+
+/* ---------- 9) States of matter ---------- */
+def({id:"states", s:"sci", icon:"🧊", t:"حالات المادة والجزيئات", g:"الصف 3–8", d:"سخّن المادة وبرّدها وشاهد حركة الجزيئات في الحالة الصلبة والسائلة والغازية، والانصهار والغليان.", tags:"حالات المادة صلب سائل غاز انصهار تجمد غليان تبخر تكاثف جزيئات حرارة",
+ build(){
+  setHome([0,3,8],[0,1.6,0]);
+  const W=3.2, Hh=3.2, Dd=2.2; const box = new THREE.Mesh(new THREE.BoxGeometry(W,Hh,Dd), new THREE.MeshPhysicalMaterial({color:0xffffff, transparent:true, opacity:.12, side:THREE.BackSide, depthWrite:false})); box.position.y = Hh/2+.05; E.root.add(box);
+  const edges = new THREE.LineSegments(new THREE.EdgesGeometry(box.geometry), new THREE.LineBasicMaterial({color:0x0B5457})); box.add(edges);
+  const N = 64, P = []; const pm = M("#1E88E5",{roughness:.3});
+  const lattice = []; for(let i=0;i<4;i++) for(let j=0;j<4;j++) for(let k=0;k<4;k++) lattice.push(new THREE.Vector3((i-1.5)*.32, .22+j*.32, (k-1.5)*.32));
+  for(let i=0;i<N;i++){ const m = mesh(new THREE.SphereGeometry(.12,16,12), pm, E.root); m.position.copy(lattice[i]); m.userData.v = new THREE.Vector3((Math.random()-.5),(Math.random()-.5),(Math.random()-.5)); P.push(m); }
+  let T = 0; const st = label("", [0,3.9,0], {size:.36});
+  const heat = mesh(new THREE.BoxGeometry(W,.12,Dd), M("#90A4AE"), E.root); heat.position.y=-.06;
+  function state(){ return T < 0 ? "صلبة" : (T < 100 ? "سائلة" : "غازية"); }
+  onUpdate((dt,t)=>{
+    const s = state(); const sp = 0.4 + Math.abs(T+30)/130*3.2;
+    heat.material.color.set(T>60 ? "#e53935" : T<-10 ? "#4FC3F7" : "#90A4AE");
+    pm.color.set(s==="صلبة" ? "#1565C0" : s==="سائلة" ? "#1E88E5" : "#64B5F6");
+    P.forEach((p,i)=>{
+      if(s==="صلبة"){ const home = lattice[i].clone().add(new THREE.Vector3(0,.0,0)); p.position.lerp(home, .08); p.position.x += Math.sin(t*25+i)*.004*(T+40)/40; p.position.y += Math.cos(t*23+i*2)*.004*(T+40)/40; }
+      else { const v = p.userData.v; if(s==="سائلة"){ v.y -= dt*3.2; } v.clampLength(0, 9); p.position.addScaledVector(v, dt*sp);
+        const lim = [W/2-.13, Hh-.13, Dd/2-.13]; const yMax = s==="سائلة" ? 1.45 : lim[1];
+        if(Math.abs(p.position.x)>lim[0]){ p.position.x = Math.sign(p.position.x)*lim[0]; v.x*=-1; }
+        if(Math.abs(p.position.z)>lim[2]){ p.position.z = Math.sign(p.position.z)*lim[2]; v.z*=-1; }
+        if(p.position.y<.13){ p.position.y=.13; v.y=Math.abs(v.y)*(s==="سائلة"?.6:1)+(s==="سائلة"?Math.random()*.5:0); }
+        if(p.position.y>yMax){ p.position.y=yMax; v.y=-Math.abs(v.y); }
+        if(s==="غازية" && v.length()<2) v.multiplyScalar(1.05); if(s==="سائلة"){ v.x += (Math.random()-.5)*.5; v.z += (Math.random()-.5)*.5; }
+      }
+    });
+  });
+  function apply(v){ const prev = state(); T = v; const s = state(); st.userData.set(`الحالة ${s} — ${T} °س`);
+    const desc = {"صلبة":"الجزيئات متقاربة جدًا ومرتبة، تهتز في أماكنها فقط؛ لذلك للمادة الصلبة شكل وحجم ثابتان.", "سائلة":"الجزيئات متقاربة لكنها تنزلق فوق بعضها؛ للسائل حجم ثابت ويأخذ شكل الإناء.", "غازية":"الجزيئات متباعدة جدًا وسريعة الحركة وتملأ الإناء كله؛ ليس للغاز شكل ولا حجم ثابتان."}[s];
+    info.innerHTML = `<div class="big">${s}</div>${desc}${prev!==s?`<div style="margin-top:6px;color:#9A6B1F;font-weight:800">↻ ${({"صلبة>سائلة":"انصهار","سائلة>غازية":"غليان / تبخّر","غازية>سائلة":"تكاثف","سائلة>صلبة":"تجمّد"})[prev+">"+s]||""}</div>`:""}`;
+    if(s!=="صلبة" && prev==="صلبة") P.forEach(p=>p.userData.v.set((Math.random()-.5)*2,(Math.random())*2,(Math.random()-.5)*2));
+  }
+  UI.reset(this.t, this.g);
+  const s = UI.sec("درجة الحرارة (الماء)");
+  const sl = UI.slider(s, {label:"درجة الحرارة", min:-30, max:140, value:-10, unit:" °س", onInput:apply});
+  UI.buttons(s, [{t:"🧊 جليد −10°", on:()=>{ sl.set(-10); apply(-10); }},{t:"💧 ماء 25°", on:()=>{ sl.set(25); apply(25); }},{t:"♨️ بخار 120°", on:()=>{ sl.set(120); apply(120); }}]);
+  const info = UI.info(); apply(-10);
+  UI.steps([
+    {t:"المادة وجزيئاتها", d:"تتكون المادة من جزيئات صغيرة جدًا في حركة مستمرة، وتعتمد حالة المادة على قوة الترابط بينها وسرعة حركتها.", run:()=>{ sl.set(-10); apply(-10); }},
+    {t:"الحالة الصلبة", d:"في الجليد تكون الجزيئات مرتبة ومتقاربة وتهتز في أماكنها.", run:()=>{ sl.set(-20); apply(-20); }},
+    {t:"الانصهار", d:"عند تسخين الجليد إلى صفر درجة مئوية ينصهر ويتحول إلى ماء سائل.", run:()=>{ tweenVal(-20,30,2.5,v=>{ v=Math.round(v); sl.set(v); apply(v); }); }},
+    {t:"الغليان", d:"عند 100 درجة مئوية يغلي الماء ويتحول إلى بخار، وتتحرك الجزيئات بسرعة كبيرة وتملأ الإناء.", run:()=>{ tweenVal(30,120,2.5,v=>{ v=Math.round(v); sl.set(v); apply(v); }); }},
+    {t:"التكاثف والتجمّد", d:"عند التبريد يحدث العكس: يتكاثف البخار إلى ماء، ثم يتجمد الماء إلى جليد.", run:()=>{ tweenVal(120,-15,3.5,v=>{ v=Math.round(v); sl.set(v); apply(v); }); }}
+  ]);
+ }});
+
+/* ---------- 10) Solar system ---------- */
+def({id:"solar", s:"sci", icon:"🪐", t:"المجموعة الشمسية", g:"الصف 3–9", d:"الشمس والكواكب الثمانية تدور في مداراتها. انقر أي كوكب لتعرف معلوماته.", tags:"المجموعة الشمسية الشمس الكواكب عطارد كوكب_الزهرة كوكب_الأرض المريخ المشتري زحل أورانوس نبتون القمر مدار الفضاء",
+ build(){
+  setHome([0,10,18],[0,0,0]); if(!E.ar){ E.grid.visible=false; E.floor.visible=false; }
+  const sunM = new THREE.MeshBasicMaterial({color:0xFDB813}); const sun = mesh(new THREE.SphereGeometry(1.4,48,32), sunM, E.root); sun.position.y = 1.5; sun.castShadow=false;
+  const glowC = document.createElement("canvas"); glowC.width=glowC.height=256; const gx=glowC.getContext("2d"); const gr=gx.createRadialGradient(128,128,20,128,128,128); gr.addColorStop(0,"rgba(255,210,80,.9)"); gr.addColorStop(1,"rgba(255,160,0,0)"); gx.fillStyle=gr; gx.fillRect(0,0,256,256);
+  const glow = new THREE.Sprite(new THREE.SpriteMaterial({map:new THREE.CanvasTexture(glowC), transparent:true, depthWrite:false})); glow.scale.set(6,6,1); sun.add(glow);
+  const pl = new THREE.PointLight(0xffffff, 1.3, 0, 0); sun.add(pl); E.hemi.intensity = .3; E.sun.intensity = .15;
+  const PL = [["عطارد","#9E9E9E",.18,2.6,4.15,"أقرب الكواكب إلى الشمس وأصغرها. ليس له أقمار.","88 يومًا","0"],["الزهرة","#E8C27A",.3,3.5,1.62,"أشد الكواكب حرارة بسبب غلافه الجوي الكثيف من ثاني أكسيد الكربون.","225 يومًا","0"],["الأرض","#3C8DDE",.32,4.6,1,"الكوكب الوحيد المعروف بوجود الحياة والماء السائل على سطحه.","365 يومًا","1"],["المريخ","#D2553A",.24,5.7,.53,"الكوكب الأحمر بسبب أكسيد الحديد في تربته.","687 يومًا","2"],["المشتري","#D8A47F",.8,7.6,.084,"أكبر كواكب المجموعة الشمسية، كوكب غازي فيه البقعة الحمراء العظيمة.","12 سنة","95"],["زحل","#E3CB8F",.68,9.6,.034,"يتميز بحلقاته الجميلة المكونة من الجليد والصخور.","29 سنة","146"],["أورانوس","#9ED7E3",.48,11.3,.012,"يدور وهو مائل على جانبه تقريبًا.","84 سنة","28"],["نبتون","#4067D8",.46,12.8,.006,"أبعد الكواكب عن الشمس، رياحه هي الأسرع في المجموعة الشمسية.","165 سنة","16"]];
+  const bodies = []; let speed = 1;
+  PL.forEach(([n,c,r,d,w,fact,year,moons],i)=>{
+    const orbit = new THREE.Mesh(new THREE.RingGeometry(d-.01,d+.01,128), new THREE.MeshBasicMaterial({color:0xb7a98a, side:THREE.DoubleSide, transparent:true, opacity:.55})); orbit.rotation.x=-Math.PI/2; orbit.position.y=1.5; E.root.add(orbit);
+    const pivot = new THREE.Group(); pivot.position.y=1.5; pivot.rotation.y = Math.random()*Math.PI*2; E.root.add(pivot);
+    const p = mesh(new THREE.SphereGeometry(r,32,24), M(c,{roughness:.8}), pivot); p.position.x = d;
+    if(n==="زحل"){ const ring = new THREE.Mesh(new THREE.RingGeometry(r*1.3,r*2.2,64), new THREE.MeshStandardMaterial({color:0xd9c08a, side:THREE.DoubleSide, transparent:true, opacity:.8})); ring.rotation.x = -Math.PI/2.4; p.add(ring); }
+    if(n==="الأرض"){ const moon = mesh(new THREE.SphereGeometry(.08,16,12), M("#cfcfcf"), p); moon.position.x=.55; p.userData.moon = moon; }
+    const lb = label(n, [d, r+.45, 0], {size:.26, parent:pivot});
+    clickable(p, ()=>{ info.innerHTML = `<div class="big">${n}</div>${fact}<br>⏱️ سنته (دورة حول الشمس): <b>${year}</b><br>🌙 عدد الأقمار: <b>${moons}</b><br>📍 ترتيبه من الشمس: <b>${i+1}</b>`; const wp = new THREE.Vector3(); p.getWorldPosition(wp); camTo([wp.x+r*6, wp.y+r*3, wp.z+r*6],[wp.x,wp.y,wp.z],1.2); speak(n+". "+fact); });
+    bodies.push({pivot, p, w});
+  });
+  label("الشمس", [0,3.4,0], {size:.36});
+  onUpdate((dt)=>{ bodies.forEach(b=>{ b.pivot.rotation.y += dt*.35*b.w*speed; b.p.rotation.y += dt; if(b.p.userData.moon){ b.p.rotation.y += dt*2; } }); sun.rotation.y += dt*.1; });
+  if(!E.ar) E.scene.background = new THREE.Color(0x0b1026);
+  const stars = new THREE.BufferGeometry(); const sp = []; for(let i=0;i<1500;i++){ const v = new THREE.Vector3().randomDirection().multiplyScalar(60+Math.random()*40); sp.push(v.x,v.y,v.z); } stars.setAttribute("position", new THREE.Float32BufferAttribute(sp,3));
+  const starPts = new THREE.Points(stars, new THREE.PointsMaterial({color:0xffffff, size:.15})); E.root.add(starPts); starPts.visible = !E.ar;
+  UI.reset(this.t, this.g);
+  const s = UI.sec("التحكّم");
+  UI.slider(s, {label:"سرعة الحركة", min:0, max:400, value:100, unit:"%", onInput:v=>speed=v/100});
+  UI.buttons(s, [{t:"🔭 منظر علوي", on:()=>camTo([0,26,1],[0,0,0])},{t:"🌍 الأرض", on:()=>bodies[2].p.userData.onClick()},{t:"🪐 زحل", on:()=>bodies[5].p.userData.onClick()}]);
+  const info = UI.info(); info.innerHTML = "انقر على أي كوكب لمعرفة معلوماته.";
+  UI.steps([
+    {t:"المجموعة الشمسية", d:"تتكون من الشمس وثمانية كواكب تدور حولها في مدارات، إضافة إلى الأقمار والكويكبات والمذنبات.", run:()=>camTo([0,10,18],[0,0,0])},
+    {t:"الكواكب الداخلية", d:"عطارد والزهرة والأرض والمريخ: كواكب صخرية صغيرة وقريبة من الشمس.", run:()=>camTo([0,7,8],[0,1.5,0])},
+    {t:"الكواكب الخارجية", d:"المشتري وزحل وأورانوس ونبتون: كواكب غازية عملاقة وبعيدة عن الشمس.", run:()=>camTo([0,14,22],[0,1.5,0])},
+    {t:"كوكب الأرض", d:"تدور الأرض حول الشمس مرة كل سنة (365 يومًا) فتتكون الفصول، ويدور القمر حولها.", run:()=>bodies[2].p.userData.onClick()}
+  ]);
+ }});
+
+/* ---------- 11) Atom builder ---------- */
+def({id:"atom", s:"sci", icon:"⚛️", t:"تركيب الذرة", g:"الصف 7–12", d:"اختر العنصر من 1 إلى 20: البروتونات والنيوترونات في النواة والإلكترونات في المستويات، والتوزيع الإلكتروني.", tags:"ذرة الذرة نواة بروتون نيوترون إلكترون مستويات الطاقة التوزيع الإلكتروني العدد الذري العدد الكتلي عنصر الجدول الدوري",
+ build(){
+  setHome([0,3.4,8.5],[0,2,0]);
+  const EL = [["هيدروجين","H",1],["هيليوم","He",4],["ليثيوم","Li",7],["بيريليوم","Be",9],["بورون","B",11],["كربون","C",12],["نيتروجين","N",14],["أكسجين","O",16],["فلور","F",19],["نيون","Ne",20],["صوديوم","Na",23],["مغنيسيوم","Mg",24],["ألومنيوم","Al",27],["سيليكون","Si",28],["فوسفور","P",31],["كبريت","S",32],["كلور","Cl",35],["أرجون","Ar",40],["بوتاسيوم","K",39],["كالسيوم","Ca",40]];
+  const g = new THREE.Group(); g.position.y = 2; E.root.add(g); let Z = 6; const title = label("", [0,5,0], {size:.4});
+  let electrons = [];
+  function build(){
+    g.traverse(o=>{ if(o.geometry) o.geometry.dispose(); }); g.clear(); electrons = [];
+    const [n,sym,A] = EL[Z-1], N = A - Z, shells = []; let left = Z; [2,8,8,2].forEach(c=>{ if(left>0){ shells.push(Math.min(c,left)); left -= Math.min(c,left); } });
+    const nuc = []; for(let i=0;i<Z;i++) nuc.push("p"); for(let i=0;i<N;i++) nuc.push("n"); nuc.sort(()=>Math.random()-.5);
+    const rN = .16 * Math.cbrt(A) + .05;
+    nuc.forEach((k,i)=>{ const v = new THREE.Vector3().randomDirection().multiplyScalar(Math.cbrt(Math.random())*rN*1.6); const s = mesh(new THREE.SphereGeometry(.13,16,12), M(k==="p"?"#E53935":"#9E9E9E",{roughness:.4}), g); s.position.copy(v); });
+    shells.forEach((cnt,si)=>{ const R = .9 + si*.75; const sh = new THREE.Group(); sh.rotation.set(Math.PI/2 + si*.35, si*.7, si*.2); g.add(sh);
+      sh.add(new THREE.Mesh(new THREE.TorusGeometry(R,.01,6,128), new THREE.MeshBasicMaterial({color:0x0B5457, transparent:true, opacity:.5})));
+      for(let e=0;e<cnt;e++){ const el = mesh(new THREE.SphereGeometry(.08,14,10), M("#1E88E5",{emissive:"#1E88E5",emissiveIntensity:.4}), sh); electrons.push({el, R, a:e/cnt*Math.PI*2, w:1.4/(si+1)}); } });
+    title.userData.set(`${n} (${sym})`);
+    info.innerHTML = `<div class="big">${n} — ${sym}</div>العدد الذري (عدد البروتونات): <b>${Z}</b><br>العدد الكتلي: <b>${A}</b> · النيوترونات = ${A} − ${Z} = <b>${N}</b><br>الإلكترونات: <b>${Z}</b> (الذرة متعادلة كهربائيًا)<br>التوزيع الإلكتروني: <bdi dir="ltr"><b>${shells.join(" , ")}</b></bdi><br>الدورة: <b>${shells.length}</b> · إلكترونات التكافؤ: <b>${shells[shells.length-1]}</b>`;
+  }
+  onUpdate((dt)=>{ electrons.forEach(e=>{ e.a += dt*e.w*2; e.el.position.set(Math.cos(e.a)*e.R, Math.sin(e.a)*e.R, 0); }); });
+  UI.reset(this.t, this.g);
+  const s = UI.sec("العنصر");
+  const sl = UI.slider(s, {label:"العدد الذري", min:1, max:20, value:Z, fmt:v=>`${v} — ${EL[v-1][0]}`, onInput:v=>{ Z=v; build(); }});
+  UI.buttons(s, [{t:"H",on:()=>{Z=1;sl.set(1);build();}},{t:"C",on:()=>{Z=6;sl.set(6);build();}},{t:"O",on:()=>{Z=8;sl.set(8);build();}},{t:"Na",on:()=>{Z=11;sl.set(11);build();}},{t:"Cl",on:()=>{Z=17;sl.set(17);build();}},{t:"Ca",on:()=>{Z=20;sl.set(20);build();}}]);
+  const info = UI.info(); build();
+  UI.steps([
+    {t:"الذرة", d:"الذرة أصغر جزء من العنصر يحمل صفاته، وتتكون من نواة في المركز تدور حولها إلكترونات.", run:()=>{ Z=6; sl.set(6); build(); }},
+    {t:"النواة", d:"تحتوي النواة على بروتونات موجبة الشحنة (بالأحمر) ونيوترونات متعادلة (بالرمادي).", run:()=>camTo([0,2.4,3],[0,2,0])},
+    {t:"الإلكترونات ومستويات الطاقة", d:"الإلكترونات سالبة الشحنة وتدور في مستويات: الأول يتسع لإلكترونين، والثاني لثمانية، والثالث لثمانية (في أول 20 عنصرًا).", run:()=>{ Z=11; sl.set(11); build(); camTo([0,3.4,8.5],[0,2,0]); }},
+    {t:"التوزيع الإلكتروني", d:"اختر عناصر مختلفة ولاحظ كيف تمتلئ المستويات، وأن عدد الإلكترونات يساوي عدد البروتونات في الذرة المتعادلة.", run:()=>{ Z=17; sl.set(17); build(); }}
+  ]);
+ }});
+
+/* ---------- 12) Electric circuit ---------- */
+def({id:"circuit", s:"sci", icon:"💡", t:"الدارة الكهربائية", g:"الصف 4–9", d:"بطارية ومفتاح ومصابيح: افتح وأغلق الدارة، وقارن التوصيل على التوالي والتوازي، وشاهد حركة الإلكترونات.", tags:"دارة كهربائية الكهرباء بطارية مصباح مفتاح توالي توازي تيار إلكترونات موصل عازل",
+ build(){
+  setHome([0,6,7],[0,.5,0]);
+  let closed = true, mode = "series", volts = 1;
+  const board = mesh(new THREE.BoxGeometry(8,.2,5), M("#EFE6D2",{roughness:.9}), E.root); board.position.y=-.1;
+  const wireM = M("#C62828",{roughness:.4}), parts = new THREE.Group(); E.root.add(parts);
+  let bulbs = [], paths = [], dots = [], sw, swArm;
+  function bulb(x,z){ const b = new THREE.Group(); b.position.set(x,0,z); parts.add(b);
+    mesh(new THREE.CylinderGeometry(.22,.26,.35,20), M("#9E9E9E",{metalness:.6}), b).position.y=.18;
+    const gm = new THREE.MeshStandardMaterial({color:0xfff6d5, transparent:true, opacity:.6, emissive:0x000000, roughness:.1}); const gl = mesh(new THREE.SphereGeometry(.38,24,18), gm, b); gl.position.y=.7;
+    const light = new THREE.PointLight(0xffd54f, 0, 6); light.position.y=.7; b.add(light); return {gm, light}; }
+  function wire(pts){ const c = new THREE.CatmullRomCurve3(pts.map(p=>new THREE.Vector3(p[0],.12,p[1])), false, "catmullrom", 0.0001); mesh(new THREE.TubeGeometry(c, 80, .05, 8), wireM, parts); return c; }
+  function build(){
+    parts.traverse(o=>{ if(o.geometry) o.geometry.dispose(); }); parts.clear(); bulbs=[]; paths=[]; dots.forEach(d=>E.root.remove(d)); dots=[];
+    // battery
+    const bat = new THREE.Group(); bat.position.set(-3,0,0); parts.add(bat);
+    const cell = mesh(new THREE.CylinderGeometry(.35,.35,1.6,24), M("#263238"), bat); cell.rotation.x=Math.PI/2; cell.position.y=.35;
+    const cap = mesh(new THREE.CylinderGeometry(.36,.36,.5,24), M("#F9A825"), bat); cap.rotation.x=Math.PI/2; cap.position.set(0,.35,-.55);
+    label("+", [-3,.9,-.8], {size:.25, parent:parts, color:"#B23A3A"}); label("−", [-3,.9,.8], {size:.25, parent:parts});
+    label("البطارية", [-3,1.4,0], {size:.22, parent:parts});
+    // switch
+    sw = new THREE.Group(); sw.position.set(0,0,1.8); parts.add(sw); mesh(new THREE.BoxGeometry(.9,.12,.4), M("#5D4037"), sw).position.y=.06;
+    swArm = mesh(new THREE.BoxGeometry(.8,.05,.08), M("#B0BEC5",{metalness:.7}), sw); swArm.geometry.translate(.4,0,0); swArm.position.set(-.4,.18,0); swArm.rotation.z = closed?0:.6;
+    clickable(sw, ()=>{ closed=!closed; refresh(); }); label("المفتاح (انقر)", [0,.85,1.8], {size:.2, parent:parts});
+    if(mode==="series"){
+      const b1 = bulb(1.2,-1.8), b2 = bulb(3,-0.2); bulbs=[b1,b2];
+      paths.push(wire([[-3,-.8],[-3,-1.8],[1.2,-1.8],[3,-1.8],[3,-.2],[3,1.8],[.4,1.8],[-.4,1.8],[-3,1.8],[-3,.8]]));
+    } else {
+      const b1 = bulb(1.2,-1.8), b2 = bulb(1.2,0); bulbs=[b1,b2];
+      paths.push(wire([[-3,-.8],[-3,-1.8],[1.2,-1.8],[3,-1.8],[3,1.8],[.4,1.8],[-.4,1.8],[-3,1.8],[-3,.8]]));
+      paths.push(wire([[-1.6,-1.8],[-1.6,0],[1.2,0],[3,0],[3,-1.8]]));
+      label("فرع ثانٍ", [-1.6,.6,-.6], {size:.18, parent:parts});
+    }
+    for(let i=0;i<46;i++){ const d = mesh(new THREE.SphereGeometry(.05,10,8), M("#FFEB3B",{emissive:"#FFEB3B",emissiveIntensity:.8}), E.root); d.userData = {u:i/46, path: paths[mode==="parallel" && i%3===0 ? 1 : 0]}; dots.push(d); }
+    refresh();
+  }
+  function refresh(){
+    swArm.rotation.z = closed ? 0 : .6;
+    const n = bulbs.length, bright = !closed ? 0 : (mode==="series" ? volts/n : volts);
+    bulbs.forEach(b=>{ b.gm.emissive.set(bright>0?0xffc107:0x000000); b.gm.emissiveIntensity = bright*1.6; b.light.intensity = bright*2.2; });
+    dots.forEach(d=>d.visible = closed);
+    info.innerHTML = `<div class="big">${closed?"دارة مغلقة ✔":"دارة مفتوحة ✖"}</div>${closed?"يسري التيار الكهربائي فتضيء المصابيح.":"انقطع مسار التيار فلا تضيء المصابيح."}<br>التوصيل: <b>${mode==="series"?"على التوالي":"على التوازي"}</b><br><small>${mode==="series"?"مسار واحد للتيار: إذا تلف مصباح انطفأ الآخر، وتقل الإضاءة كلما زاد عدد المصابيح.":"لكل مصباح مسار مستقل: إذا تلف مصباح يبقى الآخر مضيئًا، وتبقى الإضاءة قوية."}</small>`;
+  }
+  onUpdate((dt)=>{ if(!closed) return; dots.forEach(d=>{ d.userData.u = (d.userData.u + dt*.08*volts) % 1; d.position.copy(d.userData.path.getPointAt(d.userData.u)); d.position.y = .2; }); });
+  UI.reset(this.t, this.g);
+  const s = UI.sec("التحكّم");
+  UI.buttons(s, [{t:"🔌 فتح / إغلاق المفتاح", on:()=>{ closed=!closed; refresh(); }}]);
+  UI.buttons(s, [{t:"على التوالي", on0:true, on:()=>{ mode="series"; build(); }},{t:"على التوازي", on:()=>{ mode="parallel"; build(); }}], {radio:true});
+  UI.slider(s, {label:"عدد البطاريات", min:1, max:3, value:1, onInput:v=>{ volts=v; refresh(); }});
+  const info = UI.info(); build();
+  UI.steps([
+    {t:"الدارة الكهربائية", d:"مسار مغلق يسري فيه التيار الكهربائي، ويتكون من مصدر (بطارية) وأسلاك ومفتاح وجهاز (مصباح).", run:()=>{ closed=true; mode="series"; build(); }},
+    {t:"الدارة المفتوحة", d:"عند فتح المفتاح ينقطع المسار فيتوقف التيار وتنطفئ المصابيح.", run:()=>{ closed=false; refresh(); }},
+    {t:"التوصيل على التوالي", d:"المصابيح على مسار واحد؛ تتقاسم الطاقة فتقل إضاءتها، وإذا تلف أحدها انطفأ الجميع.", run:()=>{ closed=true; mode="series"; build(); }},
+    {t:"التوصيل على التوازي", d:"لكل مصباح فرع مستقل؛ تبقى الإضاءة قوية، وإذا تلف مصباح يبقى الآخر مضيئًا — وهكذا تُوصل أجهزة منازلنا.", run:()=>{ closed=true; mode="parallel"; build(); }}
+  ]);
+ }});
+
+/* ---------- 13) Computer components ---------- */
+def({id:"computer", s:"it", icon:"🖥️", t:"مكونات الحاسوب من الداخل", g:"الصف 3–10", d:"افتح صندوق الحاسوب وفكّك مكوناته: المعالج، الذاكرة، اللوحة الأم، بطاقة الرسوميات، التخزين، مزود الطاقة.", tags:"حاسوب الحاسوب مكونات المعالج وحدة المعالجة المركزية الذاكرة RAM اللوحة الأم القرص الصلب SSD مزود الطاقة بطاقة الرسوميات مدخلات مخرجات عتاد",
+ build(){
+  setHome([7,5,8.5],[0,1.8,0]);
+  const caseG = new THREE.Group(); E.root.add(caseG);
+  const shell = mesh(new THREE.BoxGeometry(2.2,3.6,4), new THREE.MeshPhysicalMaterial({color:0x263238, transparent:true, opacity:.18, side:THREE.DoubleSide, depthWrite:false}), caseG); shell.position.y=1.8;
+  caseG.add(new THREE.LineSegments(new THREE.EdgesGeometry(shell.geometry), new THREE.LineBasicMaterial({color:0x37474F}))).position.y=1.8;
+  const PARTS = [];
+  function part(name, desc, color, geo, pos, explode, extra){ const m = mesh(geo, M(color,{roughness:.45, metalness:.2}), E.root); m.position.set(...pos); m.userData.home = new THREE.Vector3(...pos); m.userData.out = new THREE.Vector3(...pos).add(new THREE.Vector3(...explode)); extra && extra(m);
+    const lb = label(name, [0,0,0], {size:.2}); lb.visible=false; m.userData.lb = lb;
+    clickable(m, ()=>select(m)); m.userData.name=name; m.userData.desc=desc; PARTS.push(m); return m; }
+  const mb = part("اللوحة الأم", "اللوحة الرئيسية التي تُركّب عليها كل المكونات وتربط بينها بمسارات نحاسية لنقل البيانات والطاقة.", "#2E7D32", new THREE.BoxGeometry(.08,3,3.4), [-.95,1.9,0], [-1.6,0,0]);
+  const cpu = part("المعالج (CPU)", "وحدة المعالجة المركزية: «عقل» الحاسوب، تنفّذ التعليمات وتجري العمليات الحسابية والمنطقية. تُقاس سرعته بالجيجاهيرتز.", "#B0BEC5", new THREE.BoxGeometry(.12,.55,.55), [-.85,2.6,.4], [-.3,1.4,.6], m=>{ const fan = mesh(new THREE.CylinderGeometry(.42,.42,.18,24), M("#424242"), m); fan.rotation.z=Math.PI/2; fan.position.x=.2; m.userData.fan=fan; });
+  const ram = part("الذاكرة العشوائية (RAM)", "ذاكرة مؤقتة سريعة يحفظ فيها الحاسوب البرامج والبيانات أثناء العمل، وتُمحى عند إطفاء الجهاز.", "#1565C0", new THREE.BoxGeometry(.32,.1,1.2), [-.75,2.6,-.75], [-.2,1.4,-1.2], m=>{ m.rotation.x=Math.PI/2; const r2 = mesh(new THREE.BoxGeometry(.32,.1,1.2), M("#1565C0"), m); r2.position.y=.18; });
+  const gpu = part("بطاقة الرسوميات (GPU)", "تعالج الصور والفيديو والرسوم ثلاثية الأبعاد وترسلها إلى الشاشة.", "#37474F", new THREE.BoxGeometry(1.3,.25,2.2), [-.25,1.5,.2], [.8,-.2,1.6], m=>{ [-.5,.5].forEach(z=>{ const f = mesh(new THREE.CylinderGeometry(.35,.35,.06,20), M("#212121"), m); f.position.set(0,-.15,z); }); });
+  const ssd = part("وحدة التخزين (SSD / HDD)", "تحفظ البيانات والبرامج ونظام التشغيل بشكل دائم حتى بعد إطفاء الجهاز. SSD أسرع من القرص الصلب HDD.", "#455A64", new THREE.BoxGeometry(.9,.12,1.3), [.4,.6,-1.2], [1.3,.2,-1.6]);
+  const psu = part("مزود الطاقة (PSU)", "يحوّل الكهرباء من المقبس (تيار متردد) إلى جهد مناسب (تيار مستمر) يغذّي جميع المكونات.", "#212121", new THREE.BoxGeometry(1.6,.9,1.3), [.1,.5,1.25], [1.2,-.3,1.8]);
+  const fanC = part("مروحة التبريد", "تطرد الهواء الساخن خارج الصندوق لحماية المكونات من ارتفاع الحرارة.", "#607D8B", new THREE.CylinderGeometry(.55,.55,.12,24), [0,2.6,-1.95], [0,.8,-1.4], m=>{ m.rotation.x=Math.PI/2; });
+  let exploded = 0, cur = null;
+  function select(m){ cur = m; PARTS.forEach(p=>{ p.material.emissive.set(p===m?0x3DB8A8:0x000000); p.material.emissiveIntensity = p===m?.55:0; p.userData.lb.visible = p===m; });
+    const wp = m.position.clone(); m.userData.lb.position.set(wp.x, wp.y+.75, wp.z); info.innerHTML = `<div class="big">${m.userData.name}</div>${m.userData.desc}`; speak(m.userData.name+". "+m.userData.desc); }
+  function setExplode(to){ const from = exploded; tweenVal(from, to, 1.4, k=>{ exploded=k; PARTS.forEach(p=>p.position.lerpVectors(p.userData.home, p.userData.out, k)); shell.material.opacity = .18*(1-k)+.04; if(cur) select(cur); }); }
+  onUpdate(dt=>{ if(cpu.userData.fan) cpu.userData.fan.rotation.y += dt*12; fanC.rotation.y += dt*10; });
+  UI.reset(this.t, this.g);
+  const s = UI.sec("العرض");
+  UI.buttons(s, [{t:"🧩 تفكيك المكونات", on:()=>setExplode(1)},{t:"📦 إعادة التركيب", on:()=>setExplode(0)}]);
+  UI.buttons(s, PARTS.map(p=>({t:p.userData.name.split(" (")[0], on:()=>select(p)})));
+  const info = UI.info(); info.innerHTML = "انقر على أي مكوّن لمعرفة وظيفته.";
+  UI.steps([
+    {t:"صندوق الحاسوب", d:"يحتوي صندوق الحاسوب على المكونات المادية (العتاد) التي تعمل معًا لمعالجة البيانات.", run:()=>setExplode(0)},
+    {t:"تفكيك المكونات", d:"لنفكّك الصندوق ونتعرف على كل قطعة.", run:()=>setExplode(1)},
+    ...[cpu,ram,mb,gpu,ssd,psu,fanC].map(p=>({t:p.userData.name, d:p.userData.desc, run:()=>{ if(exploded<1) setExplode(1); select(p); }})),
+    {t:"دورة معالجة البيانات", d:"مدخلات (لوحة المفاتيح والفأرة) ← معالجة (المعالج والذاكرة) ← مخرجات (الشاشة والطابعة) ← تخزين (SSD).", run:()=>select(cpu)}
+  ]);
+ }});
+
+/* =====================================================================
+   AI scene — any lesson → JSON scene DSL → 3D
+   ===================================================================== */
+function matchBuiltin(text){ const t = " "+String(text||"").replace(/[^\u0600-\u06FFA-Za-z0-9 ]/g," ")+" "; let best=null, sc=0;
+  XP.forEach(x=>{ const n = x.tags.split(/\s+/).map(w=>w.replace(/_/g," ")).filter(w=>w.length>2 && (t.includes(" "+w+" ") || t.includes(" ال"+w+" ") || (w.length>=5 && (t.includes(" "+w) || t.includes(" ال"+w))))).reduce((a,w)=>a+w.length,0); if(n>sc){ sc=n; best=x; } });
+  return sc>=4 ? best : null; }
+async function aiScene(subject, grade, topic){
+  const prompt = `أنت مصمم تجارب تعليمية ثلاثية الأبعاد (واقع معزز) لمعلم في سلطنة عمان.
+المادة: ${subject}. الصف: ${grade}. الدرس: ${topic}.
+صمّم مشهدًا ثلاثي الأبعاد يشرح الدرس بصريًا باستخدام أشكال هندسية بسيطة مركّبة بذكاء (مثل نموذج تعليمي مجسّم)، مع شرح خطوة بخطوة واختبار قصير.
+أعد JSON فقط بهذه البنية:
+{"title":"عنوان قصير","intro":"جملة تعريفية",
+"objects":[{"id":"a1","type":"box|sphere|cylinder|cone|torus|plane|capsule|ring|arrow|text","pos":[x,y,z],"size":[...],"rot":[x,y,z],"color":"#hex","label":"اسم عربي قصير أو فارغ","opacity":1,"anim":{"type":"none|rotate|orbit|bounce|pulse|float","speed":1,"axis":"y","center":[x,y,z],"radius":2}}],
+"steps":[{"title":"عنوان الخطوة","text":"شرح من جملتين","show":["ids تظهر في هذه الخطوة"],"focus":"id للتركيز","highlight":["ids"]}],
+"quiz":[{"q":"سؤال","options":["أ","ب","ج","د"],"answer":"النص الصحيح"}]}
+قواعد: الوحدة متر تقريبًا، المشهد داخل مكعب من -4 إلى 4 أفقيًا ومن 0 إلى 5 رأسيًا، والأرض y=0 (ضع الأجسام فوقها).
+size: box=[عرض,ارتفاع,عمق]، sphere=[نصف قطر]، cylinder/cone=[نصف قطر,ارتفاع]، torus/ring=[نصف القطر,السمك]، plane=[عرض,طول]، capsule=[نصف قطر,طول]، arrow: pos=البداية و size=[dx,dy,dz] الاتجاه والطول، text: label هو النص و size=[حجم الخط 0.2-0.6].
+استخدم 12 إلى 35 جسمًا بألوان واقعية، و5 إلى 7 خطوات تُظهر الأجسام تدريجيًا، و3 أسئلة اختيار من متعدد. كل النصوص بالعربية الفصحى المناسبة للصف.`;
+  const r = await fetch("/api/ai", {method:"POST", credentials:"same-origin", headers:{"content-type":"application/json"}, body:JSON.stringify({prompt, tier:"default", json:true})});
+  const d = await r.json().catch(()=>({}));
+  if(r.status===401) throw new Error("auth");
+  if(!r.ok || !d.text) throw new Error(d.error||"ai");
+  let s = String(d.text).replace(/```(?:json)?/gi,"").trim(); const a = s.indexOf("{"), b = s.lastIndexOf("}");
+  return JSON.parse(s.slice(a, b+1));
+}
+function num(v, d){ v = +v; return isFinite(v) ? v : d; }
+function vec(a, d){ return [0,1,2].map(i=>num(Array.isArray(a)?a[i]:undefined, d[i])); }
+function buildAIScene(S, meta){
+  clearScene(); setHome([0,4,10],[0,1.5,0]);
+  const objs = {}, all = [];
+  (Array.isArray(S.objects)?S.objects:[]).slice(0,45).forEach((o,i)=>{
+    const id = String(o.id||("o"+i)), t = String(o.type||"box").toLowerCase(), sz = Array.isArray(o.size)?o.size.map(x=>clamp(num(x,1),.02,8)):[];
+    const col = /^#?[0-9a-f]{3,6}$/i.test(String(o.color||"")) ? (String(o.color).startsWith("#")?o.color:"#"+o.color) : "#3DB8A8";
+    const op = clamp(num(o.opacity,1),.1,1); const mat = M(col, op<1?{transparent:true, opacity:op, depthWrite:false}:{});
+    let geo = null, node;
+    const s0=sz[0]||1, s1=sz[1]||s0, s2=sz[2]||s0;
+    switch(t){
+      case "sphere": geo = new THREE.SphereGeometry(s0*.5>4?4:Math.max(s0,.05),32,24); break;
+      case "cylinder": geo = new THREE.CylinderGeometry(s0,s0,s1,32); break;
+      case "cone": geo = new THREE.ConeGeometry(s0,s1,32); break;
+      case "torus": geo = new THREE.TorusGeometry(s0, Math.min(s1,.5*s0)||.1, 16, 48); break;
+      case "ring": geo = new THREE.TorusGeometry(s0, Math.min(s1||.04,.3), 8, 64); break;
+      case "plane": geo = new THREE.PlaneGeometry(s0, s1); mat.side = THREE.DoubleSide; break;
+      case "capsule": geo = new THREE.CapsuleGeometry(s0, s1, 6, 16); break;
+      case "arrow": { const dir = new THREE.Vector3(num(sz[0],1), num(sz[1],0), num(sz[2],0)); const len = clamp(dir.length(),.2,8); node = new THREE.ArrowHelper(dir.normalize(), new THREE.Vector3(...vec(o.pos,[0,0,0])), len, new THREE.Color(col).getHex(), Math.min(.4,len*.3), Math.min(.22,len*.18)); E.root.add(node); break; }
+      case "text": node = label(String(o.label||""), vec(o.pos,[0,1,0]), {size:clamp((s0||.35)*.7,.1,.4)}); break;
+      default: geo = new THREE.BoxGeometry(s0, s1, s2);
+    }
+    if(geo){ node = mesh(geo, mat); node.position.set(...vec(o.pos,[0,.5,0])); const r = vec(o.rot,[0,0,0]); node.rotation.set(r[0]*(Math.abs(r[0])>6.3?D2R:1), r[1]*(Math.abs(r[1])>6.3?D2R:1), r[2]*(Math.abs(r[2])>6.3?D2R:1)); }
+    if(!node) return;
+    if(o.label && t!=="text"){ const bb = new THREE.Box3().setFromObject(node); const lb = label(String(o.label), [node.position.x, bb.max.y+.3, node.position.z], {size:.17}); node.userData.lb = lb; }
+    node.userData.id = id; node.userData.base = node.position.clone(); node.userData.anim = o.anim||{}; node.userData.t0 = Math.random()*6;
+    if(geo){ clickable(node, ()=>{ if(o.label){ toast(o.label); speak(o.label); } flash(node); }); }
+    objs[id] = node; all.push(node);
+  });
+  // fit to view
+  const bb = new THREE.Box3(); all.forEach(n=>bb.expandByObject(n)); if(!bb.isEmpty()){ const sz = bb.getSize(new THREE.Vector3()), c = bb.getCenter(new THREE.Vector3()); const k = Math.min(1.6, 8/Math.max(sz.x, sz.z, sz.y*1.4, .5)); E.root.scale.setScalar(k); E.root.position.set(-c.x*k, Math.max(0,-bb.min.y*k), -c.z*k); const H = Math.max(sz.y*k, 2); setHome([0, H*.9+2, Math.max(sz.x,sz.z)*k*1.1+5],[0, H*.45, 0]); }
+  onUpdate((dt,t)=>{ all.forEach(n=>{ const a = n.userData.anim, sp = clamp(num(a.speed,1),.1,5), tt = t + n.userData.t0;
+    switch(a.type){ case "rotate": n.rotation[{x:"x",z:"z"}[a.axis]||"y"] += dt*sp; break;
+      case "orbit": { const c = vec(a.center,[0,n.userData.base.y,0]), R = clamp(num(a.radius, Math.hypot(n.userData.base.x-c[0], n.userData.base.z-c[2])||2),.2,6); n.position.set(c[0]+Math.cos(tt*sp*.6)*R, n.userData.base.y, c[2]+Math.sin(tt*sp*.6)*R); if(n.userData.lb) n.userData.lb.position.set(n.position.x, n.userData.lb.position.y, n.position.z); break; }
+      case "bounce": n.position.y = n.userData.base.y + Math.abs(Math.sin(tt*sp*2))*.4; break;
+      case "float": n.position.y = n.userData.base.y + Math.sin(tt*sp)*.15; break;
+      case "pulse": n.scale.setScalar(1 + Math.sin(tt*sp*3)*.08); break; } }); });
+  function flash(n){ if(!n.material || !n.material.emissive) return; n.material.emissive.set(0xE2B864); n.material.emissiveIntensity=.6; setTimeout(()=>{ n.material.emissiveIntensity=0; }, 900); }
+  UI.reset(S.title || meta.topic, `${meta.subject} — ${meta.grade} · مشهد مولّد بالذكاء الاصطناعي`);
+  const info = UI.info(); info.innerHTML = esc(S.intro || "");
+  const steps = (Array.isArray(S.steps)?S.steps:[]).slice(0,9);
+  const shown = new Set();
+  const anyShow = steps.some(s=>Array.isArray(s.show) && s.show.length);
+  if(anyShow) all.forEach(n=>{ n.visible=false; if(n.userData.lb) n.userData.lb.visible=false; });
+  UI.steps(steps.map((s,i)=>({t:String(s.title||("الخطوة "+(i+1))), d:String(s.text||""), run:()=>{
+    if(anyShow){ all.forEach(n=>{ n.visible=false; if(n.userData.lb) n.userData.lb.visible=false; }); for(let j=0;j<=i;j++) (steps[j].show||[]).forEach(id=>{ const n=objs[id]; if(n){ n.visible=true; if(n.userData.lb) n.userData.lb.visible=true; } });
+      if(i===steps.length-1) all.forEach(n=>{ n.visible=true; if(n.userData.lb) n.userData.lb.visible=true; }); }
+    (s.highlight||[]).forEach(id=>objs[id] && flash(objs[id]));
+    const f = objs[s.focus]; if(f){ const p = new THREE.Vector3(); f.getWorldPosition(p); camTo([p.x+3.5, p.y+2.8, p.z+6],[p.x,p.y,p.z],1.2); } else camTo(E.home.pos.toArray(), E.home.target.toArray(), 1.2);
+  }})));
+  const quiz = (Array.isArray(S.quiz)?S.quiz:[]).slice(0,5);
+  if(quiz.length){ const q = UI.sec("✅ اختبر فهمك"); q.classList.add("quiz"); let score=0, done=0;
+    quiz.forEach(it=>{ const d=document.createElement("div"); d.innerHTML = `<div class="q">${esc(it.q)}</div>`; (it.options||[]).forEach(op=>{ const b=document.createElement("button"); b.className="pill o"; b.textContent=op; b.onclick=()=>{ if(d.dataset.done) return; d.dataset.done=1; done++; const ok = String(op).trim()===String(it.answer).trim(); if(ok) score++; b.classList.add(ok?"good":"bad"); if(!ok) [...d.querySelectorAll(".o")].forEach(x=>{ if(x.textContent.trim()===String(it.answer).trim()) x.classList.add("good"); }); if(done===quiz.length) toast(`نتيجتك ${score} من ${quiz.length}`); }; d.appendChild(b); }); q.appendChild(d); }); }
+  const m = matchBuiltin(meta.topic + " " + (S.title||"")); if(m){ const tip = UI.sec("💡 تجربة جاهزة ذات صلة"); UI.buttons(tip, [{t:m.icon+" "+m.t, on:()=>openXP(m.id)}]); }
+}
+
+/* =====================================================================
+   Home, routing, AR camera, WebXR
+   ===================================================================== */
+let filter = "all";
+function renderHome(){
+  const chips = [["all","الكل"],...Object.entries(SUBJ).map(([k,v])=>[k,v.n])];
+  $("chips").innerHTML = chips.map(([k,n])=>`<button class="chip ${filter===k?"on":""}" data-f="${k}">${n}</button>`).join("");
+  $("grid").innerHTML = XP.filter(x=>filter==="all"||x.s===filter||x.s2===filter).map(x=>`<div class="xp" data-x="${x.id}"><span class="ar">AR</span><div class="ic" style="background:${SUBJ[x.s].c}">${x.icon}</div><h3>${esc(x.t)}</h3><p>${esc(x.d)}</p><div class="meta"><span>${SUBJ[x.s].n}</span><span>${esc(x.g)}</span></div></div>`).join("");
+}
+$("chips").addEventListener("click", e=>{ const c=e.target.closest("[data-f]"); if(c){ filter=c.dataset.f; renderHome(); } });
+$("grid").addEventListener("click", e=>{ const c=e.target.closest("[data-x]"); if(c) openXP(c.dataset.x); });
+function showStage(on){ $("home").style.display = on?"none":""; $("stage").classList.toggle("on", on); $("backHome").hidden = !on; window.dispatchEvent(new Event("resize")); }
+function openXP(id){ const x = XP.find(q=>q.id===id); if(!x) return; showStage(true); clearScene(); E.scene.background = null; if(window.speechSynthesis) speechSynthesis.cancel(); x.build(); history.replaceState(null,"","#"+id); }
+$("backHome").onclick = ()=>{ if(window.speechSynthesis) speechSynthesis.cancel(); clearScene(); showStage(false); history.replaceState(null,"",location.pathname+location.search.replace(/[?&]ai=1[^#]*/,"")); };
+async function runAI(subject, grade, topic){
+  if(!topic){ toast("اكتب عنوان الدرس"); return; }
+  showStage(true); clearScene(); UI.reset(topic, subject+" — "+grade);
+  $("loading").classList.add("on"); $("loadingMsg").textContent = "✨ الذكاء الاصطناعي يصمم المشهد ثلاثي الأبعاد… (10–30 ثانية)";
+  const m = matchBuiltin(topic);
+  try{
+    let S; try{ S = await aiScene(subject, grade, topic); }catch(e1){ if(e1.message==="auth") throw e1; S = await aiScene(subject, grade, topic); }
+    if(!S || !Array.isArray(S.objects) || !S.objects.length) throw new Error("empty");
+    buildAIScene(S, {subject, grade, topic});
+  }catch(e){
+    const msg = e.message==="auth" ? "سجّل الدخول في المنصة أولًا ثم أعد المحاولة." : e.message==="rate_limited" ? "تم بلوغ الحد المسموح من طلبات الذكاء الاصطناعي لهذه الساعة." : "تعذّر بناء المشهد الآن، حاول مرة أخرى أو جرّب صياغة أخرى للدرس.";
+    UI.reset(topic, msg); if(m){ const tip = UI.sec("تجربة جاهزة مناسبة"); UI.buttons(tip,[{t:m.icon+" "+m.t, on:()=>openXP(m.id)}]); }
+    toast(msg);
+  }finally{ $("loading").classList.remove("on"); }
+}
+$("aiGo").onclick = ()=>runAI($("aiSubject").value, $("aiGrade").value, $("aiTopic").value.trim());
+$("aiTopic").addEventListener("keydown", e=>{ if(e.key==="Enter") $("aiGo").click(); });
+
+/* toolbar */
+$("bReset").onclick = ()=>camTo(E.home.pos.toArray(), E.home.target.toArray(), 1);
+$("bSpin").onclick = ()=>{ E.autoSpin = !E.autoSpin; $("bSpin").classList.toggle("on", E.autoSpin); };
+$("bShot").onclick = ()=>{ try{ let url;
+    if(E.ar){ const v=$("cam"), c=document.createElement("canvas"); c.width=E.R.domElement.width; c.height=E.R.domElement.height; const x=c.getContext("2d");
+      const vr = v.videoWidth/v.videoHeight, cr = c.width/c.height; let sw=v.videoWidth, sh=v.videoHeight, sx=0, sy=0; if(vr>cr){ sw=sh*cr; sx=(v.videoWidth-sw)/2; } else { sh=sw/cr; sy=(v.videoHeight-sh)/2; }
+      x.drawImage(v,sx,sy,sw,sh,0,0,c.width,c.height); x.drawImage(E.R.domElement,0,0); url=c.toDataURL("image/png"); }
+    else url = E.R.domElement.toDataURL("image/png");
+    const a=document.createElement("a"); a.href=url; a.download="مختبر_افتراضي.png"; a.click(); }catch(e){ toast("تعذّر حفظ اللقطة"); } };
+$("bFull").onclick = ()=>{ const el = $("stage"); if(document.fullscreenElement) document.exitFullscreen(); else (el.requestFullscreen ? el.requestFullscreen() : Promise.reject()).catch(()=>toast("ملء الشاشة غير مدعوم هنا")); };
+
+/* AR camera mode (works on any phone/laptop with a camera) */
+let camStream = null;
+$("bAR").onclick = async ()=>{
+  if(E.ar){ E.ar=false; if(camStream){ camStream.getTracks().forEach(t=>t.stop()); camStream=null; } $("view").classList.remove("ar"); $("bAR").classList.remove("on"); E.floor.visible = E.grid.visible = true; E.scene.background = null; E.scene.fog = null; return; }
+  try{
+    camStream = await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:"environment"}, width:{ideal:1920}, height:{ideal:1080}}, audio:false});
+    $("cam").srcObject = camStream; await $("cam").play().catch(()=>{});
+    E.ar = true; $("view").classList.add("ar"); $("bAR").classList.add("on"); E.floor.visible = false; E.grid.visible = false; E.scene.background = null; E.scene.fog = null;
+    toast("📷 الواقع المعزز: وجّه الكاميرا، واسحب لتدوير المجسّم وقرّب بإصبعين");
+  }catch(e){ toast(e && e.name==="NotAllowedError" ? "اسمح للمتصفح باستخدام الكاميرا لتفعيل الواقع المعزز" : "لا توجد كاميرا متاحة على هذا الجهاز"); }
+};
+
+/* WebXR immersive AR — place the model on a real surface (Android Chrome / ARCore) */
+let xrHit = null, xrRef = null, reticle = null, placed = false;
+(async ()=>{ try{ if(navigator.xr && await navigator.xr.isSessionSupported("immersive-ar")) $("bXR").hidden = false; }catch(e){} })();
+function xrFrame(frame){
+  if(!frame || !xrHit) return; const pose = frame.getHitTestResults(xrHit)[0]?.getPose(xrRef);
+  if(pose){ reticle.visible = !placed; reticle.matrix.fromArray(pose.transform.matrix); reticle.userData.ok = true; } else { reticle.visible = false; reticle.userData.ok = false; }
+}
+$("bXR").onclick = async ()=>{
+  try{
+    const session = await navigator.xr.requestSession("immersive-ar", {requiredFeatures:["hit-test"], optionalFeatures:["dom-overlay","local-floor"], domOverlay:{root:$("xrOverlay")}});
+    E.R.xr.enabled = true; E.R.xr.setReferenceSpaceType("local"); await E.R.xr.setSession(session);
+    xrRef = await session.requestReferenceSpace("local"); const viewer = await session.requestReferenceSpace("viewer"); xrHit = await session.requestHitTestSource({space:viewer});
+    if(!reticle){ reticle = new THREE.Mesh(new THREE.RingGeometry(.08,.11,32).rotateX(-Math.PI/2), new THREE.MeshBasicMaterial({color:0x3DB8A8})); reticle.matrixAutoUpdate = false; E.scene.add(reticle); }
+    placed = false; E.world.visible = false; E.floor.visible = E.grid.visible = false; E.scene.background = null; E.scene.fog = null; $("xrOverlay").style.display = "block"; E.xr = session;
+    const box = new THREE.Box3().setFromObject(E.root); const span = Math.max(.001, ...box.getSize(new THREE.Vector3()).toArray()); const k = .45/span;
+    session.addEventListener("select", ()=>{ if(!reticle.userData.ok) return; const p = new THREE.Vector3(), q = new THREE.Quaternion(), s = new THREE.Vector3(); reticle.matrix.decompose(p,q,s);
+      E.world.position.copy(p); E.world.scale.setScalar(k); E.world.visible = true; placed = true; reticle.visible = false; $("xrMsg").textContent = "✔ تم وضع المجسّم — تحرّك حوله لتراه من كل الجهات"; });
+    session.addEventListener("end", ()=>{ E.xr=null; xrHit=null; E.R.xr.enabled=false; $("xrOverlay").style.display="none"; E.world.position.set(0,0,0); E.world.scale.setScalar(1); E.world.visible = true; if(reticle) reticle.visible=false; E.floor.visible = E.grid.visible = !E.ar; window.dispatchEvent(new Event("resize")); });
+  }catch(e){ toast("تعذّر تشغيل الواقع المعزز الغامر على هذا الجهاز — استخدم زر 📷 واقع معزز"); }
+};
+$("xrExit").onclick = ()=>E.xr && E.xr.end();
+$("xrPlace").onclick = ()=>{ placed=false; E.world.visible=false; $("xrMsg").textContent="حرّك الهاتف ببطء نحو سطح مستوٍ ثم المس الشاشة"; };
+
+/* boot */
+renderHome();
+document.fonts && document.fonts.ready.then(()=>{ E.scene.traverse(o=>{ if(o.isSprite && o.userData.set && o.userData.text!=null) o.userData.set(o.userData.text); }); });
+(function boot(){
+  const q = new URLSearchParams(location.search);
+  if(q.get("topic")){ const sub = q.get("subject")||"العلوم", gr = q.get("grade")||"", tp = q.get("topic");
+    $("aiTopic").value = tp; if(sub) { const o=[...$("aiSubject").options].find(o=>sub.includes(o.text)||o.text.includes(sub)); if(o) $("aiSubject").value=o.text; }
+    if(gr){ const o=[...$("aiGrade").options].find(o=>gr.includes(o.text.replace("الصف ",""))); if(o) $("aiGrade").value=o.text; }
+    const m = matchBuiltin(tp); if(m && q.get("prefer")!=="ai") openXP(m.id); else runAI($("aiSubject").value, $("aiGrade").value, tp); return; }
+  const h = location.hash.slice(1); if(h && XP.some(x=>x.id===h)) openXP(h);
+})();
+</script>
+</body>
+</html>
