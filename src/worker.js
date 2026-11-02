@@ -27,6 +27,8 @@ async function ensureSchema(db) {
     db.prepare("CREATE TABLE IF NOT EXISTS ai_usage (k TEXT PRIMARY KEY, n INTEGER NOT NULL, until INTEGER NOT NULL)"),
     db.prepare("CREATE TABLE IF NOT EXISTS portfolio (id TEXT PRIMARY KEY, teacher_id TEXT NOT NULL, data TEXT NOT NULL, created INTEGER NOT NULL, updated INTEGER NOT NULL)"),
     db.prepare("CREATE TABLE IF NOT EXISTS file_meta (id TEXT PRIMARY KEY, owner TEXT NOT NULL, name TEXT NOT NULL, type TEXT NOT NULL, size INTEGER NOT NULL, chunks INTEGER NOT NULL, created INTEGER NOT NULL)"),
+    db.prepare("CREATE TABLE IF NOT EXISTS records (id TEXT PRIMARY KEY, kind TEXT NOT NULL, teacher_id TEXT NOT NULL, data TEXT NOT NULL, created INTEGER NOT NULL, updated INTEGER NOT NULL)"),
+    db.prepare("CREATE INDEX IF NOT EXISTS records_kind ON records (kind, teacher_id)"),
     db.prepare("CREATE TABLE IF NOT EXISTS file_chunks (id TEXT NOT NULL, idx INTEGER NOT NULL, data BLOB NOT NULL, PRIMARY KEY (id, idx))"),
   ]);
   schemaReady = true;
@@ -426,6 +428,117 @@ async function handleAI(db, env, request, user) {
   }
 }
 
+/* ---------------- school records: duty log (المناوبة) & supervisory-visit recommendations ----------------
+   A teacher reads and writes only their own records; the admin reads all, reviews,
+   and can record visits (with recommendations) for any teacher. */
+const DUTY_SLOTS = ["طابور الصباح", "الحصة 1", "الحصة 2", "الحصة 3", "الحصة 4", "الفسحة", "الحصة 5", "الحصة 6", "الحصة 7", "الحصة 8", "نهاية الدوام"];
+const REC_STATUS = ["لم يبدأ", "قيد التنفيذ", "منفذة"];
+const VISIT_TYPES = ["زيارة إشرافية (المشرف)", "زيارة إدارية (مدير المدرسة)", "زيارة إدارية (مساعد المدير)", "زيارة المعلم الأول", "زيارة تبادلية", "زيارة أخرى"];
+const isDate = (v) => /^\d{4}-\d{2}-\d{2}$/.test(String(v || "")) ? String(v) : "";
+const cleanUrl = (u) => { u = clip(u, 500).trim(); return /^https?:\/\//i.test(u) ? u : ""; };
+function dutyFields(b) {
+  return { date: isDate(b.date), slot: DUTY_SLOTS.includes(b.slot) ? b.slot : "", place: clip(b.place, 80).trim(), notes: clip(b.notes, 1500).trim(), cases: Math.max(0, Math.min(99, parseInt(b.cases, 10) || 0)) };
+}
+function recList(list, prev, isAdmin) {
+  const old = new Map((prev || []).map((r) => [r.id, r]));
+  return (Array.isArray(list) ? list : []).slice(0, 25).map((r) => {
+    const o = old.get(r.id) || {};
+    const text = isAdmin || !o.text ? clip(r.text, 600).trim() : o.text;   // the recommendation itself is set by the visitor/admin
+    return { id: /^[\w-]{1,24}$/.test(r.id || "") ? r.id : "r" + randHex(5), text,
+      status: REC_STATUS.includes(r.status) ? r.status : "لم يبدأ", action: clip(r.action, 1200).trim(), doneDate: isDate(r.doneDate), evidence: cleanUrl(r.evidence),
+      verified: isAdmin ? !!r.verified : !!o.verified, adminNote: isAdmin ? clip(r.adminNote, 600).trim() : (o.adminNote || "") };
+  }).filter((r) => r.text);
+}
+function visitFields(b, prev, isAdmin) {
+  const p = prev || {};
+  const lock = !isAdmin && p.byAdmin;     // visits recorded by the admin: the teacher only updates follow-up
+  return {
+    date: lock ? p.date : isDate(b.date), type: lock ? p.type : (VISIT_TYPES.includes(b.type) ? b.type : "زيارة أخرى"),
+    visitor: lock ? p.visitor : clip(b.visitor, 120).trim(), cls: lock ? p.cls : clip(b.cls, 80).trim(), topic: lock ? p.topic : clip(b.topic, 200).trim(),
+    followDate: lock ? p.followDate : isDate(b.followDate), notes: lock ? p.notes : clip(b.notes, 1500).trim(),
+    recs: recList(b.recs, p.recs, isAdmin), byAdmin: !!p.byAdmin, adminComment: isAdmin ? clip(b.adminComment, 1000).trim() : (p.adminComment || ""),
+  };
+}
+async function handleRecords(db, request, user, url) {
+  if (!user) return json({ error: "unauthorized" }, 401);
+  const kind = url.searchParams.get("kind");
+  if (kind !== "duty" && kind !== "visit" && kind !== "bonus") return json({ error: "bad_kind" }, 400);
+  const isAdmin = user.role === "admin", id = url.searchParams.get("id") || "";
+  if (kind === "bonus" && request.method !== "GET" && !isAdmin) return json({ error: "forbidden" }, 403);
+  const out = (r) => ({ ...JSON.parse(r.data), id: r.id, teacherId: r.teacher_id, created: r.created, updated: r.updated });
+  if (request.method === "GET") {
+    const rows = isAdmin
+      ? (await db.prepare("SELECT * FROM records WHERE kind = ? ORDER BY created DESC LIMIT 5000").bind(kind).all()).results
+      : (await db.prepare("SELECT * FROM records WHERE kind = ? AND teacher_id = ? ORDER BY created DESC LIMIT 2000").bind(kind, user.teacherId || "-").all()).results;
+    return json({ list: (rows || []).map(out), slots: DUTY_SLOTS, statuses: REC_STATUS, visitTypes: VISIT_TYPES });
+  }
+  const body = request.method === "DELETE" ? {} : await request.json().catch(() => ({}));
+  const teachers = (await getDoc(db, "school/teachers"))?.list || [];
+  if (request.method === "POST") {
+    const tid = isAdmin && body.teacherId ? String(body.teacherId) : user.teacherId;
+    const t = teachers.find((x) => x.id === tid);
+    if (!tid || !t) return json({ error: "forbidden" }, 403);
+    let data;
+    if (kind === "bonus") { const pts = Math.max(-100, Math.min(100, parseInt(body.pts, 10) || 0)); data = { pts, reason: clip(body.reason, 300).trim(), date: new Date().toISOString().slice(0, 10) }; if (!pts || !data.reason) return json({ error: "missing_fields" }, 400); }
+    else if (kind === "duty") { data = dutyFields(body); if (!data.date || !data.slot || !data.place) return json({ error: "missing_fields" }, 400); data.reviewed = false; data.adminNote = ""; }
+    else { data = visitFields(body, { byAdmin: isAdmin && tid !== user.teacherId }, isAdmin); if (!data.date || !data.recs.length) return json({ error: "missing_fields" }, 400); }
+    data.teacherName = t.name; data.by = user.name || "";
+    const rid = (kind === "duty" ? "du" : "vi") + randHex(8), now = Date.now();
+    await db.prepare("INSERT INTO records (id, kind, teacher_id, data, created, updated) VALUES (?, ?, ?, ?, ?, ?)").bind(rid, kind, tid, JSON.stringify(data), now, now).run();
+    return json({ ok: true, id: rid });
+  }
+  const row = id ? await db.prepare("SELECT * FROM records WHERE id = ? AND kind = ?").bind(id, kind).first() : null;
+  if (!row) return json({ error: "not_found" }, 404);
+  const mine = row.teacher_id === user.teacherId;
+  if (!isAdmin && !mine) return json({ error: "forbidden" }, 403);
+  const cur = JSON.parse(row.data);
+  if (request.method === "DELETE") {
+    if (!isAdmin && kind === "visit" && cur.byAdmin) return json({ error: "forbidden" }, 403);
+    await db.prepare("DELETE FROM records WHERE id = ?").bind(id).run(); return json({ ok: true });
+  }
+  if (request.method === "PUT") {
+    let next;
+    if (kind === "duty") {
+      next = { ...cur };
+      if (mine) Object.assign(next, dutyFields({ ...cur, ...body }));
+      if (isAdmin) { if ("reviewed" in body) next.reviewed = !!body.reviewed; if ("adminNote" in body) next.adminNote = clip(body.adminNote, 600).trim(); }
+    } else next = { ...cur, ...visitFields({ ...cur, ...body }, cur, isAdmin) };
+    await db.prepare("UPDATE records SET data = ?, updated = ? WHERE id = ?").bind(JSON.stringify(next), Date.now(), id).run();
+    return json({ ok: true });
+  }
+  return json({ error: "method_not_allowed" }, 405);
+}
+
+/* ---------------- teacher points: tallied from platform activity + admin bonus ---------------- */
+const POINT_RULES = [
+  ["duty", "مناوبة مسجلة", 5], ["dutyReviewed", "مناوبة راجعتها الإدارة", 2],
+  ["recProgress", "توصية قيد التنفيذ", 3], ["recDone", "توصية منفذة", 10], ["recVerified", "توصية تحققت منها الإدارة", 5],
+  ["pf", "مبادرة أو إنجاز مقدَّم", 5], ["pfممتاز", "تقييم «ممتاز»", 20], ["pfجيد جدًا", "تقييم «جيد جدًا»", 15], ["pfجيد", "تقييم «جيد»", 10], ["pfمقبول", "تقييم «مقبول»", 5],
+  ["arShared", "مشهد واقع معزز شاركه مع المعلمين", 10],
+];
+async function handlePoints(db, request, user) {
+  if (!user) return json({ error: "unauthorized" }, 401);
+  const isAdmin = user.role === "admin";
+  const teachers = ((await getDoc(db, "school/teachers"))?.list || []).filter((t) => t.active !== false);
+  const W = Object.fromEntries(POINT_RULES.map(([k, , w]) => [k, w]));
+  const acc = new Map(teachers.map((t) => [t.id, { teacherId: t.id, name: t.name, subject: t.title || t.subject || "", counts: {}, bonus: [], total: 0 }]));
+  const add = (tid, key, n = 1) => { const a = acc.get(tid); if (!a || !n) return; a.counts[key] = (a.counts[key] || 0) + n; a.total += (W[key] || 0) * n; };
+  const rows = (await db.prepare("SELECT teacher_id, kind, data FROM records").all()).results || [];
+  for (const r of rows) { let d; try { d = JSON.parse(r.data); } catch { continue; }
+    if (r.kind === "duty") { add(r.teacher_id, "duty"); if (d.reviewed) add(r.teacher_id, "dutyReviewed"); }
+    else if (r.kind === "visit") for (const x of d.recs || []) { if (x.status === "منفذة") add(r.teacher_id, "recDone"); else if (x.status === "قيد التنفيذ") add(r.teacher_id, "recProgress"); if (x.verified) add(r.teacher_id, "recVerified"); }
+    else if (r.kind === "bonus") { const a = acc.get(r.teacher_id); if (a) { a.bonus.push({ pts: d.pts, reason: d.reason, date: d.date }); a.total += d.pts || 0; } }
+  }
+  const pf = (await db.prepare("SELECT teacher_id, data FROM portfolio").all()).results || [];
+  for (const r of pf) { let d; try { d = JSON.parse(r.data); } catch { continue; } add(r.teacher_id, "pf"); const rt = d.evaluation && d.evaluation.rating; if (d.status === "evaluated" && rt) add(r.teacher_id, "pf" + rt); }
+  const shared = ((await getDoc(db, "classroom/arshared"))?.list || []);
+  for (const x of shared) { const t = teachers.find((q) => q.name === x.by); if (t) add(t.id, "arShared"); }
+  let list = [...acc.values()].sort((a, b) => b.total - a.total);
+  list.forEach((x, i) => (x.rank = i + 1));
+  if (!isAdmin) list = list.filter((x) => x.teacherId === user.teacherId);
+  return json({ list, rules: POINT_RULES.map(([k, t, w]) => ({ key: k, title: t, pts: w })) });
+}
+
 /* ---------------- lesson media: AI images + YouTube videos ---------------- */
 const IMG_MODEL = "@cf/black-forest-labs/flux-1-schnell";
 async function bumpUsage(db, key, limit) {
@@ -665,6 +778,8 @@ export default {
             for (const t of list) out.push({ id: t.id, username: t.username || "", code: t.codeEnc ? await decryptCode(db, t.codeEnc) : "", hasCode: !!t.code });
             return json({ list: out });
           }
+          case "/api/points": return handlePoints(db, request, await currentUser(db, request));
+          case "/api/records": return handleRecords(db, request, await currentUser(db, request), url);
           case "/api/portfolio": return handlePortfolio(db, request, await currentUser(db, request), url);
           case "/api/image": return handleImage(db, env, request, await currentUser(db, request));
           case "/api/ar": return handleAR(db, env, request, request.method === "GET" ? null : await currentUser(db, request));

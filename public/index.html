@@ -1594,6 +1594,117 @@
   </section>
 
   <!-- المبادرات والإنجازات: teachers document their year's work (evidence for إجادة); leadership evaluates -->
+  <section class="view" id="view-duty">
+    <div class="card">
+      <div class="view-head"><h2>🛡️ سجل المناوبة</h2><p>سجّل مناوبتك: المكان، والحصة أو الفسحة، وما لاحظته. تصل مباشرة لإدارة المدرسة للمتابعة.</p></div>
+      <div class="stats-row" id="dutyStats"></div>
+      <div class="lrc-block">
+        <div class="lrc-block-head"><h3>➕ تسجيل مناوبة</h3><button class="btn ghost sm" id="dutyNowBtn">⚡ الفترة الحالية</button></div>
+        <div class="row">
+          <div class="field"><label>التاريخ</label><input type="date" id="dutyDate"></div>
+          <div class="field"><label>الحصة / الفترة</label><select id="dutySlot"></select></div>
+          <div class="field"><label>مكان المناوبة</label><select id="dutyPlace"></select></div>
+          <div class="field" id="dutyPlaceOtherWrap" hidden><label>حدّد المكان</label><input type="text" id="dutyPlaceOther" placeholder="مثال: ممر الصفوف 7–9"></div>
+        </div>
+        <div class="row">
+          <div class="field" style="max-width:180px"><label>عدد الحالات أو الملاحظات</label><input type="number" id="dutyCases" min="0" max="99" value="0"></div>
+          <div class="field"><label>الملاحظات (اختياري)</label><textarea id="dutyNotes" rows="2" placeholder="مثال: تم تنظيم الطلاب عند المقصف، لا توجد ملاحظات…"></textarea></div>
+        </div>
+        <button class="btn" id="dutySaveBtn">💾 تسجيل المناوبة</button>
+      </div>
+      <div class="lrc-block"><div class="lrc-block-head"><h3>📜 مناوباتي</h3></div><div class="tbl-wrap"><table class="datatable" id="dutyMine"></table></div></div>
+    </div>
+  </section>
+
+  <section class="view" id="view-visits">
+    <div class="card">
+      <div class="view-head"><h2>📋 متابعة توصيات الزيارات الإشرافية</h2><p>توصيات زياراتك (المشرف، الإدارة، الزيارات التبادلية): حدّث حالة كل توصية واكتب ما نفّذته وأرفق الشاهد.</p></div>
+      <div class="stats-row" id="visStats"></div>
+      <details class="lrc-block" id="visFormBox"><summary style="cursor:pointer;font-weight:800">➕ تسجيل زيارة وتوصياتها</summary>
+        <div style="margin-top:12px">
+          <div class="row">
+            <div class="field"><label>تاريخ الزيارة</label><input type="date" id="visDate"></div>
+            <div class="field"><label>نوع الزيارة</label><select id="visType"></select></div>
+            <div class="field"><label>الزائر</label><input type="text" id="visVisitor" placeholder="مثال: أ. محمد العبري – المشرف"></div>
+          </div>
+          <div class="row">
+            <div class="field"><label>الصف / الشعبة</label><input type="text" id="visCls" placeholder="مثال: السابع / 1"></div>
+            <div class="field"><label>موضوع الدرس</label><input type="text" id="visTopic"></div>
+            <div class="field"><label>موعد المتابعة</label><input type="date" id="visFollow"></div>
+          </div>
+          <div class="field"><label>التوصيات (توصية في كل سطر)</label><textarea id="visRecs" rows="4" placeholder="توظيف استراتيجيات التعلم النشط&#10;تفعيل التقويم الختامي&#10;…"></textarea></div>
+          <div class="field"><label>ملاحظات عامة (اختياري)</label><textarea id="visNotes" rows="2"></textarea></div>
+          <button class="btn" id="visSaveBtn">💾 حفظ الزيارة</button>
+        </div>
+      </details>
+      <div id="visList"></div>
+    </div>
+  </section>
+
+  <section class="view" id="view-adminduty">
+    <div class="card">
+      <div class="view-head"><h2>🛡️ متابعة المناوبة</h2><p>كل ما سجّله المعلمون من مناوبات: المكان والحصة أو الفسحة والملاحظات، مع المراجعة والتصدير.</p></div>
+      <div class="stats-row" id="adStats"></div>
+      <div class="lrc-block">
+        <div class="row">
+          <div class="field"><label>من</label><input type="date" id="adFrom"></div>
+          <div class="field"><label>إلى</label><input type="date" id="adTo"></div>
+          <div class="field"><label>المعلم</label><select id="adTeacher"></select></div>
+          <div class="field"><label>الفترة</label><select id="adSlot"></select></div>
+          <div class="field"><label>المكان</label><select id="adPlace"></select></div>
+        </div>
+        <div class="btns-row" style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn ghost sm" id="adToday">اليوم</button><button class="btn ghost sm" id="adWeek">هذا الأسبوع</button><button class="btn ghost sm" id="adMonth">هذا الشهر</button><button class="btn ghost sm" id="adReviewAll">✔ مراجعة كل المعروض</button><button class="btn ghost sm" id="adExport">⬇️ تصدير Excel</button></div>
+      </div>
+      <div class="lrc-block"><div class="lrc-block-head"><h3>📍 تغطية الفترات في يوم <span id="adCovDay"></span></h3></div><div class="tbl-wrap"><table class="datatable" id="adCoverage"></table></div></div>
+      <div class="tbl-wrap"><table class="datatable" id="adTable"></table></div>
+    </div>
+  </section>
+
+  <section class="view" id="view-adminvisits">
+    <div class="card">
+      <div class="view-head"><h2>📋 متابعة توصيات الزيارات الإشرافية</h2><p>توصيات زيارات جميع المعلمين ومدى تنفيذها، مع التحقق والملاحظات وتسجيل زيارات جديدة.</p></div>
+      <div class="stats-row" id="avStats"></div>
+      <details class="lrc-block"><summary style="cursor:pointer;font-weight:800">➕ تسجيل زيارة لمعلم مع توصياتها</summary>
+        <div style="margin-top:12px">
+          <div class="row">
+            <div class="field"><label>المعلم</label><select id="avTeacherNew"></select></div>
+            <div class="field"><label>تاريخ الزيارة</label><input type="date" id="avDate"></div>
+            <div class="field"><label>نوع الزيارة</label><select id="avType"></select></div>
+          </div>
+          <div class="row">
+            <div class="field"><label>الزائر</label><input type="text" id="avVisitor"></div>
+            <div class="field"><label>الصف / الشعبة</label><input type="text" id="avCls"></div>
+            <div class="field"><label>موضوع الدرس</label><input type="text" id="avTopic"></div>
+            <div class="field"><label>موعد المتابعة</label><input type="date" id="avFollow"></div>
+          </div>
+          <div class="field"><label>التوصيات (توصية في كل سطر)</label><textarea id="avRecs" rows="4"></textarea></div>
+          <button class="btn" id="avSaveBtn">💾 حفظ الزيارة وإرسالها للمعلم</button>
+        </div>
+      </details>
+      <div class="lrc-block"><div class="row">
+        <div class="field"><label>المعلم</label><select id="avTeacher"></select></div>
+        <div class="field"><label>حالة التوصية</label><select id="avStatus"><option value="">الكل</option><option>لم يبدأ</option><option>قيد التنفيذ</option><option>منفذة</option><option value="late">متأخرة عن موعد المتابعة</option><option value="unverified">منفذة وبانتظار التحقق</option></select></div>
+        <div class="field" style="align-self:flex-end"><button class="btn ghost sm" id="avExport">⬇️ تصدير Excel</button></div>
+      </div></div>
+      <div class="tbl-wrap"><table class="datatable" id="avTable"></table></div>
+    </div>
+  </section>
+
+  <section class="view" id="view-adminpoints">
+    <div class="card">
+      <div class="view-head"><h2>🏆 سجل نقاط المعلمين</h2><p>نقاط كل معلم محسوبة تلقائيًا من نشاطه في المنصة، مع إمكانية إضافة نقاط أو خصمها بسبب واضح.</p></div>
+      <div class="stats-row" id="ptStats"></div>
+      <details class="lrc-block"><summary style="cursor:pointer;font-weight:800">📏 طريقة احتساب النقاط</summary><div id="ptRules" style="margin-top:10px;font-size:13.5px;line-height:2"></div></details>
+      <div class="lrc-block" id="ptBonusBox" hidden>
+        <div class="lrc-block-head"><h3 id="ptBonusTitle">➕ نقاط إضافية</h3><button class="btn ghost sm" id="ptBonusClose">إغلاق</button></div>
+        <div class="row"><div class="field" style="max-width:160px"><label>النقاط (+ أو −)</label><input type="number" id="ptBonusPts" min="-100" max="100" value="10"></div><div class="field"><label>السبب</label><input type="text" id="ptBonusReason" placeholder="مثال: تميز في تنظيم الإذاعة المدرسية"></div></div>
+        <button class="btn" id="ptBonusSave">💾 حفظ</button><div id="ptBonusHist" style="margin-top:10px;font-size:13px"></div>
+      </div>
+      <div style="display:flex;gap:8px;margin-bottom:10px"><button class="btn ghost sm" id="ptExport">⬇️ تصدير Excel</button><button class="btn ghost sm" id="ptRefresh">↻ تحديث</button></div>
+      <div class="tbl-wrap"><table class="datatable" id="ptTable"></table></div>
+    </div>
+  </section>
+
   <section class="view" id="view-portfolio">
     <div class="card">
       <div class="view-head"><h2 id="pfTitle">🏅 مبادراتي وإنجازاتي</h2><p id="pfSub">وثّق أعمالك ومبادراتك خلال العام الدراسي مع شواهدها (روابط، صور، ملفات) لتصل للإدارة وتُقيَّم في منصة إجادة.</p></div>
@@ -1870,7 +1981,9 @@
     {id:"teacherschedule", icon:"📅", title:"جدولي الأسبوعي", desc:"جدولك وسجل طلباتك السابقة"},
     {id:"teachersubs", icon:"🔄", title:"حصصي الاحتياطية", desc:"الحصص التي كُلّفت بتغطيتها"},
     {id:"lrc", icon:"🏛️", title:"مركز مصادر التعلم", desc:"حجز قاعة المصادر وأجهزة العرض لحصتك"},
-    {id:"portfolio", icon:"🏅", title:"مبادراتي وإنجازاتي", desc:"وثّق أعمالك خلال السنة مع الشواهد لتقييمها في إجادة", accent:true}
+    {id:"portfolio", icon:"🏅", title:"مبادراتي وإنجازاتي", desc:"وثّق أعمالك خلال السنة مع الشواهد لتقييمها في إجادة", accent:true},
+    {id:"duty", icon:"🛡️", title:"سجل المناوبة", desc:"سجّل مناوبتك: المكان والحصة أو الفسحة"},
+    {id:"visits", icon:"📋", title:"توصيات الزيارات الإشرافية", desc:"تابع تنفيذ توصيات زياراتك وأرفق الشواهد"}
   ];
   const ADMIN_TILES = [
     {id:"admindash", icon:"📊", title:"لوحة التحكم", desc:"إحصائيات المدرسة العامة", accent:true},
@@ -1887,10 +2000,18 @@
     {id:"lrc", icon:"🏛️", title:"مركز مصادر التعلم", desc:"جدول حجوزات القاعة وأجهزة العرض"},
     {id:"absinbox", icon:"📥", title:"الغياب الوارد", desc:"غياب الطلاب كما يصل لأخصائي قواعد البيانات، وحالة إدخاله"},
     {id:"portfolio", icon:"🏅", title:"مبادرات وإنجازات المعلمين", desc:"مراجعة أعمال المعلمين وشواهدها وتقييمها لإجادة", accent:true},
-    {id:"adminaccounts", icon:"🗄️", title:"قاعدة بيانات المعلمين", desc:"إنشاء حسابات المعلمين وتعديلها وتعطيلها وحذفها من مكان واحد", accent:true}
+    {id:"adminaccounts", icon:"🗄️", title:"قاعدة بيانات المعلمين", desc:"إنشاء حسابات المعلمين وتعديلها وتعطيلها وحذفها من مكان واحد", accent:true},
+    {id:"adminduty", icon:"🛡️", title:"متابعة المناوبة", desc:"مناوبات المعلمين: المكان والحصة والفسحة، وتغطية اليوم والمراجعة"},
+    {id:"adminvisits", icon:"📋", title:"متابعة توصيات الزيارات الإشرافية", desc:"تنفيذ توصيات زيارات المعلمين والتحقق منها وتسجيل زيارات جديدة"},
+    {id:"adminpoints", icon:"🏆", title:"سجل نقاط المعلمين", desc:"ترتيب المعلمين بنقاط نشاطهم في المنصة مع الإضافة والخصم", accent:true}
   ];
 
   const ICON_PATHS = {
+    duty: '<path d="M12 3 5 6v5c0 4.4 3 8.2 7 10 4-1.8 7-5.6 7-10V6z"/><path d="m9 12 2 2 4-4"/>',
+    adminduty: '<path d="M12 3 5 6v5c0 4.4 3 8.2 7 10 4-1.8 7-5.6 7-10V6z"/><circle cx="12" cy="11" r="2.5"/><path d="M8.5 16.5c.8-1.5 2-2.2 3.5-2.2s2.7.7 3.5 2.2"/>',
+    visits: '<rect x="5" y="4" width="14" height="17" rx="1.5"/><path d="M9 4V2.8h6V4"/><path d="m8.5 10 1.5 1.5L13 8.5"/><line x1="8.5" y1="15" x2="15.5" y2="15"/><line x1="8.5" y1="18" x2="13" y2="18"/>',
+    adminvisits: '<rect x="5" y="4" width="14" height="17" rx="1.5"/><path d="M9 4V2.8h6V4"/><path d="M8.5 11h7M8.5 14.5h7M8.5 18h4"/>',
+    adminpoints: '<path d="M8 21h8M12 17v4"/><path d="M7 4h10v5a5 5 0 0 1-10 0z"/><path d="M7 6H4.5a2.5 2.5 0 0 0 2.5 4M17 6h2.5a2.5 2.5 0 0 1-2.5 4"/>',
     portfolio: '<circle cx="12" cy="9" r="5"/><path d="m9 13.5-1.5 7L12 18l4.5 2.5-1.5-7"/><path d="m10.3 9 1.2 1.2 2.3-2.4"/>',
     absinbox: '<path d="M4 13h4l1.5 2.5h5L16 13h4"/><path d="M5.5 6h13L20 13v5a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 4 18v-5z"/><path d="M12 3v6M9.5 6.5 12 9l2.5-2.5"/>',
     lrc: '<path d="M3 9.5 12 4l9 5.5"/><path d="M5 10v8M9.5 10v8M14.5 10v8M19 10v8"/><path d="M3 20.5h18"/>',
@@ -2156,6 +2277,11 @@
     if(id==="lrc" && currentUser) renderLrc(true);
     if(id==="absinbox" && currentUser) renderAbsInbox(true);
     if(id==="portfolio" && currentUser) renderPortfolio(true);
+    if(id==="duty" && currentUser) renderDuty(true);
+    if(id==="visits" && currentUser) renderVisits(true);
+    if(id==="adminduty" && currentUser && currentUser.role==="admin") renderAdminDuty(true);
+    if(id==="adminvisits" && currentUser && currentUser.role==="admin") renderAdminVisits(true);
+    if(id==="adminpoints" && currentUser && currentUser.role==="admin") renderAdminPoints(true);
     document.getElementById("crumbWrap").hidden = (id==="dashboard" || id==="identify" || (id==="absinbox" && currentUser && currentUser.role==="teacher"));
     window.scrollTo({top:0, behavior:"smooth"});
   }
@@ -5437,6 +5563,144 @@ ${fields.map(f=>GAME_SPEC[f]).join(",\n")}
         </tr>`).join("") : `<tr><td colspan="3" style="text-align:center; color:var(--text-muted); padding:22px;">✅ لم يتم العثور على أي مشاكل في الجدول الحالي</td></tr>`}</tbody>`;
     }
   }
+
+  /* ======================= المناوبة · توصيات الزيارات · نقاط المعلمين ======================= */
+  const DUTY_PLACES = ["الساحة الرئيسية","الممرات - الدور الأرضي","الممرات - الدور الأول","المقصف","البوابة الرئيسية","دورات المياه","المصلى","الملاعب","مواقف الحافلات","أخرى"];
+  const DUTY_SLOTS_UI = ["طابور الصباح","الحصة 1","الحصة 2","الحصة 3","الحصة 4","الفسحة","الحصة 5","الحصة 6","الحصة 7","الحصة 8","نهاية الدوام"];
+  const VISIT_TYPES_UI = ["زيارة إشرافية (المشرف)","زيارة إدارية (مدير المدرسة)","زيارة إدارية (مساعد المدير)","زيارة المعلم الأول","زيارة تبادلية","زيارة أخرى"];
+  const REC_ST = ["لم يبدأ","قيد التنفيذ","منفذة"];
+  const lISO = (d)=>{ d = d || new Date(); return new Date(d.getTime() - d.getTimezoneOffset()*6e4).toISOString().slice(0,10); };
+  const fmtD = (s)=>{ try{ return new Date(s+"T00:00:00").toLocaleDateString("ar-OM",{weekday:"short", day:"numeric", month:"numeric"}); }catch(e){ return s; } };
+  let dutyMine = [], dutyAll = [], visMine = [], visAll = [], ptData = null;
+  async function recApi(kind, method, body, id){
+    const r = await fetch("/api/records?kind="+kind+(id?"&id="+encodeURIComponent(id):""), {method:method||"GET", cache:"no-store", credentials:"same-origin", headers:body?{"content-type":"application/json"}:{}, body:body?JSON.stringify(body):undefined});
+    const d = await r.json().catch(()=>({})); if(!r.ok) throw new Error(d.error||"err"); return d;
+  }
+  const opts = (arr, sel, all)=> (all?`<option value="">${all}</option>`:"") + arr.map(v=>`<option${v===sel?" selected":""}>${escapeHTML(v)}</option>`).join("");
+  function currentSlot(){ const n = new Date(), m = n.getHours()*60 + n.getMinutes(); const T = Object.entries(PERIOD_TIMES_DISPLAY).map(([p,t])=>{ const [a,b] = t.split("-").map(x=>{ const [h,mi] = x.split(":").map(Number); return h*60+mi; }); return [+p,a,b]; });
+    if(m < T[0][1]) return "طابور الصباح"; for(const [p,a,b] of T){ if(m>=a-4 && m<=b) return "الحصة "+p; } const p4 = T.find(x=>x[0]===4), p5 = T.find(x=>x[0]===5); if(p4 && p5 && m>p4[2] && m<p5[1]) return "الفسحة"; return "نهاية الدوام"; }
+  function teacherOpts(sel, all){ return (all?`<option value="">${all}</option>`:"") + (teachers||[]).filter(t=>t.active!==false).slice().sort((a,b)=>a.name.localeCompare(b.name,"ar")).map(t=>`<option value="${escapeHTML(t.id)}"${t.id===sel?" selected":""}>${escapeHTML(t.name)}</option>`).join(""); }
+  function statTile(num, lbl, icon){ return `<div class="stat-tile"><div class="num">${num}</div><div class="lbl">${icon||""} ${lbl}</div></div>`; }
+
+  /* ---------- teacher: duty ---------- */
+  async function renderDuty(reload){
+    const ds = document.getElementById("dutySlot");
+    if(!ds.options.length){ ds.innerHTML = opts(DUTY_SLOTS_UI, currentSlot()); document.getElementById("dutyPlace").innerHTML = opts(DUTY_PLACES); document.getElementById("dutyDate").value = lISO(); }
+    if(reload){ try{ dutyMine = (await recApi("duty")).list; }catch(e){ dutyMine = []; } }
+    const now = new Date(), wk = lISO(new Date(now.getTime() - ((now.getDay()+1)%7)*864e5)), mo = lISO(now).slice(0,7);
+    let my = null; try{ const r = await fetch("/api/points",{credentials:"same-origin",cache:"no-store"}); if(r.ok) my = (await r.json()).list[0]; }catch(e){}
+    document.getElementById("dutyStats").innerHTML = statTile(dutyMine.filter(d=>d.date>=wk).length,"مناوبات هذا الأسبوع","🗓️") + statTile(dutyMine.filter(d=>d.date.slice(0,7)===mo).length,"مناوبات هذا الشهر","📆") + statTile(dutyMine.filter(d=>d.reviewed).length,"راجعتها الإدارة","✔") + statTile(my?my.total:"—","نقاطي في المنصة","🏆");
+    const t = document.getElementById("dutyMine");
+    t.innerHTML = `<thead><tr><th>التاريخ</th><th>الفترة</th><th>المكان</th><th>الحالات</th><th>الملاحظات</th><th>المراجعة</th><th></th></tr></thead><tbody>${dutyMine.length ? dutyMine.slice(0,120).map(d=>`<tr><td>${fmtD(d.date)}</td><td><b>${escapeHTML(d.slot)}</b></td><td>${escapeHTML(d.place)}</td><td>${d.cases||0}</td><td style="font-size:12.5px">${escapeHTML(d.notes||"—")}${d.adminNote?`<div style="color:var(--accent)">💬 ${escapeHTML(d.adminNote)}</div>`:""}</td><td>${d.reviewed?'<span class="pill ok">تمت المراجعة</span>':'<span class="pill wait">بانتظار المراجعة</span>'}</td><td>${d.reviewed?"":`<button class="btn ghost sm" data-dutydel="${escapeHTML(d.id)}">حذف</button>`}</td></tr>`).join("") : `<tr><td colspan="7" style="text-align:center;color:var(--text-muted);padding:20px">لا توجد مناوبات مسجلة بعد.</td></tr>`}</tbody>`;
+  }
+  document.getElementById("dutyPlace").addEventListener("change", e=>{ document.getElementById("dutyPlaceOtherWrap").hidden = e.target.value!=="أخرى"; });
+  document.getElementById("dutyNowBtn").addEventListener("click", ()=>{ document.getElementById("dutyDate").value = lISO(); document.getElementById("dutySlot").value = currentSlot(); toast("⚡ "+currentSlot()); });
+  document.getElementById("dutySaveBtn").addEventListener("click", async ()=>{
+    const pl = document.getElementById("dutyPlace").value, place = pl==="أخرى" ? document.getElementById("dutyPlaceOther").value.trim() : pl;
+    const body = {date:document.getElementById("dutyDate").value, slot:document.getElementById("dutySlot").value, place, cases:document.getElementById("dutyCases").value, notes:document.getElementById("dutyNotes").value};
+    if(!body.date || !body.slot || !place){ toast("أكمل التاريخ والفترة والمكان"); return; }
+    if(dutyMine.some(d=>d.date===body.date && d.slot===body.slot)){ if(!confirm("سجّلت مناوبة لهذه الفترة في اليوم نفسه، هل تريد تسجيل أخرى؟")) return; }
+    try{ await recApi("duty","POST",body); toast("✔ سُجّلت المناوبة وأُرسلت للإدارة"); document.getElementById("dutyNotes").value=""; document.getElementById("dutyCases").value="0"; renderDuty(true); }catch(e){ toast("تعذّر الحفظ — تحقق من الاتصال"); }
+  });
+  document.getElementById("dutyMine").addEventListener("click", async e=>{ const b = e.target.closest("[data-dutydel]"); if(!b || !confirm("حذف هذه المناوبة؟")) return; try{ await recApi("duty","DELETE",null,b.dataset.dutydel); renderDuty(true); }catch(err){ toast("تعذّر الحذف"); } });
+
+  /* ---------- teacher: visits ---------- */
+  function recsFromText(t){ return String(t||"").split(/\n+/).map(x=>x.replace(/^[\s\-–•\d.)]+/,"").trim()).filter(Boolean).map(text=>({text, status:"لم يبدأ"})); }
+  function visitProgress(v){ const n = (v.recs||[]).length, d = (v.recs||[]).filter(r=>r.status==="منفذة").length; return {n, d, pct: n?Math.round(d/n*100):0}; }
+  async function renderVisits(reload){
+    const vt = document.getElementById("visType"); if(!vt.options.length){ vt.innerHTML = opts(VISIT_TYPES_UI); document.getElementById("visDate").value = lISO(); }
+    if(reload){ try{ visMine = (await recApi("visit")).list; }catch(e){ visMine = []; } }
+    const recs = visMine.flatMap(v=>v.recs||[]), done = recs.filter(r=>r.status==="منفذة").length;
+    document.getElementById("visStats").innerHTML = statTile(visMine.length,"زيارة","📋") + statTile(recs.length,"توصية","📝") + statTile(done,"منفذة","✔") + statTile(recs.length?Math.round(done/recs.length*100)+"%":"—","نسبة التنفيذ","📈");
+    document.getElementById("visList").innerHTML = visMine.length ? visMine.map(v=>{ const p = visitProgress(v), late = v.followDate && v.followDate < lISO() && p.pct<100;
+      return `<div class="lrc-block" data-vid="${escapeHTML(v.id)}"><div class="lrc-block-head"><h3>${escapeHTML(v.type)} — ${fmtD(v.date)}</h3><span class="pill ${p.pct===100?"ok":late?"bad":"wait"}">${p.d}/${p.n} منفذة${late?" · متأخرة":""}</span></div>
+        <div style="font-size:13px;color:var(--text-muted);margin:-6px 0 8px">${v.visitor?`الزائر: <b>${escapeHTML(v.visitor)}</b> · `:""}${v.cls?`الصف: ${escapeHTML(v.cls)} · `:""}${v.topic?`الدرس: ${escapeHTML(v.topic)} · `:""}${v.followDate?`موعد المتابعة: ${fmtD(v.followDate)}`:""}${v.byAdmin?" · 🏫 سجّلتها الإدارة":""}</div>
+        <div style="height:8px;background:var(--surface-2);border-radius:99px;overflow:hidden;margin-bottom:10px"><div style="height:100%;width:${p.pct}%;background:var(--success)"></div></div>
+        ${(v.recs||[]).map((r,i)=>`<div class="rec-row" data-ri="${i}" style="border-top:1px dashed var(--border);padding:10px 0">
+          <div style="font-weight:800;margin-bottom:6px">${i+1}. ${escapeHTML(r.text)} ${r.verified?'<span class="pill ok">✔ تحققت الإدارة</span>':""}</div>
+          <div class="row"><div class="field" style="max-width:170px"><label>الحالة</label><select data-f="status">${opts(REC_ST, r.status)}</select></div>
+          <div class="field" style="max-width:170px"><label>تاريخ التنفيذ</label><input type="date" data-f="doneDate" value="${escapeHTML(r.doneDate||"")}"></div>
+          <div class="field"><label>رابط الشاهد (اختياري)</label><input type="url" data-f="evidence" value="${escapeHTML(r.evidence||"")}" placeholder="https://…"></div></div>
+          <div class="field"><label>ما الذي نفّذته؟</label><textarea data-f="action" rows="2">${escapeHTML(r.action||"")}</textarea></div>
+          ${r.adminNote?`<div style="color:var(--accent);font-size:13px">💬 الإدارة: ${escapeHTML(r.adminNote)}</div>`:""}</div>`).join("")}
+        ${v.adminComment?`<div class="pf-result need">💬 ${escapeHTML(v.adminComment)}</div>`:""}
+        <div style="display:flex;gap:8px;margin-top:8px"><button class="btn sm" data-vsave="1">💾 حفظ المتابعة</button>${v.byAdmin?"":`<button class="btn ghost sm" data-vdel="1">حذف الزيارة</button>`}</div></div>`; }).join("") : `<div class="empty-hint">لا توجد زيارات مسجلة بعد. أضف زيارتك وتوصياتها من الأعلى، أو ستظهر هنا الزيارات التي تسجلها الإدارة لك.</div>`;
+  }
+  document.getElementById("visSaveBtn").addEventListener("click", async ()=>{
+    const body = {date:document.getElementById("visDate").value, type:document.getElementById("visType").value, visitor:document.getElementById("visVisitor").value, cls:document.getElementById("visCls").value, topic:document.getElementById("visTopic").value, followDate:document.getElementById("visFollow").value, notes:document.getElementById("visNotes").value, recs:recsFromText(document.getElementById("visRecs").value)};
+    if(!body.date || !body.recs.length){ toast("أدخل تاريخ الزيارة وتوصية واحدة على الأقل"); return; }
+    try{ await recApi("visit","POST",body); toast("✔ حُفظت الزيارة"); ["visVisitor","visCls","visTopic","visRecs","visNotes"].forEach(i=>document.getElementById(i).value=""); document.getElementById("visFormBox").open = false; renderVisits(true); }catch(e){ toast("تعذّر الحفظ"); }
+  });
+  document.getElementById("visList").addEventListener("click", async e=>{
+    const box = e.target.closest("[data-vid]"); if(!box) return; const v = visMine.find(x=>x.id===box.dataset.vid); if(!v) return;
+    if(e.target.closest("[data-vdel]")){ if(!confirm("حذف الزيارة وتوصياتها؟")) return; try{ await recApi("visit","DELETE",null,v.id); renderVisits(true); }catch(err){ toast("تعذّر الحذف"); } return; }
+    if(!e.target.closest("[data-vsave]")) return;
+    const recs = (v.recs||[]).map((r,i)=>{ const row = box.querySelector(`.rec-row[data-ri="${i}"]`); const g = f=>row.querySelector(`[data-f="${f}"]`).value; return Object.assign({}, r, {status:g("status"), doneDate:g("doneDate"), evidence:g("evidence"), action:g("action")}); });
+    try{ await recApi("visit","PUT",Object.assign({}, v, {recs}),v.id); toast("✔ حُفظت المتابعة"); renderVisits(true); }catch(err){ toast("تعذّر الحفظ"); }
+  });
+
+  /* ---------- admin: duty follow-up ---------- */
+  function adRange(kind){ const n = new Date(); const f = kind==="today" ? n : kind==="week" ? new Date(n.getTime() - ((n.getDay()+1)%7)*864e5) : new Date(n.getFullYear(), n.getMonth(), 1); document.getElementById("adFrom").value = lISO(f); document.getElementById("adTo").value = lISO(n); renderAdminDuty(); }
+  function adFiltered(){ const f = document.getElementById("adFrom").value, t = document.getElementById("adTo").value, te = document.getElementById("adTeacher").value, sl = document.getElementById("adSlot").value, pl = document.getElementById("adPlace").value;
+    return dutyAll.filter(d=>(!f||d.date>=f)&&(!t||d.date<=t)&&(!te||d.teacherId===te)&&(!sl||d.slot===sl)&&(!pl||d.place===pl)).sort((a,b)=>(b.date+b.slot).localeCompare(a.date+a.slot)); }
+  async function renderAdminDuty(reload){
+    if(!document.getElementById("adSlot").options.length){ document.getElementById("adSlot").innerHTML = opts(DUTY_SLOTS_UI,"","كل الفترات"); document.getElementById("adPlace").innerHTML = opts(DUTY_PLACES.filter(p=>p!=="أخرى"),"","كل الأماكن"); document.getElementById("adTeacher").innerHTML = teacherOpts("","كل المعلمين"); const n=new Date(); document.getElementById("adFrom").value = lISO(new Date(n.getTime()-((n.getDay()+1)%7)*864e5)); document.getElementById("adTo").value = lISO(n); }
+    if(reload){ try{ dutyAll = (await recApi("duty")).list; }catch(e){ dutyAll = []; } }
+    const list = adFiltered(), today = lISO(), td = dutyAll.filter(d=>d.date===today);
+    document.getElementById("adStats").innerHTML = statTile(td.length,"مناوبة مسجلة اليوم","🛡️") + statTile(new Set(td.map(d=>d.teacherId)).size,"معلم مناوب اليوم","👥") + statTile(list.length,"في الفترة المعروضة","📊") + statTile(dutyAll.filter(d=>!d.reviewed).length,"بانتظار المراجعة","⏳");
+    const day = document.getElementById("adTo").value || today; document.getElementById("adCovDay").textContent = fmtD(day);
+    const dd = dutyAll.filter(d=>d.date===day);
+    document.getElementById("adCoverage").innerHTML = `<thead><tr><th>الفترة</th><th>المعلمون المناوبون والأماكن</th></tr></thead><tbody>${DUTY_SLOTS_UI.map(s=>{ const x = dd.filter(d=>d.slot===s); return `<tr><td><b>${s}</b></td><td>${x.length?x.map(d=>`<span class="pill ok" style="margin:2px">${escapeHTML(d.teacherName)} — ${escapeHTML(d.place)}</span>`).join(""):`<span style="color:var(--text-muted)">${s==="الفسحة"?"⚠️ لا يوجد تسجيل":"—"}</span>`}</td></tr>`; }).join("")}</tbody>`;
+    document.getElementById("adTable").innerHTML = `<thead><tr><th>التاريخ</th><th>المعلم</th><th>الفترة</th><th>المكان</th><th>الحالات</th><th>الملاحظات</th><th>المراجعة</th><th>ملاحظة الإدارة</th></tr></thead><tbody>${list.length ? list.map(d=>`<tr data-did="${escapeHTML(d.id)}"><td>${fmtD(d.date)}</td><td><b>${escapeHTML(d.teacherName)}</b></td><td>${escapeHTML(d.slot)}</td><td>${escapeHTML(d.place)}</td><td>${d.cases||0}</td><td style="font-size:12.5px;max-width:260px">${escapeHTML(d.notes||"—")}</td><td><label style="display:flex;gap:6px;align-items:center;white-space:nowrap"><input type="checkbox" data-rev ${d.reviewed?"checked":""}> ${d.reviewed?"تمت":"مراجعة"}</label></td><td><input type="text" data-note value="${escapeHTML(d.adminNote||"")}" placeholder="ملاحظة…" style="min-width:150px"></td></tr>`).join("") : `<tr><td colspan="8" style="text-align:center;color:var(--text-muted);padding:20px">لا توجد مناوبات في هذه الفترة.</td></tr>`}</tbody>`;
+  }
+  ["adFrom","adTo","adTeacher","adSlot","adPlace"].forEach(i=>document.getElementById(i).addEventListener("change", ()=>renderAdminDuty()));
+  document.getElementById("adToday").onclick = ()=>adRange("today"); document.getElementById("adWeek").onclick = ()=>adRange("week"); document.getElementById("adMonth").onclick = ()=>adRange("month");
+  document.getElementById("adTable").addEventListener("change", async e=>{ const tr = e.target.closest("[data-did]"); if(!tr) return; const d = dutyAll.find(x=>x.id===tr.dataset.did); if(!d) return;
+    const body = e.target.matches("[data-rev]") ? {reviewed:e.target.checked} : {adminNote:e.target.value}; try{ await recApi("duty","PUT",body,d.id); Object.assign(d, body); renderAdminDuty(); }catch(err){ toast("تعذّر الحفظ"); } });
+  document.getElementById("adReviewAll").onclick = async ()=>{ const list = adFiltered().filter(d=>!d.reviewed); if(!list.length){ toast("لا يوجد ما يحتاج مراجعة"); return; } for(const d of list){ try{ await recApi("duty","PUT",{reviewed:true},d.id); d.reviewed = true; }catch(e){} } toast(`✔ رُوجعت ${list.length} مناوبة`); renderAdminDuty(); };
+  document.getElementById("adExport").onclick = ()=>exportRowsAsXlsx("سجل_المناوبة.xlsx","المناوبة",["التاريخ","المعلم","الفترة","المكان","الحالات","الملاحظات","المراجعة","ملاحظة الإدارة"], adFiltered().map(d=>[d.date,d.teacherName,d.slot,d.place,d.cases||0,d.notes||"",d.reviewed?"تمت":"لا",d.adminNote||""]));
+
+  /* ---------- admin: visit recommendations ---------- */
+  function avRows(){ const te = document.getElementById("avTeacher").value, st = document.getElementById("avStatus").value, today = lISO(); const out = [];
+    visAll.forEach(v=>(v.recs||[]).forEach((r,i)=>{ if(te && v.teacherId!==te) return; const late = v.followDate && v.followDate < today && r.status!=="منفذة";
+      if(st==="late" ? !late : st==="unverified" ? !(r.status==="منفذة" && !r.verified) : (st && r.status!==st)) return; out.push({v, r, i, late}); }));
+    return out.sort((a,b)=>b.v.date.localeCompare(a.v.date)); }
+  async function renderAdminVisits(reload){
+    if(!document.getElementById("avType").options.length){ document.getElementById("avType").innerHTML = opts(VISIT_TYPES_UI); document.getElementById("avTeacherNew").innerHTML = teacherOpts(""); document.getElementById("avTeacher").innerHTML = teacherOpts("","كل المعلمين"); document.getElementById("avDate").value = lISO(); }
+    if(reload){ try{ visAll = (await recApi("visit")).list; }catch(e){ visAll = []; } }
+    const recs = visAll.flatMap(v=>(v.recs||[]).map(r=>({r, v}))), done = recs.filter(x=>x.r.status==="منفذة").length, today = lISO();
+    document.getElementById("avStats").innerHTML = statTile(visAll.length,"زيارة","📋") + statTile(recs.length,"توصية","📝") + statTile(recs.length?Math.round(done/recs.length*100)+"%":"—","نسبة التنفيذ","📈") + statTile(recs.filter(x=>x.r.status==="منفذة"&&!x.r.verified).length,"منفذة بانتظار التحقق","🔎") + statTile(recs.filter(x=>x.v.followDate&&x.v.followDate<today&&x.r.status!=="منفذة").length,"متأخرة عن المتابعة","⚠️");
+    const rows = avRows();
+    document.getElementById("avTable").innerHTML = `<thead><tr><th>المعلم</th><th>الزيارة</th><th>التوصية</th><th>الحالة</th><th>ما نفّذه المعلم</th><th>الشاهد</th><th>تحقق الإدارة</th><th>ملاحظة الإدارة</th></tr></thead><tbody>${rows.length ? rows.map(({v,r,i,late})=>`<tr data-v="${escapeHTML(v.id)}" data-i="${i}"><td><b>${escapeHTML(v.teacherName)}</b></td><td style="font-size:12px">${escapeHTML(v.type)}<br>${fmtD(v.date)}${v.followDate?`<br>متابعة: ${fmtD(v.followDate)}`:""}</td><td style="max-width:240px">${escapeHTML(r.text)}</td><td><span class="pill ${r.status==="منفذة"?"ok":late?"bad":"wait"}">${escapeHTML(r.status)}${late?" · متأخرة":""}</span>${r.doneDate?`<div style="font-size:11px">${fmtD(r.doneDate)}</div>`:""}</td><td style="font-size:12.5px;max-width:220px">${escapeHTML(r.action||"—")}</td><td>${r.evidence?`<a href="${escapeHTML(r.evidence)}" target="_blank" rel="noopener">🔗 فتح</a>`:"—"}</td><td><input type="checkbox" data-ver ${r.verified?"checked":""}></td><td><input type="text" data-anote value="${escapeHTML(r.adminNote||"")}" placeholder="ملاحظة…" style="min-width:140px"></td></tr>`).join("") : `<tr><td colspan="8" style="text-align:center;color:var(--text-muted);padding:20px">لا توجد توصيات مطابقة.</td></tr>`}</tbody>`;
+  }
+  ["avTeacher","avStatus"].forEach(i=>document.getElementById(i).addEventListener("change", ()=>renderAdminVisits()));
+  document.getElementById("avTable").addEventListener("change", async e=>{ const tr = e.target.closest("[data-v]"); if(!tr) return; const v = visAll.find(x=>x.id===tr.dataset.v); if(!v) return; const i = +tr.dataset.i;
+    const recs = (v.recs||[]).map((r,k)=>k!==i ? r : Object.assign({}, r, e.target.matches("[data-ver]") ? {verified:e.target.checked} : {adminNote:e.target.value}));
+    try{ await recApi("visit","PUT",Object.assign({}, v, {recs}),v.id); v.recs = recs; renderAdminVisits(); toast("✔ حُفظ"); }catch(err){ toast("تعذّر الحفظ"); } });
+  document.getElementById("avSaveBtn").addEventListener("click", async ()=>{
+    const body = {teacherId:document.getElementById("avTeacherNew").value, date:document.getElementById("avDate").value, type:document.getElementById("avType").value, visitor:document.getElementById("avVisitor").value || (currentUser&&currentUser.name)||"", cls:document.getElementById("avCls").value, topic:document.getElementById("avTopic").value, followDate:document.getElementById("avFollow").value, recs:recsFromText(document.getElementById("avRecs").value)};
+    if(!body.teacherId || !body.date || !body.recs.length){ toast("اختر المعلم وأدخل التاريخ وتوصية واحدة على الأقل"); return; }
+    try{ await recApi("visit","POST",body); toast("✔ حُفظت الزيارة وظهرت للمعلم"); ["avCls","avTopic","avRecs"].forEach(i=>document.getElementById(i).value=""); renderAdminVisits(true); }catch(e){ toast("تعذّر الحفظ"); }
+  });
+  document.getElementById("avExport").onclick = ()=>exportRowsAsXlsx("متابعة_توصيات_الزيارات.xlsx","التوصيات",["المعلم","تاريخ الزيارة","نوع الزيارة","الزائر","الصف","موعد المتابعة","التوصية","الحالة","تاريخ التنفيذ","ما نفّذه المعلم","الشاهد","تحقق الإدارة","ملاحظة الإدارة"], avRows().map(({v,r})=>[v.teacherName,v.date,v.type,v.visitor||"",v.cls||"",v.followDate||"",r.text,r.status,r.doneDate||"",r.action||"",r.evidence||"",r.verified?"نعم":"لا",r.adminNote||""]));
+
+  /* ---------- admin: teacher points ---------- */
+  let ptBonusFor = null;
+  async function renderAdminPoints(reload){
+    if(reload || !ptData){ try{ const r = await fetch("/api/points",{credentials:"same-origin",cache:"no-store"}); ptData = await r.json(); }catch(e){ ptData = {list:[], rules:[]}; } }
+    const L = ptData.list||[], R = ptData.rules||[], c = (x,k)=>x.counts[k]||0;
+    document.getElementById("ptRules").innerHTML = R.map(r=>`• ${escapeHTML(r.title)}: <b>${r.pts>0?"+":""}${r.pts}</b>`).join("<br>") + "<br>• نقاط إضافية أو خصم من الإدارة مع ذكر السبب.";
+    const tot = L.reduce((a,x)=>a+x.total,0);
+    document.getElementById("ptStats").innerHTML = statTile(L.filter(x=>x.total>0).length,"معلم لديه نقاط","👥") + statTile(tot,"مجموع النقاط","⭐") + statTile(L[0]&&L[0].total>0?escapeHTML(L[0].name.split(" ").slice(0,2).join(" ")):"—","المتصدر","🥇") + statTile(L.length?Math.round(tot/L.length):0,"متوسط النقاط","📊");
+    const medal = i=>i===0?"🥇":i===1?"🥈":i===2?"🥉":i+1;
+    document.getElementById("ptTable").innerHTML = `<thead><tr><th>#</th><th>المعلم</th><th>المناوبة</th><th>التوصيات المنفذة</th><th>المبادرات</th><th>الواقع المعزز</th><th>إضافي/خصم</th><th>المجموع</th><th></th></tr></thead><tbody>${L.map((x,i)=>{ const b = x.bonus.reduce((a,y)=>a+y.pts,0); return `<tr><td style="font-size:18px">${x.total>0?medal(i):"—"}</td><td><b>${escapeHTML(x.name)}</b><div style="font-size:11.5px;color:var(--text-muted)">${escapeHTML(x.subject||"")}</div></td><td>${c(x,"duty")}${c(x,"dutyReviewed")?` <small>(${c(x,"dutyReviewed")} مراجعة)</small>`:""}</td><td>${c(x,"recDone")}${c(x,"recVerified")?` <small>(${c(x,"recVerified")} تحقق)</small>`:""}</td><td>${c(x,"pf")}</td><td>${c(x,"arShared")}</td><td style="color:${b<0?"var(--danger)":"inherit"}">${b?(b>0?"+":"")+b:"—"}</td><td><b style="font-family:Cairo;font-size:17px;color:var(--primary-strong)">${x.total}</b></td><td><button class="btn ghost sm" data-ptb="${escapeHTML(x.teacherId)}">± نقاط</button></td></tr>`; }).join("")}</tbody>`;
+  }
+  document.getElementById("ptTable").addEventListener("click", e=>{ const b = e.target.closest("[data-ptb]"); if(!b) return; ptBonusFor = b.dataset.ptb; const x = (ptData.list||[]).find(q=>q.teacherId===ptBonusFor); document.getElementById("ptBonusTitle").textContent = "± نقاط: " + (x?x.name:""); document.getElementById("ptBonusHist").innerHTML = x && x.bonus.length ? "<b>السجل:</b><br>" + x.bonus.map(y=>`${y.date} · ${y.pts>0?"+":""}${y.pts} · ${escapeHTML(y.reason)}`).join("<br>") : ""; document.getElementById("ptBonusBox").hidden = false; document.getElementById("ptBonusBox").scrollIntoView({behavior:"smooth", block:"center"}); });
+  document.getElementById("ptBonusClose").onclick = ()=>{ document.getElementById("ptBonusBox").hidden = true; };
+  document.getElementById("ptBonusSave").onclick = async ()=>{ const pts = +document.getElementById("ptBonusPts").value, reason = document.getElementById("ptBonusReason").value.trim(); if(!ptBonusFor || !pts || !reason){ toast("أدخل النقاط والسبب"); return; }
+    try{ await recApi("bonus","POST",{teacherId:ptBonusFor, pts, reason}); toast("✔ حُفظت النقاط"); document.getElementById("ptBonusReason").value=""; document.getElementById("ptBonusBox").hidden = true; renderAdminPoints(true); }catch(e){ toast("تعذّر الحفظ"); } };
+  document.getElementById("ptRefresh").onclick = ()=>renderAdminPoints(true);
+  document.getElementById("ptExport").onclick = ()=>{ const L = (ptData&&ptData.list)||[]; exportRowsAsXlsx("سجل_نقاط_المعلمين.xlsx","النقاط",["الترتيب","المعلم","المادة","المناوبات","التوصيات المنفذة","المبادرات","مشاهد الواقع المعزز","إضافي/خصم","المجموع"], L.map((x,i)=>[i+1,x.name,x.subject||"",x.counts.duty||0,x.counts.recDone||0,x.counts.pf||0,x.counts.arShared||0,x.bonus.reduce((a,y)=>a+y.pts,0),x.total])); };
 
   /* ======================= تصدير الجدول: معلم واحد / كل المعلمين / شعبة / صف / مادة ======================= */
   function exportRowsAsXlsx(filename, sheetName, header, rows){
