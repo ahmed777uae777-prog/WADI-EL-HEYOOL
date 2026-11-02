@@ -318,6 +318,8 @@
   }
   .chip:hover{border-color:color-mix(in srgb, var(--primary) 45%, var(--border));}
   .chip.selected{background:var(--primary); border-color:var(--primary); color:var(--on-primary);}
+  .chip.on{background:var(--primary); border-color:var(--primary); color:var(--on-primary);}
+  .chips{display:flex; gap:6px; flex-wrap:wrap;} .chips .chip{padding:6px 12px; font-size:12.5px;}
   .chip small{display:block; font-weight:500; opacity:.8; font-size:11px;}
 
   .step-label{
@@ -1598,7 +1600,9 @@
     <div class="card">
       <div class="view-head"><h2>🛡️ سجل المناوبة</h2><p>سجّل مناوبتك: المكان، والحصة أو الفسحة، وما لاحظته. تصل مباشرة لإدارة المدرسة للمتابعة.</p></div>
       <div class="stats-row" id="dutyStats"></div>
-      <div class="lrc-block">
+      <div class="lrc-block"><div class="lrc-block-head"><h3>📌 مناوباتي المكلّف بها من الإدارة</h3></div><div id="dutyAssigned"></div></div>
+      <details class="lrc-block"><summary style="cursor:pointer;font-weight:800">➕ تسجيل مناوبة إضافية (غير مدرجة في الجدول)</summary>
+      <div style="margin-top:12px">
         <div class="lrc-block-head"><h3>➕ تسجيل مناوبة</h3><button class="btn ghost sm" id="dutyNowBtn">⚡ الفترة الحالية</button></div>
         <div class="row">
           <div class="field"><label>التاريخ</label><input type="date" id="dutyDate"></div>
@@ -1611,7 +1615,7 @@
           <div class="field"><label>الملاحظات (اختياري)</label><textarea id="dutyNotes" rows="2" placeholder="مثال: تم تنظيم الطلاب عند المقصف، لا توجد ملاحظات…"></textarea></div>
         </div>
         <button class="btn" id="dutySaveBtn">💾 تسجيل المناوبة</button>
-      </div>
+      </div></details>
       <div class="lrc-block"><div class="lrc-block-head"><h3>📜 مناوباتي</h3></div><div class="tbl-wrap"><table class="datatable" id="dutyMine"></table></div></div>
     </div>
   </section>
@@ -1643,7 +1647,47 @@
 
   <section class="view" id="view-adminduty">
     <div class="card">
-      <div class="view-head"><h2>🛡️ متابعة المناوبة</h2><p>كل ما سجّله المعلمون من مناوبات: المكان والحصة أو الفسحة والملاحظات، مع المراجعة والتصدير.</p></div>
+      <div class="view-head"><h2>🛡️ المناوبة: التكليف والمتابعة</h2><p>كلّف المعلمين بالمناوبة (يدويًا أو بالذكاء الاصطناعي)، وأعد التكليف ليوم محدد، وتابع التنفيذ والملاحظات.</p></div>
+      <div class="chips" id="adTabs" style="margin-bottom:12px"><button class="chip on" data-adtab="assign">📅 التكليف</button><button class="chip" data-adtab="follow">📊 المتابعة والتنفيذ</button></div>
+      <div id="adAssign">
+      <div class="lrc-block" id="rosterAI">
+        <div class="lrc-block-head"><h3>🤖 إنشاء جدول المناوبة بالذكاء الاصطناعي</h3></div>
+        <p class="lrc-hint">اكتب ما تريده بكلامك، فيملأ الذكاء الاصطناعي الإعدادات، ثم يوزّع المناوبات بعدل ودون تعارض مع حصص المعلمين. راجع النتيجة وعدّلها قبل النشر.</p>
+        <div class="field"><textarea id="roPrompt" rows="2" placeholder="مثال: وزّع مناوبة الفسحة يوميًا من الأحد إلى الخميس على 4 أماكن: الساحة (معلمان) والمقصف والممرات والبوابة، ومناوبة نهاية الدوام عند البوابة، بحد أقصى مناوبتين لكل معلم أسبوعيًا، واستثنِ المدير ومساعدة المدير"></textarea></div>
+        <button class="btn sm" id="roAiBtn">🤖 املأ الإعدادات من طلبي</button>
+        <div class="row" style="margin-top:12px">
+          <div class="field"><label>الأيام</label><div id="roDays" class="chips"></div></div>
+          <div class="field"><label>الفترات</label><div id="roSlots" class="chips"></div></div>
+        </div>
+        <div class="row">
+          <div class="field"><label>الأماكن وعدد المعلمين (سطر لكل مكان: المكان × العدد)</label><textarea id="roPlaces" rows="4">الساحة الرئيسية × 2
+المقصف × 1
+الممرات - الدور الأرضي × 1
+البوابة الرئيسية × 1</textarea></div>
+          <div class="field"><label>معلمون مستثنون (اسم في كل سطر)</label><textarea id="roExclude" rows="4"></textarea></div>
+          <div class="field" style="max-width:170px"><label>الحد الأقصى أسبوعيًا لكل معلم</label><input type="number" id="roMax" min="1" max="10" value="2"></div>
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn" id="roGenBtn">⚙️ وزّع المناوبات</button><button class="btn ghost" id="roPublishBtn" disabled>✅ اعتماد ونشر الجدول</button></div>
+        <div id="roPreview" style="margin-top:12px"></div>
+      </div>
+      <div class="lrc-block">
+        <div class="lrc-block-head"><h3>📅 جدول المناوبة الأسبوعي المعتمد</h3><div style="display:flex;gap:6px"><button class="btn ghost sm" id="roExport">⬇️ Excel</button><button class="btn ghost sm" id="roPrint">🖨️ طباعة</button></div></div>
+        <p class="lrc-hint">غيّر أي معلم من القائمة مباشرة، أو أضف تكليفًا جديدًا. يظهر الجدول لكل معلم في «سجل المناوبة».</p>
+        <div class="tbl-wrap"><table class="datatable" id="roWeek"></table></div>
+        <div class="row" style="margin-top:10px;align-items:flex-end">
+          <div class="field"><label>اليوم</label><select id="roAddDay"></select></div><div class="field"><label>الفترة</label><select id="roAddSlot"></select></div>
+          <div class="field"><label>المكان</label><input type="text" id="roAddPlace" list="roPlaceList" placeholder="المكان"></div><div class="field"><label>المعلم</label><select id="roAddTeacher"></select></div>
+          <div class="field" style="flex:0"><button class="btn sm" id="roAddBtn">➕ تكليف</button></div>
+        </div>
+        <datalist id="roPlaceList"></datalist>
+      </div>
+      <div class="lrc-block">
+        <div class="lrc-block-head"><h3>🔁 إعادة التكليف ليوم محدد</h3><div class="lrc-date"><input type="date" id="roDay"></div></div>
+        <p class="lrc-hint">عند غياب معلم أو انشغاله: اختر البديل لهذا اليوم فقط دون تغيير الجدول الأسبوعي. المقترحون أولًا هم غير المشغولين بحصة وأقل مناوبات.</p>
+        <div class="tbl-wrap"><table class="datatable" id="roDayTable"></table></div>
+      </div>
+      </div>
+      <div id="adFollow" hidden>
       <div class="stats-row" id="adStats"></div>
       <div class="lrc-block">
         <div class="row">
@@ -1657,6 +1701,7 @@
       </div>
       <div class="lrc-block"><div class="lrc-block-head"><h3>📍 تغطية الفترات في يوم <span id="adCovDay"></span></h3></div><div class="tbl-wrap"><table class="datatable" id="adCoverage"></table></div></div>
       <div class="tbl-wrap"><table class="datatable" id="adTable"></table></div>
+      </div>
     </div>
   </section>
 
@@ -2001,7 +2046,7 @@
     {id:"absinbox", icon:"📥", title:"الغياب الوارد", desc:"غياب الطلاب كما يصل لأخصائي قواعد البيانات، وحالة إدخاله"},
     {id:"portfolio", icon:"🏅", title:"مبادرات وإنجازات المعلمين", desc:"مراجعة أعمال المعلمين وشواهدها وتقييمها لإجادة", accent:true},
     {id:"adminaccounts", icon:"🗄️", title:"قاعدة بيانات المعلمين", desc:"إنشاء حسابات المعلمين وتعديلها وتعطيلها وحذفها من مكان واحد", accent:true},
-    {id:"adminduty", icon:"🛡️", title:"متابعة المناوبة", desc:"مناوبات المعلمين: المكان والحصة والفسحة، وتغطية اليوم والمراجعة"},
+    {id:"adminduty", icon:"🛡️", title:"المناوبة: التكليف والمتابعة", desc:"جدول المناوبة بالذكاء الاصطناعي، إعادة التكليف، ومتابعة التنفيذ", accent:true},
     {id:"adminvisits", icon:"📋", title:"متابعة توصيات الزيارات الإشرافية", desc:"تنفيذ توصيات زيارات المعلمين والتحقق منها وتسجيل زيارات جديدة"},
     {id:"adminpoints", icon:"🏆", title:"سجل نقاط المعلمين", desc:"ترتيب المعلمين بنقاط نشاطهم في المنصة مع الإضافة والخصم", accent:true}
   ];
@@ -2279,7 +2324,7 @@
     if(id==="portfolio" && currentUser) renderPortfolio(true);
     if(id==="duty" && currentUser) renderDuty(true);
     if(id==="visits" && currentUser) renderVisits(true);
-    if(id==="adminduty" && currentUser && currentUser.role==="admin") renderAdminDuty(true);
+    if(id==="adminduty" && currentUser && currentUser.role==="admin"){ loadRoster2().then(()=>renderRosterAdmin()); renderAdminDuty(true); }
     if(id==="adminvisits" && currentUser && currentUser.role==="admin") renderAdminVisits(true);
     if(id==="adminpoints" && currentUser && currentUser.role==="admin") renderAdminPoints(true);
     document.getElementById("crumbWrap").hidden = (id==="dashboard" || id==="identify" || (id==="absinbox" && currentUser && currentUser.role==="teacher"));
@@ -5582,17 +5627,123 @@ ${fields.map(f=>GAME_SPEC[f]).join(",\n")}
   function teacherOpts(sel, all){ return (all?`<option value="">${all}</option>`:"") + (teachers||[]).filter(t=>t.active!==false).slice().sort((a,b)=>a.name.localeCompare(b.name,"ar")).map(t=>`<option value="${escapeHTML(t.id)}"${t.id===sel?" selected":""}>${escapeHTML(t.name)}</option>`).join(""); }
   function statTile(num, lbl, icon){ return `<div class="stat-tile"><div class="num">${num}</div><div class="lbl">${icon||""} ${lbl}</div></div>`; }
 
+  /* ======================= تكليف المناوبة (المدير) — جدول أسبوعي + توزيع ذكي + إعادة تكليف ======================= */
+  let roster = {weekly:[], overrides:[]}, roDraft = null;
+  const RO_DAYS = ["الأحد","الإثنين","الثلاثاء","الأربعاء","الخميس"];
+  const dayNameOf = (iso)=>AR_DAYS[new Date(iso+"T12:00:00").getDay()];
+  const slotPeriod = (slot)=>{ const m = String(slot).match(/الحصة (\d)/); return m ? +m[1] : null; };
+  const tName = (id)=>((teachers||[]).find(t=>t.id===id)||{}).name || "—";
+  async function loadRoster2(){ try{ const r = await fetch("/api/doc?path=school/dutyroster",{credentials:"same-origin",cache:"no-store"}); if(r.ok){ const d = await r.json(); roster = {weekly:d.weekly||[], overrides:d.overrides||[]}; } }catch(e){} return roster; }
+  async function saveRoster2(){ roster.updated = Date.now(); const r = await fetch("/api/doc?path=school/dutyroster",{method:"PUT",credentials:"same-origin",headers:{"content-type":"application/json"},body:JSON.stringify(roster)}); if(!r.ok) throw new Error("save"); }
+  // assignments for a given date: weekly roster for that weekday, with that day's re-assignments applied
+  function assignmentsOn(iso){ const day = dayNameOf(iso);
+    return roster.weekly.filter(a=>a.day===day).map(a=>{ const o = roster.overrides.find(x=>x.date===iso && x.aid===a.id); return Object.assign({}, a, {date:iso, teacherId:o?o.teacherId:a.teacherId, origTeacherId:o?a.teacherId:null, reason:o?o.reason:""}); }); }
+  function dutyLoad(list){ const m = {}; list.forEach(a=>m[a.teacherId]=(m[a.teacherId]||0)+1); return m; }
+  function chipsSel(el, items, sel){ el.innerHTML = items.map(x=>`<button type="button" class="chip${sel.includes(x)?" on":""}" data-v="${escapeHTML(x)}">${escapeHTML(x)}</button>`).join(""); }
+  function chipVals(el){ return [...el.querySelectorAll(".chip.on")].map(b=>b.dataset.v); }
+  function parsePlaces(t){ return String(t||"").split(/\n+/).map(l=>{ const m = l.split(/[×x*]/); const name = (m[0]||"").trim(); const n = Math.max(1, Math.min(6, parseInt((m[1]||"1").replace(/[٠-٩]/g,d=>"٠١٢٣٤٥٦٧٨٩".indexOf(d)),10)||1)); return name ? {name, count:n} : null; }).filter(Boolean); }
+  // fair distributor: least-loaded first, never twice the same day, never during the teacher's own class period
+  function generateRoster(p){
+    const ex = (p.exclude||[]).map(x=>String(x).trim()).filter(Boolean);
+    const pool = (teachers||[]).filter(t=>t.active!==false && !ex.some(n=>t.name.includes(n) || n.includes(t.name)));
+    const load = {}, out = [], unfilled = []; pool.forEach(t=>load[t.id]=0);
+    p.days.forEach(day=>{ const used = new Set();
+      p.slots.forEach(slot=>{ const per = slotPeriod(slot);
+        p.places.forEach(pl=>{ for(let k=0;k<pl.count;k++){
+          const cand = pool.filter(t=>!used.has(t.id) && load[t.id] < p.max && !(per && isTeacherBusyAt(t.id, day, per)));
+          if(!cand.length){ unfilled.push(`${day} · ${slot} · ${pl.name}`); continue; }
+          const min = Math.min(...cand.map(t=>load[t.id])); const best = cand.filter(t=>load[t.id]===min); const t = best[Math.floor(Math.random()*best.length)];
+          load[t.id]++; used.add(t.id); out.push({id:"a"+Math.random().toString(36).slice(2,9), day, slot, place:pl.name, teacherId:t.id});
+        } }); }); });
+    return {weekly:out, unfilled, load};
+  }
+  function rosterTable(list, editable){
+    const slots = DUTY_SLOTS_UI.filter(s=>list.some(a=>a.slot===s));
+    if(!slots.length) return `<tbody><tr><td style="text-align:center;color:var(--text-muted);padding:20px">لا توجد تكليفات بعد — أنشئ الجدول بالذكاء الاصطناعي أو أضف تكليفًا يدويًا.</td></tr></tbody>`;
+    return `<thead><tr><th>الفترة</th>${RO_DAYS.map(d=>`<th>${d}</th>`).join("")}</tr></thead><tbody>${slots.map(s=>`<tr><td><b>${s}</b></td>${RO_DAYS.map(d=>`<td style="vertical-align:top;min-width:150px">${list.filter(a=>a.day===d&&a.slot===s).map(a=>editable?`<div style="margin:3px 0;font-size:12px"><b>${escapeHTML(a.place)}</b><div style="display:flex;gap:3px"><select data-roa="${a.id}" style="font-size:12px;padding:3px">${teacherOpts(a.teacherId)}</select><button class="btn ghost sm" data-rodel="${a.id}" title="حذف" style="padding:2px 7px">✕</button></div></div>`:`<div style="margin:3px 0;font-size:12px"><b>${escapeHTML(a.place)}</b>: ${escapeHTML(tName(a.teacherId))}</div>`).join("")||"—"}</td>`).join("")}</tr>`).join("")}</tbody>`;
+  }
+  async function renderRosterAdmin(reload){
+    if(reload) await loadRoster2();
+    const de = document.getElementById("roDays"); if(!de.children.length){ chipsSel(de, RO_DAYS, RO_DAYS); chipsSel(document.getElementById("roSlots"), DUTY_SLOTS_UI, ["الفسحة"]); document.getElementById("roAddDay").innerHTML = opts(RO_DAYS); document.getElementById("roAddSlot").innerHTML = opts(DUTY_SLOTS_UI,"الفسحة"); document.getElementById("roAddTeacher").innerHTML = teacherOpts(""); document.getElementById("roPlaceList").innerHTML = DUTY_PLACES.filter(p=>p!=="أخرى").map(p=>`<option value="${escapeHTML(p)}">`).join(""); document.getElementById("roDay").value = lISO(); }
+    document.getElementById("roWeek").innerHTML = rosterTable(roster.weekly, true);
+    renderRosterDay();
+  }
+  function renderRosterDay(){
+    const iso = document.getElementById("roDay").value || lISO(), day = dayNameOf(iso), list = assignmentsOn(iso), load = dutyLoad(roster.weekly);
+    document.getElementById("roDayTable").innerHTML = list.length ? `<thead><tr><th>الفترة</th><th>المكان</th><th>المكلّف</th><th>البديل لهذا اليوم</th><th>السبب</th></tr></thead><tbody>${list.map(a=>{ const per = slotPeriod(a.slot), busyToday = new Set(list.map(x=>x.teacherId));
+      const free = (teachers||[]).filter(t=>t.active!==false && t.id!==a.teacherId && !busyToday.has(t.id) && !(per && isTeacherBusyAt(t.id, day, per))).sort((x,y)=>(load[x.id]||0)-(load[y.id]||0)).slice(0,25);
+      return `<tr data-aid="${a.id}"><td>${escapeHTML(a.slot)}</td><td>${escapeHTML(a.place)}</td><td><b>${escapeHTML(tName(a.teacherId))}</b>${a.origTeacherId?`<div style="font-size:11.5px;color:var(--accent)">بدلًا من ${escapeHTML(tName(a.origTeacherId))}</div>`:""}</td><td><select data-ovr><option value="">— بدون تغيير —</option>${a.origTeacherId?`<option value="__reset">↺ إعادة المكلّف الأصلي</option>`:""}${free.map(t=>`<option value="${escapeHTML(t.id)}">${escapeHTML(t.name)} (${load[t.id]||0})</option>`).join("")}</select></td><td><input type="text" data-reason value="${escapeHTML(a.reason||"")}" placeholder="مثال: غياب / تكليف آخر"></td></tr>`; }).join("")}</tbody>` : `<tbody><tr><td style="text-align:center;color:var(--text-muted);padding:16px">لا توجد مناوبات مكلّف بها يوم ${escapeHTML(day)}.</td></tr></tbody>`;
+  }
+  ["roDays","roSlots"].forEach(id=>document.getElementById(id).addEventListener("click", e=>{ const b = e.target.closest(".chip"); if(b) b.classList.toggle("on"); }));
+  document.getElementById("roAiBtn").addEventListener("click", async ()=>{
+    const q = document.getElementById("roPrompt").value.trim(); if(!q){ toast("اكتب طلبك أولًا"); return; }
+    if(!sample){ toast("الذكاء الاصطناعي غير متاح الآن"); return; }
+    const btn = document.getElementById("roAiBtn"); btn.disabled = true; btn.textContent = "⏳ يفهم طلبك…";
+    try{
+      const prompt = `حوّل طلب مدير مدرسة لتوزيع المناوبات إلى إعدادات JSON فقط.
+الأيام المتاحة: ${RO_DAYS.join("، ")}. الفترات المتاحة: ${DUTY_SLOTS_UI.join("، ")}. أماكن مقترحة: ${DUTY_PLACES.filter(p=>p!=="أخرى").join("، ")}.
+أسماء المعلمين: ${(teachers||[]).filter(t=>t.active!==false).map(t=>t.name).join("، ")}.
+الطلب: «${q}»
+أعد: {"days":[أسماء الأيام كما هي أعلاه],"slots":[الفترات كما هي أعلاه بالضبط],"places":[{"name":"اسم المكان","count":عدد المعلمين}],"exclude":[أسماء المعلمين المستثنين كما وردت في القائمة],"max":الحد الأقصى أسبوعيًا لكل معلم}
+إن لم يذكر الطلب شيئًا فاستخدم: الأيام الخمسة، الفسحة، الحد الأقصى 2.`;
+      const d = await sample.json(prompt, {modelTier:"default"});
+      const days = (d.days||[]).filter(x=>RO_DAYS.includes(x)), slots = (d.slots||[]).filter(x=>DUTY_SLOTS_UI.includes(x));
+      chipsSel(document.getElementById("roDays"), RO_DAYS, days.length?days:RO_DAYS); chipsSel(document.getElementById("roSlots"), DUTY_SLOTS_UI, slots.length?slots:["الفسحة"]);
+      if(Array.isArray(d.places) && d.places.length) document.getElementById("roPlaces").value = d.places.map(p=>`${p.name} × ${p.count||1}`).join("\n");
+      document.getElementById("roExclude").value = (d.exclude||[]).join("\n"); if(d.max) document.getElementById("roMax").value = Math.max(1, Math.min(10, +d.max||2));
+      toast("✔ مُلئت الإعدادات — راجعها ثم اضغط «وزّع المناوبات»");
+    }catch(e){ toast(sampleErrorMessage(e)); } finally{ btn.disabled = false; btn.textContent = "🤖 املأ الإعدادات من طلبي"; }
+  });
+  document.getElementById("roGenBtn").addEventListener("click", ()=>{
+    const p = {days:chipVals(document.getElementById("roDays")), slots:chipVals(document.getElementById("roSlots")), places:parsePlaces(document.getElementById("roPlaces").value), exclude:document.getElementById("roExclude").value.split(/\n+/), max:+document.getElementById("roMax").value||2};
+    if(!p.days.length || !p.slots.length || !p.places.length){ toast("اختر الأيام والفترات والأماكن"); return; }
+    roDraft = generateRoster(p);
+    const used = Object.values(roDraft.load).filter(n=>n>0).length;
+    document.getElementById("roPreview").innerHTML = `<div class="pf-result ${roDraft.unfilled.length?"need":"ok"}">✔ وُزّعت <b>${roDraft.weekly.length}</b> مناوبة على <b>${used}</b> معلمًا بالتساوي، دون تعارض مع حصصهم.${roDraft.unfilled.length?`<br>⚠️ لم يُغطَّ ${roDraft.unfilled.length} موقع (لا يوجد معلم متاح ضمن الحد الأقصى): ${roDraft.unfilled.slice(0,6).map(escapeHTML).join("، ")}`:""}<br>هذه معاينة — اضغط «اعتماد ونشر» لتحل محل الجدول الحالي.</div><div class="tbl-wrap" style="margin-top:8px"><table class="datatable">${rosterTable(roDraft.weekly,false)}</table></div>`;
+    document.getElementById("roPublishBtn").disabled = false;
+  });
+  document.getElementById("roPublishBtn").addEventListener("click", async ()=>{ if(!roDraft) return; if(roster.weekly.length && !confirm("سيحل الجدول الجديد محل الجدول الأسبوعي الحالي. متابعة؟")) return;
+    roster.weekly = roDraft.weekly; roster.overrides = []; try{ await saveRoster2(); roDraft = null; document.getElementById("roPreview").innerHTML = ""; document.getElementById("roPublishBtn").disabled = true; toast("✅ نُشر جدول المناوبة وظهر لجميع المعلمين"); renderRosterAdmin(); }catch(e){ toast("تعذّر النشر"); } });
+  document.getElementById("roWeek").addEventListener("change", async e=>{ const s = e.target.closest("[data-roa]"); if(!s) return; const a = roster.weekly.find(x=>x.id===s.dataset.roa); if(!a) return; a.teacherId = s.value; try{ await saveRoster2(); toast("✔ عُدّل التكليف"); }catch(err){ toast("تعذّر الحفظ"); } });
+  document.getElementById("roWeek").addEventListener("click", async e=>{ const b = e.target.closest("[data-rodel]"); if(!b || !confirm("حذف هذا التكليف؟")) return; roster.weekly = roster.weekly.filter(x=>x.id!==b.dataset.rodel); roster.overrides = roster.overrides.filter(o=>o.aid!==b.dataset.rodel); try{ await saveRoster2(); renderRosterAdmin(); }catch(err){ toast("تعذّر الحفظ"); } });
+  document.getElementById("roAddBtn").addEventListener("click", async ()=>{ const a = {id:"a"+Math.random().toString(36).slice(2,9), day:document.getElementById("roAddDay").value, slot:document.getElementById("roAddSlot").value, place:document.getElementById("roAddPlace").value.trim(), teacherId:document.getElementById("roAddTeacher").value};
+    if(!a.place || !a.teacherId){ toast("أدخل المكان والمعلم"); return; } const per = slotPeriod(a.slot); if(per && isTeacherBusyAt(a.teacherId, a.day, per) && !confirm("المعلم لديه حصة في هذا الوقت، هل تريد التكليف رغم ذلك؟")) return;
+    roster.weekly.push(a); try{ await saveRoster2(); toast("✔ أُضيف التكليف"); renderRosterAdmin(); }catch(err){ toast("تعذّر الحفظ"); } });
+  document.getElementById("roDay").addEventListener("change", renderRosterDay);
+  document.getElementById("roDayTable").addEventListener("change", async e=>{ const tr = e.target.closest("[data-aid]"); if(!tr) return; const iso = document.getElementById("roDay").value, aid = tr.dataset.aid;
+    const sel = tr.querySelector("[data-ovr]").value, reason = tr.querySelector("[data-reason]").value.trim();
+    const prev = roster.overrides.find(o=>o.date===iso && o.aid===aid);
+    if(e.target.matches("[data-reason]") && !prev) return;
+    if(!sel && !prev) return;
+    roster.overrides = roster.overrides.filter(o=>!(o.date===iso && o.aid===aid));
+    if(sel && sel!=="__reset") roster.overrides.push({date:iso, aid, teacherId:sel, reason});
+    else if(!sel && prev) roster.overrides.push({date:iso, aid, teacherId:prev.teacherId, reason});
+    roster.overrides = roster.overrides.filter(o=>o.date >= lISO(new Date(Date.now()-60*864e5)));
+    try{ await saveRoster2(); toast(sel==="__reset" ? "↺ أُعيد المكلّف الأصلي" : "✔ أُعيد التكليف لهذا اليوم"); renderRosterDay(); }catch(err){ toast("تعذّر الحفظ"); } });
+  document.getElementById("roExport").onclick = ()=>exportRowsAsXlsx("جدول_المناوبة.xlsx","المناوبة",["اليوم","الفترة","المكان","المعلم"], RO_DAYS.flatMap(d=>DUTY_SLOTS_UI.flatMap(s=>roster.weekly.filter(a=>a.day===d&&a.slot===s).map(a=>[d,s,a.place,tName(a.teacherId)]))));
+  document.getElementById("roPrint").onclick = ()=>{ const w = window.open("","_blank"); if(!w){ toast("اسمح بالنوافذ المنبثقة"); return; } w.document.write(`<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><title>جدول المناوبة</title><style>body{font-family:Tahoma,Arial;padding:18px}h2{text-align:center}table{width:100%;border-collapse:collapse;font-size:12px}th,td{border:1px solid #999;padding:6px;vertical-align:top}th{background:#E3EFEE}</style></head><body><h2>جدول المناوبة الأسبوعي — ${escapeHTML((schoolInfo&&schoolInfo.name)||"")}</h2><table>${rosterTable(roster.weekly,false)}</table></body></html>`); w.document.close(); setTimeout(()=>w.print(), 500); };
+
   /* ---------- teacher: duty ---------- */
   async function renderDuty(reload){
     const ds = document.getElementById("dutySlot");
     if(!ds.options.length){ ds.innerHTML = opts(DUTY_SLOTS_UI, currentSlot()); document.getElementById("dutyPlace").innerHTML = opts(DUTY_PLACES); document.getElementById("dutyDate").value = lISO(); }
-    if(reload){ try{ dutyMine = (await recApi("duty")).list; }catch(e){ dutyMine = []; } }
+    if(reload){ try{ dutyMine = (await recApi("duty")).list; }catch(e){ dutyMine = []; } await loadRoster2(); }
+    renderDutyAssigned();
     const now = new Date(), wk = lISO(new Date(now.getTime() - ((now.getDay()+1)%7)*864e5)), mo = lISO(now).slice(0,7);
     let my = null; try{ const r = await fetch("/api/points",{credentials:"same-origin",cache:"no-store"}); if(r.ok) my = (await r.json()).list[0]; }catch(e){}
     document.getElementById("dutyStats").innerHTML = statTile(dutyMine.filter(d=>d.date>=wk).length,"مناوبات هذا الأسبوع","🗓️") + statTile(dutyMine.filter(d=>d.date.slice(0,7)===mo).length,"مناوبات هذا الشهر","📆") + statTile(dutyMine.filter(d=>d.reviewed).length,"راجعتها الإدارة","✔") + statTile(my?my.total:"—","نقاطي في المنصة","🏆");
     const t = document.getElementById("dutyMine");
     t.innerHTML = `<thead><tr><th>التاريخ</th><th>الفترة</th><th>المكان</th><th>الحالات</th><th>الملاحظات</th><th>المراجعة</th><th></th></tr></thead><tbody>${dutyMine.length ? dutyMine.slice(0,120).map(d=>`<tr><td>${fmtD(d.date)}</td><td><b>${escapeHTML(d.slot)}</b></td><td>${escapeHTML(d.place)}</td><td>${d.cases||0}</td><td style="font-size:12.5px">${escapeHTML(d.notes||"—")}${d.adminNote?`<div style="color:var(--accent)">💬 ${escapeHTML(d.adminNote)}</div>`:""}</td><td>${d.reviewed?'<span class="pill ok">تمت المراجعة</span>':'<span class="pill wait">بانتظار المراجعة</span>'}</td><td>${d.reviewed?"":`<button class="btn ghost sm" data-dutydel="${escapeHTML(d.id)}">حذف</button>`}</td></tr>`).join("") : `<tr><td colspan="7" style="text-align:center;color:var(--text-muted);padding:20px">لا توجد مناوبات مسجلة بعد.</td></tr>`}</tbody>`;
   }
+  function myAssignments(){ const me = currentUser && currentUser.teacherId; const out = []; const base = new Date(); for(let k=-2;k<7;k++){ const d = new Date(base.getTime()+k*864e5), iso = lISO(d); if(!RO_DAYS.includes(dayNameOf(iso))) continue; assignmentsOn(iso).filter(a=>a.teacherId===me).forEach(a=>out.push(a)); } return out; }
+  function renderDutyAssigned(){ const list = myAssignments(), today = lISO();
+    document.getElementById("dutyAssigned").innerHTML = list.length ? list.map(a=>{ const done = dutyMine.find(d=>d.date===a.date && d.slot===a.slot); const past = a.date < today;
+      return `<div class="lrc-block" style="margin-bottom:8px;${a.date===today?"border-color:var(--primary);box-shadow:0 0 0 2px var(--primary-tint)":""}" data-as="${a.date}|${escapeHTML(a.slot)}|${escapeHTML(a.place)}">
+        <div class="lrc-block-head" style="margin-bottom:6px"><h3>${a.date===today?"📍 اليوم — ":""}${fmtD(a.date)} · ${escapeHTML(a.slot)} · ${escapeHTML(a.place)}</h3>${done?'<span class="pill ok">✔ نُفّذت</span>':past?'<span class="pill bad">لم تُسجَّل</span>':'<span class="pill wait">مكلّف</span>'}</div>
+        ${a.origTeacherId?`<div style="font-size:12.5px;color:var(--accent);margin-bottom:6px">🔁 إعادة تكليف لهذا اليوم${a.reason?": "+escapeHTML(a.reason):""}</div>`:""}
+        ${done?"":`<div class="row" style="align-items:flex-end"><div class="field" style="max-width:130px"><label>الحالات</label><input type="number" min="0" max="99" value="0" data-ac></div><div class="field"><label>ملاحظات</label><input type="text" data-an placeholder="اختياري"></div><div class="field" style="flex:0"><button class="btn sm" data-adone>✔ نفّذت المناوبة</button></div></div>`}</div>`; }).join("") : `<div class="empty-hint">لا توجد مناوبات مكلّف بها هذا الأسبوع.</div>`; }
+  document.getElementById("dutyAssigned").addEventListener("click", async e=>{ const b = e.target.closest("[data-adone]"); if(!b) return; const box = b.closest("[data-as]"); const [date, slot, place] = box.dataset.as.split("|");
+    try{ await recApi("duty","POST",{date, slot, place, cases:box.querySelector("[data-ac]").value, notes:box.querySelector("[data-an]").value}); toast("✔ سُجّل تنفيذ المناوبة"); renderDuty(true); }catch(err){ toast("تعذّر الحفظ"); } });
   document.getElementById("dutyPlace").addEventListener("change", e=>{ document.getElementById("dutyPlaceOtherWrap").hidden = e.target.value!=="أخرى"; });
   document.getElementById("dutyNowBtn").addEventListener("click", ()=>{ document.getElementById("dutyDate").value = lISO(); document.getElementById("dutySlot").value = currentSlot(); toast("⚡ "+currentSlot()); });
   document.getElementById("dutySaveBtn").addEventListener("click", async ()=>{
@@ -5643,14 +5794,17 @@ ${fields.map(f=>GAME_SPEC[f]).join(",\n")}
   function adRange(kind){ const n = new Date(); const f = kind==="today" ? n : kind==="week" ? new Date(n.getTime() - ((n.getDay()+1)%7)*864e5) : new Date(n.getFullYear(), n.getMonth(), 1); document.getElementById("adFrom").value = lISO(f); document.getElementById("adTo").value = lISO(n); renderAdminDuty(); }
   function adFiltered(){ const f = document.getElementById("adFrom").value, t = document.getElementById("adTo").value, te = document.getElementById("adTeacher").value, sl = document.getElementById("adSlot").value, pl = document.getElementById("adPlace").value;
     return dutyAll.filter(d=>(!f||d.date>=f)&&(!t||d.date<=t)&&(!te||d.teacherId===te)&&(!sl||d.slot===sl)&&(!pl||d.place===pl)).sort((a,b)=>(b.date+b.slot).localeCompare(a.date+a.slot)); }
+  document.getElementById("adTabs").addEventListener("click", e=>{ const b = e.target.closest("[data-adtab]"); if(!b) return; document.querySelectorAll("#adTabs .chip").forEach(x=>x.classList.toggle("on", x===b)); document.getElementById("adAssign").hidden = b.dataset.adtab!=="assign"; document.getElementById("adFollow").hidden = b.dataset.adtab!=="follow"; if(b.dataset.adtab==="follow") renderAdminDuty(true); });
   async function renderAdminDuty(reload){
+    if(reload) await loadRoster2(); renderRosterAdmin();
     if(!document.getElementById("adSlot").options.length){ document.getElementById("adSlot").innerHTML = opts(DUTY_SLOTS_UI,"","كل الفترات"); document.getElementById("adPlace").innerHTML = opts(DUTY_PLACES.filter(p=>p!=="أخرى"),"","كل الأماكن"); document.getElementById("adTeacher").innerHTML = teacherOpts("","كل المعلمين"); const n=new Date(); document.getElementById("adFrom").value = lISO(new Date(n.getTime()-((n.getDay()+1)%7)*864e5)); document.getElementById("adTo").value = lISO(n); }
     if(reload){ try{ dutyAll = (await recApi("duty")).list; }catch(e){ dutyAll = []; } }
     const list = adFiltered(), today = lISO(), td = dutyAll.filter(d=>d.date===today);
     document.getElementById("adStats").innerHTML = statTile(td.length,"مناوبة مسجلة اليوم","🛡️") + statTile(new Set(td.map(d=>d.teacherId)).size,"معلم مناوب اليوم","👥") + statTile(list.length,"في الفترة المعروضة","📊") + statTile(dutyAll.filter(d=>!d.reviewed).length,"بانتظار المراجعة","⏳");
     const day = document.getElementById("adTo").value || today; document.getElementById("adCovDay").textContent = fmtD(day);
-    const dd = dutyAll.filter(d=>d.date===day);
-    document.getElementById("adCoverage").innerHTML = `<thead><tr><th>الفترة</th><th>المعلمون المناوبون والأماكن</th></tr></thead><tbody>${DUTY_SLOTS_UI.map(s=>{ const x = dd.filter(d=>d.slot===s); return `<tr><td><b>${s}</b></td><td>${x.length?x.map(d=>`<span class="pill ok" style="margin:2px">${escapeHTML(d.teacherName)} — ${escapeHTML(d.place)}</span>`).join(""):`<span style="color:var(--text-muted)">${s==="الفسحة"?"⚠️ لا يوجد تسجيل":"—"}</span>`}</td></tr>`; }).join("")}</tbody>`;
+    const dd = dutyAll.filter(d=>d.date===day), asg = assignmentsOn(day);
+    document.getElementById("adCoverage").innerHTML = `<thead><tr><th>الفترة</th><th>المكلّفون وحالة التنفيذ</th><th>تسجيلات إضافية</th></tr></thead><tbody>${DUTY_SLOTS_UI.filter(s=>asg.some(a=>a.slot===s)||dd.some(d=>d.slot===s)||s==="الفسحة").map(s=>{ const A = asg.filter(a=>a.slot===s), X = dd.filter(d=>d.slot===s && !A.some(a=>a.teacherId===d.teacherId));
+      return `<tr><td><b>${s}</b></td><td>${A.length?A.map(a=>{ const ok = dd.some(d=>d.slot===s && d.teacherId===a.teacherId); return `<span class="pill ${ok?"ok":day<lISO()?"bad":"wait"}" style="margin:2px">${ok?"✔":"⏳"} ${escapeHTML(tName(a.teacherId))} — ${escapeHTML(a.place)}</span>`; }).join(""):`<span style="color:var(--text-muted)">${s==="الفسحة"?"⚠️ لا يوجد تكليف":"—"}</span>`}</td><td>${X.map(d=>`<span class="pill ok" style="margin:2px">${escapeHTML(d.teacherName)} — ${escapeHTML(d.place)}</span>`).join("")||"—"}</td></tr>`; }).join("")}</tbody>`;
     document.getElementById("adTable").innerHTML = `<thead><tr><th>التاريخ</th><th>المعلم</th><th>الفترة</th><th>المكان</th><th>الحالات</th><th>الملاحظات</th><th>المراجعة</th><th>ملاحظة الإدارة</th></tr></thead><tbody>${list.length ? list.map(d=>`<tr data-did="${escapeHTML(d.id)}"><td>${fmtD(d.date)}</td><td><b>${escapeHTML(d.teacherName)}</b></td><td>${escapeHTML(d.slot)}</td><td>${escapeHTML(d.place)}</td><td>${d.cases||0}</td><td style="font-size:12.5px;max-width:260px">${escapeHTML(d.notes||"—")}</td><td><label style="display:flex;gap:6px;align-items:center;white-space:nowrap"><input type="checkbox" data-rev ${d.reviewed?"checked":""}> ${d.reviewed?"تمت":"مراجعة"}</label></td><td><input type="text" data-note value="${escapeHTML(d.adminNote||"")}" placeholder="ملاحظة…" style="min-width:150px"></td></tr>`).join("") : `<tr><td colspan="8" style="text-align:center;color:var(--text-muted);padding:20px">لا توجد مناوبات في هذه الفترة.</td></tr>`}</tbody>`;
   }
   ["adFrom","adTo","adTeacher","adSlot","adPlace"].forEach(i=>document.getElementById(i).addEventListener("change", ()=>renderAdminDuty()));
