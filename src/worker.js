@@ -437,7 +437,7 @@ const VISIT_TYPES = ["زيارة إشرافية (المشرف)", "زيارة إ�
 const isDate = (v) => /^\d{4}-\d{2}-\d{2}$/.test(String(v || "")) ? String(v) : "";
 const cleanUrl = (u) => { u = clip(u, 500).trim(); return /^https?:\/\//i.test(u) ? u : ""; };
 function dutyFields(b) {
-  return { date: isDate(b.date), slot: DUTY_SLOTS.includes(b.slot) ? b.slot : "", place: clip(b.place, 80).trim(), notes: clip(b.notes, 1500).trim(), cases: Math.max(0, Math.min(99, parseInt(b.cases, 10) || 0)) };
+  return { date: isDate(b.date), slot: DUTY_SLOTS.includes(b.slot) ? b.slot : "", place: clip(b.place, 80).trim(), notes: clip(b.notes, 1500).trim(), cases: Math.max(0, Math.min(99, parseInt(b.cases, 10) || 0)), type: b.type === "apology" ? "apology" : "done" };
 }
 function recList(list, prev, isAdmin) {
   const old = new Map((prev || []).map((r) => [r.id, r]));
@@ -480,7 +480,7 @@ async function handleRecords(db, request, user, url) {
     if (!tid || !t) return json({ error: "forbidden" }, 403);
     let data;
     if (kind === "bonus") { const pts = Math.max(-100, Math.min(100, parseInt(body.pts, 10) || 0)); data = { pts, reason: clip(body.reason, 300).trim(), date: new Date().toISOString().slice(0, 10) }; if (!pts || !data.reason) return json({ error: "missing_fields" }, 400); }
-    else if (kind === "duty") { data = dutyFields(body); if (!data.date || !data.slot || !data.place) return json({ error: "missing_fields" }, 400); data.reviewed = false; data.adminNote = ""; }
+    else if (kind === "duty") { data = dutyFields(body); if (!data.date || !data.slot || !data.place) return json({ error: "missing_fields" }, 400); if (data.type === "apology" && !data.notes) return json({ error: "reason_required" }, 400); data.reviewed = false; data.adminNote = ""; }
     else { data = visitFields(body, { byAdmin: isAdmin && tid !== user.teacherId }, isAdmin); if (!data.date || !data.recs.length) return json({ error: "missing_fields" }, 400); }
     data.teacherName = t.name; data.by = user.name || "";
     const rid = (kind === "duty" ? "du" : "vi") + randHex(8), now = Date.now();
@@ -525,7 +525,7 @@ async function handlePoints(db, request, user) {
   const add = (tid, key, n = 1) => { const a = acc.get(tid); if (!a || !n) return; a.counts[key] = (a.counts[key] || 0) + n; a.total += (W[key] || 0) * n; };
   const rows = (await db.prepare("SELECT teacher_id, kind, data FROM records").all()).results || [];
   for (const r of rows) { let d; try { d = JSON.parse(r.data); } catch { continue; }
-    if (r.kind === "duty") { add(r.teacher_id, "duty"); if (d.reviewed) add(r.teacher_id, "dutyReviewed"); }
+    if (r.kind === "duty") { if (d.type === "apology") continue; add(r.teacher_id, "duty"); if (d.reviewed) add(r.teacher_id, "dutyReviewed"); }
     else if (r.kind === "visit") for (const x of d.recs || []) { if (x.status === "منفذة") add(r.teacher_id, "recDone"); else if (x.status === "قيد التنفيذ") add(r.teacher_id, "recProgress"); if (x.verified) add(r.teacher_id, "recVerified"); }
     else if (r.kind === "bonus") { const a = acc.get(r.teacher_id); if (a) { a.bonus.push({ pts: d.pts, reason: d.reason, date: d.date }); a.total += d.pts || 0; } }
   }
