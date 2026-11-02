@@ -320,6 +320,13 @@
   .chip.selected{background:var(--primary); border-color:var(--primary); color:var(--on-primary);}
   .chip.on{background:var(--primary); border-color:var(--primary); color:var(--on-primary);}
   .chips{display:flex; gap:6px; flex-wrap:wrap;} .chips .chip{padding:6px 12px; font-size:12.5px;}
+  .ro-cell{display:block; width:100%; text-align:start; border:1px solid var(--border); background:var(--surface); border-radius:10px; padding:6px 8px; margin:4px 0; cursor:pointer; font-family:inherit; font-size:12.5px; line-height:1.5; color:var(--text);}
+  .ro-cell:hover{border-color:var(--primary); box-shadow:0 0 0 2px var(--primary-tint);}
+  .ro-cell b{display:block; font-size:11.5px; color:var(--text-muted);} .ro-cell.ovr{background:color-mix(in srgb, var(--accent) 10%, var(--surface)); border-color:color-mix(in srgb, var(--accent) 40%, var(--border));}
+  .ro-cell.apo{background:color-mix(in srgb, var(--danger) 9%, var(--surface)); border-color:color-mix(in srgb, var(--danger) 40%, var(--border));}
+  .ro-cell.today{outline:2px solid var(--primary);}
+  .ro-pop{position:fixed; inset:0; background:rgba(6,30,30,.45); display:grid; place-items:center; z-index:300; padding:16px;}
+  .ro-pop[hidden]{display:none;} .ro-pop-in{background:var(--surface); border-radius:18px; padding:18px; width:min(460px,100%); box-shadow:0 30px 60px -20px rgba(0,0,0,.5);}
   .chip small{display:block; font-weight:500; opacity:.8; font-size:11px;}
 
   .step-label{
@@ -1672,8 +1679,8 @@
         <div id="roPreview" style="margin-top:12px"></div>
       </div>
       <div class="lrc-block">
-        <div class="lrc-block-head"><h3>📅 جدول المناوبة الأسبوعي المعتمد</h3><div style="display:flex;gap:6px"><button class="btn ghost sm" id="roExport">⬇️ Excel</button><button class="btn ghost sm" id="roPrint">🖨️ طباعة</button></div></div>
-        <p class="lrc-hint">غيّر أي معلم من القائمة مباشرة، أو أضف تكليفًا جديدًا. يظهر الجدول لكل معلم في «سجل المناوبة».</p>
+        <div class="lrc-block-head"><h3>📅 جدول المناوبة</h3><div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap"><button class="btn ghost sm" id="roPrevW">→ الأسبوع السابق</button><b id="roWeekLbl" style="font-size:13px"></b><button class="btn ghost sm" id="roNextW">الأسبوع التالي ←</button><button class="btn ghost sm" id="roExport">⬇️ Excel</button><button class="btn ghost sm" id="roPrint">🖨️ طباعة</button></div></div>
+        <p class="lrc-hint">👆 <b>انقر على اسم أي معلم في الجدول لإعادة تكليفه</b>: اختر البديل، ثم حدّد «لهذا اليوم فقط» أو «دائمًا كل أسبوع». الأسماء المعلَّمة بـ 🔁 أُعيد تكليفها لذلك اليوم، و🙏 تعني أن المعلم اعتذر.</p>
         <div class="tbl-wrap"><table class="datatable" id="roWeek"></table></div>
         <div class="row" style="margin-top:10px;align-items:flex-end">
           <div class="field"><label>اليوم</label><select id="roAddDay"></select></div><div class="field"><label>الفترة</label><select id="roAddSlot"></select></div>
@@ -1687,6 +1694,13 @@
         <p class="lrc-hint">عند غياب معلم أو انشغاله: اختر البديل لهذا اليوم فقط دون تغيير الجدول الأسبوعي. المقترحون أولًا هم غير المشغولين بحصة وأقل مناوبات.</p>
         <div class="tbl-wrap"><table class="datatable" id="roDayTable"></table></div>
       </div>
+      <div class="ro-pop" id="roPop" hidden><div class="ro-pop-in">
+        <h3 id="roPopTitle" style="margin:0 0 4px;font-size:16px">🔁 إعادة التكليف</h3><div id="roPopSub" style="font-size:13px;color:var(--text-muted);margin-bottom:10px"></div>
+        <div class="field"><label>المعلم البديل</label><select id="roPopTeacher"></select><small style="color:var(--text-muted)">الأفضل أولًا: غير المشغولين بحصة في ذلك الوقت، وغير المناوبين ذلك اليوم، والأقل مناوبات.</small></div>
+        <div class="field"><label>نطاق التغيير</label><div class="chips" id="roPopScope"><button type="button" class="chip on" data-sc="day">لهذا اليوم فقط</button><button type="button" class="chip" data-sc="always">دائمًا كل أسبوع</button></div></div>
+        <div class="field"><label>السبب (اختياري)</label><input type="text" id="roPopReason" placeholder="مثال: غياب / اعتذار / تكليف آخر"></div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn" id="roPopSave">💾 حفظ</button><button class="btn ghost" id="roPopReset" hidden>↺ إرجاع المكلّف الأصلي</button><button class="btn ghost" id="roPopDel">🗑️ حذف التكليف</button><button class="btn ghost" id="roPopClose">إلغاء</button></div>
+      </div></div>
       </div>
       <div id="adFollow" hidden>
       <div class="stats-row" id="adStats"></div>
@@ -5663,17 +5677,55 @@ ${fields.map(f=>GAME_SPEC[f]).join(",\n")}
     if(!slots.length) return `<tbody><tr><td style="text-align:center;color:var(--text-muted);padding:20px">لا توجد تكليفات بعد — أنشئ الجدول بالذكاء الاصطناعي أو أضف تكليفًا يدويًا.</td></tr></tbody>`;
     return `<thead><tr><th>الفترة</th>${RO_DAYS.map(d=>`<th>${d}</th>`).join("")}</tr></thead><tbody>${slots.map(s=>`<tr><td><b>${s}</b></td>${RO_DAYS.map(d=>`<td style="vertical-align:top;min-width:150px">${list.filter(a=>a.day===d&&a.slot===s).map(a=>editable?`<div style="margin:3px 0;font-size:12px"><b>${escapeHTML(a.place)}</b><div style="display:flex;gap:3px"><select data-roa="${a.id}" style="font-size:12px;padding:3px">${teacherOpts(a.teacherId)}</select><button class="btn ghost sm" data-rodel="${a.id}" title="حذف" style="padding:2px 7px">✕</button></div></div>`:`<div style="margin:3px 0;font-size:12px"><b>${escapeHTML(a.place)}</b>: ${escapeHTML(tName(a.teacherId))}</div>`).join("")||"—"}</td>`).join("")}</tr>`).join("")}</tbody>`;
   }
+  let roWeekStart = (()=>{ const d = new Date(); d.setHours(12,0,0,0); d.setDate(d.getDate() - d.getDay()); return d; })();
+  const roDateOf = (i)=>lISO(new Date(roWeekStart.getTime() + i*864e5));
+  function rosterWeekGrid(){
+    const dates = RO_DAYS.map((d,i)=>roDateOf(i)), today = lISO();
+    document.getElementById("roWeekLbl").textContent = `${fmtD(dates[0])} — ${fmtD(dates[4])}`;
+    const byDate = dates.map(dt=>assignmentsOn(dt));
+    const slots = DUTY_SLOTS_UI.filter(s=>roster.weekly.some(a=>a.slot===s));
+    if(!slots.length) return `<tbody><tr><td style="text-align:center;color:var(--text-muted);padding:20px">لا توجد تكليفات بعد — أنشئ الجدول بالذكاء الاصطناعي أو أضف تكليفًا يدويًا.</td></tr></tbody>`;
+    return `<thead><tr><th>الفترة</th>${RO_DAYS.map((d,i)=>`<th>${d}<div style="font-weight:500;font-size:11px">${fmtD(dates[i]).replace(/^[^،]*،\s*/,"")}</div></th>`).join("")}</tr></thead><tbody>${slots.map(s=>`<tr><td><b>${s}</b></td>${RO_DAYS.map((d,i)=>`<td style="vertical-align:top;min-width:150px">${byDate[i].filter(a=>a.slot===s).map(a=>{ const apo = (dutyAll||[]).some(x=>x.type==="apology" && !x.reviewed && x.date===a.date && x.slot===a.slot && x.teacherId===a.teacherId);
+      return `<button class="ro-cell${a.origTeacherId?" ovr":""}${apo?" apo":""}${a.date===today?" today":""}" data-aid="${a.id}" data-date="${a.date}"><b>${escapeHTML(a.place)}</b>${a.origTeacherId?"🔁 ":""}${apo?"🙏 ":""}${escapeHTML(tName(a.teacherId))}${a.origTeacherId?`<span style="display:block;font-size:10.5px;color:var(--accent)">بدلًا من ${escapeHTML(tName(a.origTeacherId))}</span>`:""}</button>`; }).join("")||"—"}</td>`).join("")}</tr>`).join("")}</tbody>`;
+  }
+  let roPopCtx = null;
+  function openRoPop(aid, date){
+    const a = roster.weekly.find(x=>x.id===aid); if(!a) return; const cur = assignmentsOn(date).find(x=>x.id===aid) || a, day = a.day, per = slotPeriod(a.slot);
+    const onDuty = new Set(assignmentsOn(date).map(x=>x.teacherId)), load = dutyLoad(roster.weekly);
+    const all = (teachers||[]).filter(t=>t.active!==false && t.id!==cur.teacherId).map(t=>({t, busy: per ? isTeacherBusyAt(t.id, day, per) : false, duty: onDuty.has(t.id), n: load[t.id]||0}))
+      .sort((x,y)=>(x.busy-y.busy) || (x.duty-y.duty) || (x.n-y.n) || x.t.name.localeCompare(y.t.name,"ar"));
+    document.getElementById("roPopTeacher").innerHTML = all.map(o=>`<option value="${escapeHTML(o.t.id)}">${escapeHTML(o.t.name)} — ${o.n} مناوبة${o.busy?" ⚠️ لديه حصة":""}${o.duty?" · مناوب ذلك اليوم":""}</option>`).join("");
+    document.getElementById("roPopSub").innerHTML = `${fmtD(date)} · ${escapeHTML(a.slot)} · ${escapeHTML(a.place)}<br>المكلّف الآن: <b>${escapeHTML(tName(cur.teacherId))}</b>${cur.origTeacherId?` (بدلًا من ${escapeHTML(tName(cur.origTeacherId))})`:""}`;
+    document.getElementById("roPopReason").value = cur.reason || ""; document.getElementById("roPopReset").hidden = !cur.origTeacherId;
+    document.querySelectorAll("#roPopScope .chip").forEach(c=>c.classList.toggle("on", c.dataset.sc==="day"));
+    roPopCtx = {aid, date, cur}; document.getElementById("roPop").hidden = false;
+  }
+  async function closeApologyFor(date, a, newTid){ const ap = (dutyAll||[]).find(d=>d.type==="apology" && !d.reviewed && d.date===date && d.slot===a.slot && d.place===a.place);
+    if(ap){ try{ await recApi("duty","PUT",{reviewed:true, adminNote:"أُعيد التكليف إلى "+tName(newTid)},ap.id); ap.reviewed = true; }catch(e){} } }
+  document.getElementById("roWeek").addEventListener("click", e=>{ const b = e.target.closest(".ro-cell"); if(b) openRoPop(b.dataset.aid, b.dataset.date); });
+  document.getElementById("roPopScope").addEventListener("click", e=>{ const b = e.target.closest("[data-sc]"); if(!b) return; document.querySelectorAll("#roPopScope .chip").forEach(c=>c.classList.toggle("on", c===b)); });
+  document.getElementById("roPopClose").onclick = ()=>{ document.getElementById("roPop").hidden = true; };
+  document.getElementById("roPop").addEventListener("click", e=>{ if(e.target.id==="roPop") e.target.hidden = true; });
+  document.getElementById("roPopSave").onclick = async ()=>{ if(!roPopCtx) return; const {aid, date} = roPopCtx, tid = document.getElementById("roPopTeacher").value, reason = document.getElementById("roPopReason").value.trim();
+    const scope = (document.querySelector("#roPopScope .chip.on")||{}).dataset?.sc || "day", a = roster.weekly.find(x=>x.id===aid); if(!a || !tid) return;
+    if(scope==="always"){ a.teacherId = tid; roster.overrides = roster.overrides.filter(o=>!(o.aid===aid && o.date>=date)); }
+    else { roster.overrides = roster.overrides.filter(o=>!(o.date===date && o.aid===aid)); roster.overrides.push({date, aid, teacherId:tid, reason}); }
+    try{ await saveRoster2(); await closeApologyFor(date, a, tid); document.getElementById("roPop").hidden = true; toast(scope==="always" ? "✔ تغيّر المكلّف دائمًا" : "✔ أُعيد التكليف لهذا اليوم"); renderRosterAdmin(); }catch(err){ toast("تعذّر الحفظ"); } };
+  document.getElementById("roPopReset").onclick = async ()=>{ if(!roPopCtx) return; roster.overrides = roster.overrides.filter(o=>!(o.date===roPopCtx.date && o.aid===roPopCtx.aid)); try{ await saveRoster2(); document.getElementById("roPop").hidden = true; toast("↺ أُعيد المكلّف الأصلي"); renderRosterAdmin(); }catch(err){ toast("تعذّر الحفظ"); } };
+  document.getElementById("roPopDel").onclick = async ()=>{ if(!roPopCtx || !confirm("حذف هذا التكليف من الجدول الأسبوعي نهائيًا؟")) return; roster.weekly = roster.weekly.filter(x=>x.id!==roPopCtx.aid); roster.overrides = roster.overrides.filter(o=>o.aid!==roPopCtx.aid); try{ await saveRoster2(); document.getElementById("roPop").hidden = true; renderRosterAdmin(); }catch(err){ toast("تعذّر الحفظ"); } };
+  document.getElementById("roPrevW").onclick = ()=>{ roWeekStart = new Date(roWeekStart.getTime() - 7*864e5); renderRosterAdmin(); };
+  document.getElementById("roNextW").onclick = ()=>{ roWeekStart = new Date(roWeekStart.getTime() + 7*864e5); renderRosterAdmin(); };
   async function renderRosterAdmin(reload){
     if(reload) await loadRoster2();
     const de = document.getElementById("roDays"); if(!de.children.length){ chipsSel(de, RO_DAYS, RO_DAYS); chipsSel(document.getElementById("roSlots"), DUTY_SLOTS_UI, ["الفسحة"]); document.getElementById("roAddDay").innerHTML = opts(RO_DAYS); document.getElementById("roAddSlot").innerHTML = opts(DUTY_SLOTS_UI,"الفسحة"); document.getElementById("roAddTeacher").innerHTML = teacherOpts(""); document.getElementById("roPlaceList").innerHTML = DUTY_PLACES.filter(p=>p!=="أخرى").map(p=>`<option value="${escapeHTML(p)}">`).join(""); document.getElementById("roDay").value = lISO(); }
-    document.getElementById("roWeek").innerHTML = rosterTable(roster.weekly, true);
+    document.getElementById("roWeek").innerHTML = rosterWeekGrid();
     renderRosterDay(); renderApologies();
   }
   function renderApologies(){ const L = (dutyAll||[]).filter(d=>d.type==="apology" && !d.reviewed).sort((a,b)=>a.date.localeCompare(b.date));
     document.getElementById("apolList").innerHTML = L.length ? `<div class="tbl-wrap"><table class="datatable"><thead><tr><th>التاريخ</th><th>المعلم</th><th>الفترة</th><th>المكان</th><th>سبب الاعتذار</th><th></th></tr></thead><tbody>${L.map(d=>`<tr data-ap="${escapeHTML(d.id)}"><td>${fmtD(d.date)}</td><td><b>${escapeHTML(d.teacherName)}</b></td><td>${escapeHTML(d.slot)}</td><td>${escapeHTML(d.place)}</td><td>${escapeHTML(d.notes)}</td><td style="white-space:nowrap"><button class="btn sm" data-apgo>🔁 إعادة التكليف</button> <button class="btn ghost sm" data-apok>✔ مُعالج</button></td></tr>`).join("")}</tbody></table></div>` : `<div class="empty-hint" style="padding:10px">لا توجد اعتذارات بانتظار المعالجة.</div>`; }
   document.getElementById("apolList").addEventListener("click", async e=>{ const tr = e.target.closest("[data-ap]"); if(!tr) return; const d = dutyAll.find(x=>x.id===tr.dataset.ap); if(!d) return;
     if(e.target.closest("[data-apok]")){ try{ await recApi("duty","PUT",{reviewed:true, adminNote:"تمت معالجة الاعتذار"},d.id); d.reviewed = true; renderApologies(); }catch(err){ toast("تعذّر الحفظ"); } return; }
-    if(e.target.closest("[data-apgo]")){ const inp = document.getElementById("roDay"); inp.value = d.date; renderRosterDay(); const row = [...document.querySelectorAll("#roDayTable tr[data-aid]")].find(r=>{ const a = assignmentsOn(d.date).find(x=>x.id===r.dataset.aid); return a && a.teacherId===d.teacherId && a.slot===d.slot && a.place===d.place; });
+    if(e.target.closest("[data-apgo]")){ const a0 = assignmentsOn(d.date).find(x=>x.teacherId===d.teacherId && x.slot===d.slot && x.place===d.place); if(a0){ openRoPop(a0.id, d.date); document.getElementById("roPopReason").value = "اعتذار: " + d.notes; return; } const inp = document.getElementById("roDay"); inp.value = d.date; renderRosterDay(); const row = [...document.querySelectorAll("#roDayTable tr[data-aid]")].find(r=>{ const a = assignmentsOn(d.date).find(x=>x.id===r.dataset.aid); return a && a.teacherId===d.teacherId && a.slot===d.slot && a.place===d.place; });
       if(row){ row.scrollIntoView({behavior:"smooth", block:"center"}); row.style.outline = "3px solid var(--warning)"; const rs = row.querySelector("[data-reason]"); if(rs && !rs.value) rs.value = "اعتذار: " + d.notes; row.querySelector("[data-ovr]").focus(); toast("اختر البديل من القائمة"); } else toast("لم يُعثر على التكليف في جدول ذلك اليوم"); } });
   function renderRosterDay(){
     const iso = document.getElementById("roDay").value || lISO(), day = dayNameOf(iso), list = assignmentsOn(iso), load = dutyLoad(roster.weekly);
@@ -5711,7 +5763,7 @@ ${fields.map(f=>GAME_SPEC[f]).join(",\n")}
   });
   document.getElementById("roPublishBtn").addEventListener("click", async ()=>{ if(!roDraft) return; if(roster.weekly.length && !confirm("سيحل الجدول الجديد محل الجدول الأسبوعي الحالي. متابعة؟")) return;
     roster.weekly = roDraft.weekly; roster.overrides = []; try{ await saveRoster2(); roDraft = null; document.getElementById("roPreview").innerHTML = ""; document.getElementById("roPublishBtn").disabled = true; toast("✅ نُشر جدول المناوبة وظهر لجميع المعلمين"); renderRosterAdmin(); }catch(e){ toast("تعذّر النشر"); } });
-  document.getElementById("roWeek").addEventListener("change", async e=>{ const s = e.target.closest("[data-roa]"); if(!s) return; const a = roster.weekly.find(x=>x.id===s.dataset.roa); if(!a) return; a.teacherId = s.value; try{ await saveRoster2(); toast("✔ عُدّل التكليف"); }catch(err){ toast("تعذّر الحفظ"); } });
+  document.getElementById("roWeek").addEventListener("change", async e=>{ const s = e.target.closest("[data-roa]"); if(!s) return; /* legacy */ const a = roster.weekly.find(x=>x.id===s.dataset.roa); if(!a) return; a.teacherId = s.value; try{ await saveRoster2(); toast("✔ عُدّل التكليف"); }catch(err){ toast("تعذّر الحفظ"); } });
   document.getElementById("roWeek").addEventListener("click", async e=>{ const b = e.target.closest("[data-rodel]"); if(!b || !confirm("حذف هذا التكليف؟")) return; roster.weekly = roster.weekly.filter(x=>x.id!==b.dataset.rodel); roster.overrides = roster.overrides.filter(o=>o.aid!==b.dataset.rodel); try{ await saveRoster2(); renderRosterAdmin(); }catch(err){ toast("تعذّر الحفظ"); } });
   document.getElementById("roAddBtn").addEventListener("click", async ()=>{ const a = {id:"a"+Math.random().toString(36).slice(2,9), day:document.getElementById("roAddDay").value, slot:document.getElementById("roAddSlot").value, place:document.getElementById("roAddPlace").value.trim(), teacherId:document.getElementById("roAddTeacher").value};
     if(!a.place || !a.teacherId){ toast("أدخل المكان والمعلم"); return; } const per = slotPeriod(a.slot); if(per && isTeacherBusyAt(a.teacherId, a.day, per) && !confirm("المعلم لديه حصة في هذا الوقت، هل تريد التكليف رغم ذلك؟")) return;
