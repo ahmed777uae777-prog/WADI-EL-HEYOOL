@@ -1654,10 +1654,22 @@
 
   <section class="view" id="view-adminduty">
     <div class="card">
-      <div class="view-head"><h2>🛡️ المناوبة: التكليف والمتابعة</h2><p>كلّف المعلمين بالمناوبة (يدويًا أو بالذكاء الاصطناعي)، وأعد التكليف ليوم محدد، وتابع التنفيذ والملاحظات.</p></div>
+      <div class="view-head"><h2>🛡️ المناوبة: التكليف والمتابعة</h2><p>اختر بنفسك المعلم المناوب لكل يوم من الجدول، وتابع التنفيذ والاعتذارات.</p></div>
       <div class="chips" id="adTabs" style="margin-bottom:12px"><button class="chip on" data-adtab="assign">📅 التكليف</button><button class="chip" data-adtab="follow">📊 المتابعة والتنفيذ</button></div>
       <div id="adAssign">
+      <div class="lrc-block" id="smpBox">
+        <div class="lrc-block-head"><h3>📅 جدول المناوبة — اختر المعلم لكل يوم</h3><div style="display:flex;gap:6px"><button class="btn ghost sm" id="smpExport">⬇️ Excel</button><button class="btn ghost sm" id="smpPrint">🖨️ طباعة</button></div></div>
+        <p class="lrc-hint">اختر اسم المعلم من القائمة في خانة اليوم، ويُحفظ مباشرة ويظهر للمعلم في «مناوباتي». لتغيير المعلم اختر اسمًا آخر، ولإلغاء التكليف اختر «—».</p>
+        <div class="tbl-wrap"><table class="datatable" id="smpGrid"></table></div>
+        <div class="row" style="margin-top:12px;align-items:flex-end">
+          <div class="field" style="max-width:200px"><label>الفترة</label><select id="smpSlot"></select></div>
+          <div class="field"><label>مكان المناوبة</label><input type="text" id="smpPlace" list="roPlaceList" placeholder="مثال: الساحة الرئيسية"></div>
+          <div class="field" style="flex:0"><button class="btn sm" id="smpAddRow">➕ إضافة صف</button></div>
+        </div>
+        <div id="smpLoad" style="margin-top:10px;font-size:12.5px"></div>
+      </div>
       <div class="lrc-block" id="apolBox"><div class="lrc-block-head"><h3>🙏 اعتذارات المعلمين عن المناوبة</h3></div><div id="apolList"></div></div>
+      <details class="lrc-block" id="advTools"><summary style="cursor:pointer;font-weight:800">⚙️ أدوات إضافية (اختيارية): التوزيع بالذكاء الاصطناعي، وإعادة التكليف ليوم محدد</summary><div style="margin-top:12px">
       <div class="lrc-block" id="rosterAI">
         <div class="lrc-block-head"><h3>🤖 إنشاء جدول المناوبة بالذكاء الاصطناعي</h3></div>
         <p class="lrc-hint">اكتب ما تريده بكلامك، فيملأ الذكاء الاصطناعي الإعدادات، ثم يوزّع المناوبات بعدل ودون تعارض مع حصص المعلمين. راجع النتيجة وعدّلها قبل النشر.</p>
@@ -1694,6 +1706,7 @@
         <p class="lrc-hint">عند غياب معلم أو انشغاله: اختر البديل لهذا اليوم فقط دون تغيير الجدول الأسبوعي. المقترحون أولًا هم غير المشغولين بحصة وأقل مناوبات.</p>
         <div class="tbl-wrap"><table class="datatable" id="roDayTable"></table></div>
       </div>
+      </div></details>
       <div class="ro-pop" id="roPop" hidden><div class="ro-pop-in">
         <h3 id="roPopTitle" style="margin:0 0 4px;font-size:16px">🔁 إعادة التكليف</h3><div id="roPopSub" style="font-size:13px;color:var(--text-muted);margin-bottom:10px"></div>
         <div class="field"><label>المعلم البديل</label><select id="roPopTeacher"></select><small style="color:var(--text-muted)">الأفضل أولًا: غير المشغولين بحصة في ذلك الوقت، وغير المناوبين ذلك اليوم، والأقل مناوبات.</small></div>
@@ -5677,6 +5690,46 @@ ${fields.map(f=>GAME_SPEC[f]).join(",\n")}
     if(!slots.length) return `<tbody><tr><td style="text-align:center;color:var(--text-muted);padding:20px">لا توجد تكليفات بعد — أنشئ الجدول بالذكاء الاصطناعي أو أضف تكليفًا يدويًا.</td></tr></tbody>`;
     return `<thead><tr><th>الفترة</th>${RO_DAYS.map(d=>`<th>${d}</th>`).join("")}</tr></thead><tbody>${slots.map(s=>`<tr><td><b>${s}</b></td>${RO_DAYS.map(d=>`<td style="vertical-align:top;min-width:150px">${list.filter(a=>a.day===d&&a.slot===s).map(a=>editable?`<div style="margin:3px 0;font-size:12px"><b>${escapeHTML(a.place)}</b><div style="display:flex;gap:3px"><select data-roa="${a.id}" style="font-size:12px;padding:3px">${teacherOpts(a.teacherId)}</select><button class="btn ghost sm" data-rodel="${a.id}" title="حذف" style="padding:2px 7px">✕</button></div></div>`:`<div style="margin:3px 0;font-size:12px"><b>${escapeHTML(a.place)}</b>: ${escapeHTML(tName(a.teacherId))}</div>`).join("")||"—"}</td>`).join("")}</tr>`).join("")}</tbody>`;
   }
+  /* ---------- simple roster: rows (period + place) × days, a teacher picker in every cell ---------- */
+  function ensureRows(){
+    if(Array.isArray(roster.rows) && roster.rows.length && roster.weekly.every(a=>a.row)) return;
+    const rows = Array.isArray(roster.rows) ? roster.rows.slice() : [];
+    const groups = {};
+    roster.weekly.forEach(a=>{ if(a.row && rows.some(r=>r.id===a.row)) return; (groups[a.slot+"|"+a.place] = groups[a.slot+"|"+a.place] || []).push(a); });
+    Object.entries(groups).forEach(([k, list])=>{ const [slot, place] = k.split("|"); const perDay = {};
+      list.forEach(a=>{ const n = perDay[a.day] = (perDay[a.day]||0); perDay[a.day]++;
+        let r = rows.filter(x=>x.slot===slot && x.place===place)[n]; if(!r){ r = {id:"r"+Math.random().toString(36).slice(2,8), slot, place}; rows.push(r); } a.row = r.id; }); });
+    rows.sort((a,b)=>DUTY_SLOTS_UI.indexOf(a.slot)-DUTY_SLOTS_UI.indexOf(b.slot));
+    roster.rows = rows;
+  }
+  function renderSimpleGrid(){
+    ensureRows(); const load = dutyLoad(roster.weekly), act = (teachers||[]).filter(t=>t.active!==false).slice().sort((a,b)=>a.name.localeCompare(b.name,"ar"));
+    const g = document.getElementById("smpGrid");
+    if(!roster.rows.length){ g.innerHTML = `<tbody><tr><td style="text-align:center;color:var(--text-muted);padding:18px">ابدأ بإضافة صف: اختر الفترة واكتب المكان ثم «إضافة صف».</td></tr></tbody>`; }
+    else g.innerHTML = `<thead><tr><th>الفترة · المكان</th>${RO_DAYS.map(d=>`<th>${d}</th>`).join("")}<th></th></tr></thead><tbody>${roster.rows.map(r=>{ const per = slotPeriod(r.slot);
+      return `<tr data-row="${r.id}"><td style="white-space:nowrap"><b>${escapeHTML(r.slot)}</b><div style="font-size:12px;color:var(--text-muted)">${escapeHTML(r.place)}</div></td>${RO_DAYS.map(d=>{ const a = roster.weekly.find(x=>x.row===r.id && x.day===d), cur = a ? a.teacherId : "";
+        return `<td><select data-day="${d}" style="min-width:140px;font-size:12.5px;padding:6px;${cur?"background:var(--primary-tint);font-weight:700":""}"><option value="">—</option>${act.map(t=>`<option value="${escapeHTML(t.id)}"${t.id===cur?" selected":""}>${escapeHTML(t.name)}${per && isTeacherBusyAt(t.id, d, per)?" ⚠️ حصة":""}</option>`).join("")}</select></td>`; }).join("")}<td><button class="btn ghost sm" data-delrow title="حذف الصف">✕</button></td></tr>`; }).join("")}</tbody>`;
+    const used = Object.entries(load).filter(([,n])=>n>0).sort((a,b)=>b[1]-a[1]);
+    document.getElementById("smpLoad").innerHTML = used.length ? `<b>عدد مناوبات كل معلم أسبوعيًا:</b> ` + used.map(([id,n])=>`<span class="pill ${n>2?"wait":"ok"}" style="margin:2px">${escapeHTML(tName(id))}: ${n}</span>`).join("") : "";
+  }
+  document.getElementById("smpGrid").addEventListener("change", async e=>{ const sel = e.target.closest("select[data-day]"); if(!sel) return; const tr = sel.closest("[data-row]"), r = roster.rows.find(x=>x.id===tr.dataset.row), day = sel.dataset.day, tid = sel.value;
+    const per = slotPeriod(r.slot);
+    if(tid && per && isTeacherBusyAt(tid, day, per) && !confirm("هذا المعلم لديه حصة في هذا الوقت، هل تريد تكليفه رغم ذلك؟")){ renderSimpleGrid(); return; }
+    if(tid && roster.weekly.some(x=>x.day===day && x.teacherId===tid && x.slot===r.slot && x.row!==r.id) && !confirm("هذا المعلم مكلّف في الفترة نفسها من هذا اليوم في مكان آخر، هل تريد المتابعة؟")){ renderSimpleGrid(); return; }
+    let a = roster.weekly.find(x=>x.row===r.id && x.day===day);
+    if(!tid){ if(a){ roster.weekly = roster.weekly.filter(x=>x!==a); roster.overrides = roster.overrides.filter(o=>o.aid!==a.id); } }
+    else if(a){ a.teacherId = tid; } else { roster.weekly.push({id:"a"+Math.random().toString(36).slice(2,9), row:r.id, day, slot:r.slot, place:r.place, teacherId:tid}); }
+    try{ await saveRoster2(); toast(tid ? "✔ كُلّف " + tName(tid) + " يوم " + day : "تم إلغاء التكليف"); renderRosterAdmin(); }catch(err){ toast("تعذّر الحفظ — تحقق من الاتصال"); } });
+  document.getElementById("smpGrid").addEventListener("click", async e=>{ const b = e.target.closest("[data-delrow]"); if(!b) return; const id = b.closest("[data-row]").dataset.row, r = roster.rows.find(x=>x.id===id);
+    if(!confirm(`حذف صف «${r.slot} — ${r.place}» وكل تكليفاته؟`)) return; const ids = roster.weekly.filter(x=>x.row===id).map(x=>x.id);
+    roster.rows = roster.rows.filter(x=>x.id!==id); roster.weekly = roster.weekly.filter(x=>x.row!==id); roster.overrides = roster.overrides.filter(o=>!ids.includes(o.aid));
+    try{ await saveRoster2(); renderRosterAdmin(); }catch(err){ toast("تعذّر الحفظ"); } });
+  document.getElementById("smpAddRow").addEventListener("click", async ()=>{ const slot = document.getElementById("smpSlot").value, place = document.getElementById("smpPlace").value.trim(); if(!place){ toast("اكتب مكان المناوبة"); return; }
+    ensureRows(); roster.rows.push({id:"r"+Math.random().toString(36).slice(2,8), slot, place}); roster.rows.sort((a,b)=>DUTY_SLOTS_UI.indexOf(a.slot)-DUTY_SLOTS_UI.indexOf(b.slot));
+    try{ await saveRoster2(); document.getElementById("smpPlace").value = ""; toast("✔ أُضيف الصف — اختر المعلمين لكل يوم"); renderRosterAdmin(); }catch(err){ toast("تعذّر الحفظ"); } });
+  document.getElementById("smpExport").onclick = ()=>{ ensureRows(); exportRowsAsXlsx("جدول_المناوبة.xlsx","المناوبة",["الفترة","المكان"].concat(RO_DAYS), roster.rows.map(r=>[r.slot, r.place].concat(RO_DAYS.map(d=>{ const a = roster.weekly.find(x=>x.row===r.id&&x.day===d); return a ? tName(a.teacherId) : ""; })))); };
+  document.getElementById("smpPrint").onclick = ()=>{ ensureRows(); const w = window.open("","_blank"); if(!w){ toast("اسمح بالنوافذ المنبثقة"); return; }
+    w.document.write(`<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><title>جدول المناوبة</title><style>body{font-family:Tahoma,Arial;padding:18px}h2{text-align:center;margin:0 0 4px}p{text-align:center;margin:0 0 12px;color:#555}table{width:100%;border-collapse:collapse;font-size:13px}th,td{border:1px solid #888;padding:8px;text-align:center}th{background:#E3EFEE}td:first-child{text-align:right}</style></head><body><h2>جدول المناوبة الأسبوعي</h2><p>${escapeHTML((schoolInfo&&schoolInfo.name)||"")}</p><table><thead><tr><th>الفترة · المكان</th>${RO_DAYS.map(d=>`<th>${d}</th>`).join("")}</tr></thead><tbody>${roster.rows.map(r=>`<tr><td><b>${escapeHTML(r.slot)}</b> — ${escapeHTML(r.place)}</td>${RO_DAYS.map(d=>{ const a = roster.weekly.find(x=>x.row===r.id&&x.day===d); return `<td>${a?escapeHTML(tName(a.teacherId)):""}</td>`; }).join("")}</tr>`).join("")}</tbody></table><p style="margin-top:30px;text-align:left">مدير المدرسة: ....................</p></body></html>`); w.document.close(); setTimeout(()=>w.print(), 500); };
   let roWeekStart = (()=>{ const d = new Date(); d.setHours(12,0,0,0); d.setDate(d.getDate() - d.getDay()); return d; })();
   const roDateOf = (i)=>lISO(new Date(roWeekStart.getTime() + i*864e5));
   function rosterWeekGrid(){
@@ -5718,6 +5771,8 @@ ${fields.map(f=>GAME_SPEC[f]).join(",\n")}
   async function renderRosterAdmin(reload){
     if(reload) await loadRoster2();
     const de = document.getElementById("roDays"); if(!de.children.length){ chipsSel(de, RO_DAYS, RO_DAYS); chipsSel(document.getElementById("roSlots"), DUTY_SLOTS_UI, ["الفسحة"]); document.getElementById("roAddDay").innerHTML = opts(RO_DAYS); document.getElementById("roAddSlot").innerHTML = opts(DUTY_SLOTS_UI,"الفسحة"); document.getElementById("roAddTeacher").innerHTML = teacherOpts(""); document.getElementById("roPlaceList").innerHTML = DUTY_PLACES.filter(p=>p!=="أخرى").map(p=>`<option value="${escapeHTML(p)}">`).join(""); document.getElementById("roDay").value = lISO(); }
+    const ss = document.getElementById("smpSlot"); if(!ss.options.length) ss.innerHTML = opts(DUTY_SLOTS_UI, "الفسحة");
+    renderSimpleGrid();
     document.getElementById("roWeek").innerHTML = rosterWeekGrid();
     renderRosterDay(); renderApologies();
   }
@@ -5762,7 +5817,7 @@ ${fields.map(f=>GAME_SPEC[f]).join(",\n")}
     document.getElementById("roPublishBtn").disabled = false;
   });
   document.getElementById("roPublishBtn").addEventListener("click", async ()=>{ if(!roDraft) return; if(roster.weekly.length && !confirm("سيحل الجدول الجديد محل الجدول الأسبوعي الحالي. متابعة؟")) return;
-    roster.weekly = roDraft.weekly; roster.overrides = []; try{ await saveRoster2(); roDraft = null; document.getElementById("roPreview").innerHTML = ""; document.getElementById("roPublishBtn").disabled = true; toast("✅ نُشر جدول المناوبة وظهر لجميع المعلمين"); renderRosterAdmin(); }catch(e){ toast("تعذّر النشر"); } });
+    roster.weekly = roDraft.weekly; roster.overrides = []; roster.rows = []; try{ await saveRoster2(); roDraft = null; document.getElementById("roPreview").innerHTML = ""; document.getElementById("roPublishBtn").disabled = true; toast("✅ نُشر جدول المناوبة وظهر لجميع المعلمين"); renderRosterAdmin(); }catch(e){ toast("تعذّر النشر"); } });
   document.getElementById("roWeek").addEventListener("change", async e=>{ const s = e.target.closest("[data-roa]"); if(!s) return; /* legacy */ const a = roster.weekly.find(x=>x.id===s.dataset.roa); if(!a) return; a.teacherId = s.value; try{ await saveRoster2(); toast("✔ عُدّل التكليف"); }catch(err){ toast("تعذّر الحفظ"); } });
   document.getElementById("roWeek").addEventListener("click", async e=>{ const b = e.target.closest("[data-rodel]"); if(!b || !confirm("حذف هذا التكليف؟")) return; roster.weekly = roster.weekly.filter(x=>x.id!==b.dataset.rodel); roster.overrides = roster.overrides.filter(o=>o.aid!==b.dataset.rodel); try{ await saveRoster2(); renderRosterAdmin(); }catch(err){ toast("تعذّر الحفظ"); } });
   document.getElementById("roAddBtn").addEventListener("click", async ()=>{ const a = {id:"a"+Math.random().toString(36).slice(2,9), day:document.getElementById("roAddDay").value, slot:document.getElementById("roAddSlot").value, place:document.getElementById("roAddPlace").value.trim(), teacherId:document.getElementById("roAddTeacher").value};
