@@ -1761,6 +1761,23 @@
     </div>
   </section>
 
+  <section class="view" id="view-adminteacherabsence">
+    <div class="card">
+      <div class="view-head"><h2>📝 تسجيل غياب معلم</h2><p>إذا غاب المعلم ولم يرسل طلبًا، سجّل غيابه من هنا. يُعتمد مباشرة باسمك، ويظهر للمعلم في سجله، وتنتقل حصصه إلى «تكليف الاحتياط» لتختار البديل.</p></div>
+      <div class="row" style="gap:10px;flex-wrap:wrap">
+        <div class="field" style="min-width:240px"><label>المعلم</label><select id="taT"></select></div>
+        <div class="field" style="max-width:200px"><label>نوع الغياب</label><select id="taType"></select></div>
+        <div class="field" style="max-width:170px"><label>من تاريخ</label><input type="date" id="taFrom"></div>
+        <div class="field" style="max-width:170px"><label>إلى تاريخ</label><input type="date" id="taTo"></div>
+      </div>
+      <label style="display:flex;gap:6px;align-items:center;font-size:13.5px;margin:4px 0 8px"><input type="checkbox" id="taFull" checked style="width:auto"> اليوم كامل (كل حصصه)</label>
+      <div id="taPers" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:8px"></div>
+      <div class="field"><label>السبب / ملاحظة (اختياري)</label><input type="text" id="taReason" placeholder="مثال: لم يحضر ولم يُبلغ، إجازة مرضية..."></div>
+      <div id="taPreview" class="note" style="margin:8px 0"></div>
+      <button class="btn" id="taGo">✅ تسجيل الغياب وإنشاء حصص الاحتياط</button>
+      <div class="lrc-block" style="margin-top:16px"><div class="lrc-block-head"><h3>🗂️ غيابات سجّلها المدير</h3></div><div class="tbl-wrap"><table class="datatable" id="taList"></table></div></div>
+    </div>
+  </section>
   <section class="view" id="view-adminsubassign">
     <div class="card">
       <div class="view-head"><h2>🧑‍🏫 تكليف الاحتياط</h2><p>أنت من يكلّف المعلم البديل لكل حصة. القائمة تعرض فقط المعلمين المتاحين فعلًا (بلا حصة ولا اجتماع قسم ولا احتياط آخر في نفس الوقت)، مرتبين حسب الأقل احتياطًا، و⭐ لمن يدرّس نفس المادة.</p></div>
@@ -1771,14 +1788,7 @@
         <button class="btn ghost sm" id="saExport" style="margin-bottom:10px">⬇️ تصدير Excel</button>
       </div>
       <div class="lrc-block"><div class="lrc-block-head"><h3>⏳ حصص تحتاج تكليف</h3></div><div id="saPending"></div></div>
-      <details class="lrc-block" id="saAddBox"><summary style="cursor:pointer;font-weight:800">➕ تسجيل غياب معلم مباشرة (بدون طلب) لإنشاء حصص احتياط</summary>
-        <div class="row" style="margin-top:10px;gap:10px">
-          <div class="field"><label>المعلم الغائب</label><select id="saAbsT"></select></div>
-          <div class="field" style="max-width:190px"><label>التاريخ</label><input type="date" id="saAbsD"></div>
-        </div>
-        <div id="saAbsPers" style="display:flex;flex-wrap:wrap;gap:8px;margin:6px 0 10px"></div>
-        <button class="btn" id="saAbsGo">إنشاء حصص الاحتياط</button>
-      </details>
+      <div class="note" style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap">معلم غاب ولم يسجّل غيابه؟ سجّله أنت أولًا وستظهر حصصه هنا. <button class="btn ghost sm" data-goto="adminteacherabsence">📝 تسجيل غياب معلم</button></div>
       <div class="lrc-block"><div class="lrc-block-head"><h3>✅ التكليفات</h3></div><div class="tbl-wrap"><table class="datatable" id="saAssigned"></table></div></div>
     </div>
   </section>
@@ -2085,6 +2095,7 @@
     // common task there (editing/building a teacher's weekly schedule, cell by cell or several
     // at once) instead of always landing wherever the tabs were last left.
     {id:"admintimetables", iconId:"adminteacherschedules", icon:"🛠️", title:"إعداد جداول المعلمين", desc:"تعديل جدول أي معلم حصة بحصة أو عدة حصص دفعة واحدة، وتصدير Excel/PDF", presetTab:"teacher"},
+    {id:"adminteacherabsence", icon:"📝", title:"تسجيل غياب معلم", desc:"سجّل غياب معلم لم يرسل طلبًا — يُعتمد مباشرة وتنتقل حصصه للاحتياط", accent:true},
     {id:"adminsubassign", icon:"🧑‍🏫", title:"تكليف الاحتياط", desc:"اختر بنفسك المعلم البديل لكل حصة غياب من بين المتاحين فعلًا", accent:true},
     {id:"adminabsencehub", icon:"🗂️", title:"إدارة الغياب والحصص", desc:"غياب الطلاب والمعلمين — من الطلب إلى الاعتماد وتوزيع الاحتياط وإشعار أولياء الأمور والتقارير", accent:true},
     {id:"adminstudents", icon:"👨‍🎓", title:"سجل الطلاب", desc:"سجل الطلاب حسب الصف والشعبة، وبيانات أولياء الأمور"},
@@ -2100,6 +2111,7 @@
   ];
 
   const ICON_PATHS = {
+    adminteacherabsence: '<rect x="4" y="5" width="16" height="15" rx="2"/><path d="M8 3v4M16 3v4M4 10h16"/><path d="m10 13.5 4 4M14 13.5l-4 4"/>',
     adminsubassign: '<circle cx="9" cy="7.5" r="3"/><path d="M3.5 19c.6-3.2 2.8-5 5.5-5s4.9 1.8 5.5 5"/><path d="M16 8.5h5M18.5 6v5"/><path d="m15.5 15.5 1.8 1.8 3.2-3.3"/>',
     duty: '<path d="M12 3 5 6v5c0 4.4 3 8.2 7 10 4-1.8 7-5.6 7-10V6z"/><path d="m9 12 2 2 4-4"/>',
     adminduty: '<path d="M12 3 5 6v5c0 4.4 3 8.2 7 10 4-1.8 7-5.6 7-10V6z"/><circle cx="12" cy="11" r="2.5"/><path d="M8.5 16.5c.8-1.5 2-2.2 3.5-2.2s2.7.7 3.5 2.2"/>',
@@ -2378,6 +2390,7 @@
     if(id==="adminvisits" && currentUser && currentUser.role==="admin") renderAdminVisits(true);
     if(id==="adminpoints" && currentUser && currentUser.role==="admin") renderAdminPoints(true);
     if(id==="adminsubassign" && currentUser && currentUser.role==="admin") renderSubAssign();
+    if(id==="adminteacherabsence" && currentUser && currentUser.role==="admin") renderTeacherAbsence();
     document.getElementById("crumbWrap").hidden = (id==="dashboard" || id==="identify" || (id==="absinbox" && currentUser && currentUser.role==="teacher"));
     window.scrollTo({top:0, behavior:"smooth"});
   }
@@ -5989,6 +6002,108 @@ ${fields.map(f=>GAME_SPEC[f]).join(",\n")}
 
   /* ---------- admin: teacher points ---------- */
   let ptBonusFor = null;
+  // ===== تسجيل غياب معلم — admin records an absence the teacher never submitted =====
+  function taDates(){
+    const f = document.getElementById("taFrom").value, t = document.getElementById("taTo").value || f;
+    if(!f) return [];
+    const out = []; let d = new Date(f+"T00:00:00"); const end = new Date((t<f?f:t)+"T00:00:00");
+    for(let i=0; d<=end && i<40; i++){ const iso = d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
+      if(SCHOOL_DAYS.includes(dateToArDay(iso))) out.push(iso); d.setDate(d.getDate()+1); }
+    return out;
+  }
+  function taTeacher(){ return teachers.find(x=>x.name===document.getElementById("taT").value); }
+  function taClassPeriods(t, iso){ const day = dateToArDay(iso); return SCHED_PERIODS.filter((lbl,i)=>scheduleEntryFor(t.id, day, i+1)); }
+  function taRefresh(){
+    const t = taTeacher(), dates = taDates(), full = document.getElementById("taFull").checked;
+    const pers = document.getElementById("taPers"), prev = document.getElementById("taPreview");
+    if(!full && t && dates.length===1){
+      const day = dateToArDay(dates[0]);
+      const keep = new Set([...pers.querySelectorAll("input:checked")].map(x=>x.value));
+      pers.innerHTML = SCHED_PERIODS.map((lbl,i)=>{ const e = scheduleEntryFor(t.id, day, i+1);
+        return `<label style="display:flex;gap:5px;align-items:center;border:1px solid var(--border);border-radius:10px;padding:6px 10px;font-size:12.5px;${e?"":"opacity:.55"}"><input type="checkbox" value="${lbl}" ${keep.has(lbl)?"checked":""} style="width:auto"> ح${i+1}${e?": "+escapeHTML(subjectName(e.subjectId)):" (فراغ)"}</label>`; }).join("");
+    } else pers.innerHTML = (!full && dates.length>1) ? `<span style="font-size:12.5px;color:var(--text-muted)">اختيار حصص محددة متاح ليوم واحد فقط — لعدة أيام يُسجَّل اليوم كاملًا</span>` : "";
+    if(!t || !dates.length){ prev.innerHTML = !t ? "اختر المعلم" : "اختر تاريخًا يقع في أيام الدوام (الأحد–الخميس)"; return; }
+    const clash = absences.filter(a=>a.teacherName===t.name && dates.includes(a.date) && a.status!=="مرفوض");
+    const n = dates.reduce((k,iso)=>k+taClassPeriods(t,iso).length,0);
+    prev.innerHTML = `${dates.length} ${dates.length===1?"يوم":"أيام"} دوام · ${full||dates.length>1 ? n+" حصة لديه ستحتاج احتياط" : "اختر الحصص"}`
+      + (clash.length ? `<div style="color:var(--danger);margin-top:4px">⚠️ يوجد طلب مسجّل مسبقًا لهذا المعلم في: ${clash.map(a=>a.date+" ("+escapeHTML(a.status)+")").join("، ")}</div>` : "");
+  }
+  function renderTeacherAbsence(){
+    const tSel = document.getElementById("taT");
+    if(!tSel.options.length){
+      tSel.innerHTML = `<option value="">اختر المعلم...</option>` + teachers.filter(t=>!t.isAdmin && t.active!==false).sort((a,b)=>a.name.localeCompare(b.name,"ar")).map(t=>`<option value="${escapeHTML(t.name)}">${escapeHTML(t.name)} — ${escapeHTML(t.subject||"")}</option>`).join("");
+      document.getElementById("taType").innerHTML = ["📌 غياب","🤒 إجازة مرضية","🧳 إجازة","🕐 استئذان (مغادرة مؤقتة)","🎓 مهمة رسمية","🚨 حالة طارئة","📝 أخرى"].map(x=>`<option>${x}</option>`).join("");
+      document.getElementById("taFrom").value = todayISO(); document.getElementById("taTo").value = todayISO();
+    }
+    taRefresh();
+    const list = absences.filter(a=>a.recordedByAdmin).sort((a,b)=>(b.date||"").localeCompare(a.date||"")).slice(0,60);
+    document.getElementById("taList").innerHTML = `<thead><tr><th>التاريخ</th><th>المعلم</th><th>النوع</th><th>الحصص</th><th>الاحتياط</th><th>السبب</th><th></th></tr></thead><tbody>${list.length ? list.map(a=>{
+      const ss = subs.filter(x=>x.absent===a.teacherName && x.date===a.date && (a.periods||[]).includes(x.period));
+      const done = ss.filter(x=>x.subTeacher).length;
+      return `<tr><td>${escapeHTML(dateToArDay(a.date)||"")} ${escapeHTML(a.date)}</td><td style="font-weight:800">${escapeHTML(a.teacherName)}</td><td>${escapeHTML(a.type)}</td><td>${(a.periods||[]).length>=SCHED_PERIODS.length ? "اليوم كامل" : (a.periods||[]).map(p=>"ح"+(periodNumFromLabel(p)||p)).join("، ")||"-"}</td>
+        <td>${ss.length? `${done}/${ss.length} مكلّف` : "-"}</td><td style="font-size:12px">${escapeHTML(a.reason||"")}</td>
+        <td><button class="btn ghost sm" data-tadel="${a.id}">🗑️ حذف</button></td></tr>`; }).join("") : `<tr><td colspan="7" style="text-align:center;color:var(--text-muted);padding:14px">لا توجد غيابات مسجّلة من المدير</td></tr>`}</tbody>`;
+  }
+  (function wireTeacherAbsence(){
+    const v = document.getElementById("view-adminteacherabsence"); if(!v) return;
+    ["taT","taFrom","taTo","taFull"].forEach(id=>document.getElementById(id).addEventListener("change", ()=>{
+      if(id==="taFrom"){ const to=document.getElementById("taTo"); if(!to.value || to.value<document.getElementById("taFrom").value) to.value=document.getElementById("taFrom").value; }
+      taRefresh(); }));
+    document.getElementById("taPers").addEventListener("change", taRefresh);
+    document.getElementById("taGo").addEventListener("click", async e=>{
+      const btn = e.currentTarget; if(btn.disabled) return;
+      const t = taTeacher(), dates = taDates(), full = document.getElementById("taFull").checked || dates.length>1;
+      if(!t){ toast("⚠️ اختر المعلم"); return; }
+      if(!dates.length){ toast("⚠️ التاريخ خارج أيام الدوام"); return; }
+      const picked = [...document.querySelectorAll("#taPers input:checked")].map(x=>x.value);
+      if(!full && !picked.length){ toast("⚠️ اختر حصة واحدة على الأقل أو فعّل «اليوم كامل»"); return; }
+      const clash = absences.filter(a=>a.teacherName===t.name && dates.includes(a.date) && a.status!=="مرفوض");
+      if(clash.length){ toast(`⚠️ يوجد غياب/طلب مسجّل مسبقًا لـ ${t.name} في ${clash.map(a=>a.date).join("، ")} — راجعه من «إدارة الغياب والحصص» بدل تسجيله مرتين`); return; }
+      const type = document.getElementById("taType").value, reason = document.getElementById("taReason").value.trim();
+      const nowIso = new Date().toISOString(), by = currentUser ? currentUser.name : "المدير";
+      const recs = dates.map(iso=>{
+        const periods = full ? SCHED_PERIODS.slice() : picked;
+        const b = absencePeriodBounds(periods);
+        return {id:"ab"+Date.now()+Math.random().toString(36).slice(2,6), teacherId:t.id, teacherName:t.name, date:iso,
+          term:"الفصل الدراسي الأول", type, periods, startTime:b.start, endTime:b.end,
+          reason: reason || "سجّله المدير", attachments:[], status:"معتمد", rejectionReason:"",
+          approvedBy:by, approvalDate:nowIso, createdAt:nowIso, updatedAt:nowIso, submittedAt:nowIso,
+          editHistory:[], needsReapproval:false, recordedByAdmin:true, recordedBy:by};
+      });
+      btn.disabled = true;
+      const subsBefore = subs.length;
+      let slots = 0;
+      recs.forEach(r=>{ absences.push(r); try{ const al = allocateSubstitutes(r); slots += (al.results||[]).length; }catch(err){ console.error(err); } });
+      await schoolDataReady;
+      const [ok1, ok2] = await Promise.all([saveAbsences(), saveSubs()]);
+      btn.disabled = false;
+      if(!ok1 || !ok2){
+        const ids = new Set(recs.map(r=>r.id));
+        absences = absences.filter(a=>!ids.has(a.id)); subs.splice(subsBefore);
+        toast("⚠️ تعذّر الحفظ — تحقق من الاتصال وحاول مرة أخرى"); return;
+      }
+      logAction("تسجيل غياب معلم من المدير", {teacher:t.name, dates, type});
+      document.getElementById("taReason").value = "";
+      toast(`✅ سُجّل غياب ${t.name} (${dates.length} ${dates.length===1?"يوم":"أيام"}) — ${slots} ${slots===1?"حصة تحتاج":"حصص تحتاج"} احتياط`);
+      renderTeacherAbsence(); try{ renderAdminDash(); }catch(_){}
+      if(slots){ saUI.all = dates.length>1; saUI.date = dates[0]; const de=document.getElementById("saDate"); if(de) de.value = dates[0]; showView("adminsubassign"); }
+    });
+    v.addEventListener("click", async e=>{
+      const del = e.target.closest("[data-tadel]"); if(!del) return;
+      const a = absences.find(x=>x.id===del.dataset.tadel); if(!a) return;
+      const ss = subs.filter(x=>x.absent===a.teacherName && x.date===a.date && (a.periods||[]).includes(x.period));
+      if(ss.some(x=>x.subTeacher)){ toast("⚠️ بعض حصص هذا الغياب مكلّف بها معلم بديل — ألغِ التكليفات أولًا من «تكليف الاحتياط»"); return; }
+      if(!confirm(`حذف غياب ${a.teacherName} يوم ${a.date} وحصص الاحتياط المرتبطة به؟`)) return;
+      const prevA = absences.slice(), prevS = subs.slice();
+      const ids = new Set(ss.map(x=>x.id));
+      absences = absences.filter(x=>x.id!==a.id); subs = subs.filter(x=>!ids.has(x.id));
+      await schoolDataReady;
+      const [ok1, ok2] = await Promise.all([saveAbsences(), saveSubs()]);
+      if(!ok1 || !ok2){ absences = prevA; subs = prevS; toast("⚠️ تعذّر الحذف — حاول مرة أخرى"); }
+      else { logAction("حذف غياب سجّله المدير", {teacher:a.teacherName, date:a.date}); toast("🗑️ تم الحذف"); }
+      renderTeacherAbsence();
+    });
+  })();
   // ===== تكليف الاحتياط — the admin picks every substitute himself (no auto / AI distribution) =====
   const saUI = {date:"", all:true, edit:null};
   function saPerNum(p){ return typeof p==="number" ? p : (periodNumFromLabel(p)||0); }
@@ -6033,51 +6148,14 @@ ${fields.map(f=>GAME_SPEC[f]).join(",\n")}
         <td>${editing ? (opts?`<select id="saedit-${s.id}">${opts}</select> <button class="btn sm" data-saedit="${s.id}">حفظ</button>`:`<span style="font-size:12px">لا يوجد بديل متاح</span>`)+` <button class="btn ghost sm" data-saclose="1">تراجع</button>`
           : `<button class="btn ghost sm" data-sachange="${s.id}">🔁 تغيير</button> <button class="btn ghost sm" data-sacancel="${s.id}">✖️ إلغاء</button>`}</td></tr>`;
     }).join("") : `<tr><td colspan="6" style="text-align:center;color:var(--text-muted);padding:14px">لا توجد تكليفات</td></tr>`}</tbody>`;
-    // manual absence form
-    const tSel = document.getElementById("saAbsT");
-    if(tSel && !tSel.options.length){
-      tSel.innerHTML = `<option value="">اختر المعلم...</option>` + teachers.filter(t=>!t.isAdmin && t.active!==false).sort((a,b)=>a.name.localeCompare(b.name,"ar")).map(t=>`<option value="${escapeHTML(t.name)}">${escapeHTML(t.name)} — ${escapeHTML(t.subject||"")}</option>`).join("");
-      document.getElementById("saAbsD").value = todayISO();
-    }
-    saAbsPeriods();
-  }
-  function saAbsPeriods(){
-    const box = document.getElementById("saAbsPers"); if(!box) return;
-    const name = document.getElementById("saAbsT").value, date = document.getElementById("saAbsD").value;
-    const t = teachers.find(x=>x.name===name), day = date ? dateToArDay(date) : null;
-    if(!t || !day || !SCHOOL_DAYS.includes(day)){ box.innerHTML = `<span style="font-size:12.5px;color:var(--text-muted)">${t&&date?"التاريخ خارج أيام الدوام":"اختر المعلم والتاريخ لعرض حصصه"}</span>`; return; }
-    const items = SCHED_PERIODS.map((lbl,i)=>{
-      const e = scheduleEntryFor(t.id, day, i+1);
-      if(!e) return "";
-      return `<label style="display:flex;gap:5px;align-items:center;border:1px solid var(--border);border-radius:10px;padding:6px 10px;font-size:12.5px"><input type="checkbox" value="${lbl}" checked style="width:auto"> ح${i+1}: ${escapeHTML(subjectName(e.subjectId))} — ${escapeHTML(e.gradeId?gradeNameOf(e.gradeId):"")}</label>`;
-    }).join("");
-    box.innerHTML = items || `<span style="font-size:12.5px;color:var(--text-muted)">لا توجد لديه حصص يوم ${day}</span>`;
   }
   (function wireSubAssign(){
     const v = document.getElementById("view-adminsubassign"); if(!v) return;
     document.getElementById("saDate").addEventListener("change", e=>{ saUI.date = e.target.value; saUI.all = false; renderSubAssign(); });
     document.getElementById("saAll").addEventListener("change", e=>{ saUI.all = e.target.checked; renderSubAssign(); });
-    document.getElementById("saAbsT").addEventListener("change", saAbsPeriods);
-    document.getElementById("saAbsD").addEventListener("change", saAbsPeriods);
     document.getElementById("saExport").addEventListener("click", ()=>{
       exportRowsAsXlsx("تكليف-الاحتياط.xlsx","الاحتياط",["التاريخ","اليوم","الحصة","الغائب","المادة","الصف","الشعبة","البديل","الحالة"],
         saRows().map(s=>[s.date,s.day,"ح"+saPerNum(s.period),s.absent,s.subject||"",s.grade||"",s.section||"",s.subTeacher||"— لم يُكلَّف —",s.status||""]));
-    });
-    document.getElementById("saAbsGo").addEventListener("click", async ()=>{
-      const name = document.getElementById("saAbsT").value, date = document.getElementById("saAbsD").value;
-      const periods = [...document.querySelectorAll("#saAbsPers input:checked")].map(x=>x.value);
-      if(!name || !date || !periods.length){ toast("⚠️ اختر المعلم والتاريخ وحصة واحدة على الأقل"); return; }
-      const res = allocateSubstitutes({teacherName:name, date, periods, term:"الفصل الدراسي الأول"});
-      if(!res.ok){ toast(res.msg); return; }
-      const n = (res.results||[]).length;
-      if(!n){ toast(res.alreadyCovered ? "هذه الحصص مسجّلة مسبقًا" : "لا توجد حصص متأثرة"); return; }
-      await schoolDataReady;
-      if(!(await saveSubs())){ toast("⚠️ تعذّر الحفظ — تحقق من الاتصال"); return; }
-      logAction("تسجيل غياب مباشر لحصص الاحتياط", {teacher:name, date, periods});
-      toast(`✅ أُنشئت ${n} ${n===1?"حصة":"حصص"} — كلّف البديل من القائمة أعلاه`);
-      saUI.all = false; saUI.date = date; document.getElementById("saDate").value = date;
-      document.getElementById("saAddBox").open = false;
-      renderSubAssign();
     });
     v.addEventListener("click", async e=>{
       try{
