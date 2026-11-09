@@ -1784,6 +1784,7 @@
       <div class="stats-row" id="saStats"></div>
       <div class="row" style="align-items:flex-end;gap:10px;margin-bottom:10px">
         <div class="field" style="max-width:190px"><label>التاريخ</label><input type="date" id="saDate"></div>
+        <div class="field" style="max-width:240px"><label>المعلم الغائب</label><select id="saWho"></select></div>
         <label style="display:flex;gap:6px;align-items:center;font-size:13px;margin-bottom:10px"><input type="checkbox" id="saAll" style="width:auto"> كل التواريخ القادمة</label>
         <button class="btn ghost sm" id="saExport" style="margin-bottom:10px">⬇️ تصدير Excel</button>
       </div>
@@ -6026,7 +6027,8 @@ ${fields.map(f=>GAME_SPEC[f]).join(",\n")}
     const clash = absences.filter(a=>a.teacherName===t.name && dates.includes(a.date) && a.status!=="مرفوض");
     const n = dates.reduce((k,iso)=>k+taClassPeriods(t,iso).length,0);
     prev.innerHTML = `${dates.length} ${dates.length===1?"يوم":"أيام"} دوام · ${full||dates.length>1 ? n+" حصة لديه ستحتاج احتياط" : "اختر الحصص"}`
-      + (clash.length ? `<div style="color:var(--danger);margin-top:4px">⚠️ يوجد طلب مسجّل مسبقًا لهذا المعلم في: ${clash.map(a=>a.date+" ("+escapeHTML(a.status)+")").join("، ")}</div>` : "");
+      + (n===0 && (full||dates.length>1) ? `<div style="color:var(--danger);margin-top:4px">⚠️ لا توجد حصص لهذا الحساب في الجدول في هذه الأيام — تأكد أنك اخترت الحساب الصحيح للمعلم</div>` : "")
+      + (clash.length ? `<div style="color:var(--warning);margin-top:4px">ℹ️ يوجد طلب مسجّل مسبقًا في: ${clash.map(a=>a.date+" ("+escapeHTML(a.status)+")").join("، ")} — سيُعتمد ويُستخدم بدل إنشاء غياب مكرر</div>` : "");
   }
   function renderTeacherAbsence(){
     const tSel = document.getElementById("taT");
@@ -6057,11 +6059,21 @@ ${fields.map(f=>GAME_SPEC[f]).join(",\n")}
       if(!dates.length){ toast("⚠️ التاريخ خارج أيام الدوام"); return; }
       const picked = [...document.querySelectorAll("#taPers input:checked")].map(x=>x.value);
       if(!full && !picked.length){ toast("⚠️ اختر حصة واحدة على الأقل أو فعّل «اليوم كامل»"); return; }
-      const clash = absences.filter(a=>a.teacherName===t.name && dates.includes(a.date) && a.status!=="مرفوض");
-      if(clash.length){ toast(`⚠️ يوجد غياب/طلب مسجّل مسبقًا لـ ${t.name} في ${clash.map(a=>a.date).join("، ")} — راجعه من «إدارة الغياب والحصص» بدل تسجيله مرتين`); return; }
       const type = document.getElementById("taType").value, reason = document.getElementById("taReason").value.trim();
       const nowIso = new Date().toISOString(), by = currentUser ? currentUser.name : "المدير";
-      const recs = dates.map(iso=>{
+      // A request already on file for that date (e.g. the teacher sent one, or it was recorded
+      // before) is reused — approved now if still pending — instead of blocking or duplicating.
+      const reused = [];
+      const recs = dates.filter(iso=>{
+        const ex = absences.find(a=>a.teacherName===t.name && a.date===iso && a.status!=="مرفوض");
+        if(!ex) return true;
+        reused.push({ex, prev:JSON.stringify(ex)});
+        if(ex.status!=="معتمد"){ ex.status="معتمد"; ex.approvedBy=by; ex.approvalDate=nowIso; ex.needsReapproval=false; }
+        if(full) ex.periods = SCHED_PERIODS.slice();
+        else ex.periods = [...new Set([...(ex.periods||[]), ...picked])];
+        ex.updatedAt = nowIso;
+        return false;
+      }).map(iso=>{
         const periods = full ? SCHED_PERIODS.slice() : picked;
         const b = absencePeriodBounds(periods);
         return {id:"ab"+Date.now()+Math.random().toString(36).slice(2,6), teacherId:t.id, teacherName:t.name, date:iso,
@@ -6073,20 +6085,26 @@ ${fields.map(f=>GAME_SPEC[f]).join(",\n")}
       btn.disabled = true;
       const subsBefore = subs.length;
       let slots = 0;
-      recs.forEach(r=>{ absences.push(r); try{ const al = allocateSubstitutes(r); slots += (al.results||[]).length; }catch(err){ console.error(err); } });
+      recs.forEach(r=>absences.push(r));
+      [...recs, ...reused.map(x=>x.ex)].forEach(r=>{ try{ const al = allocateSubstitutes(r); slots += (al.results||[]).length; }catch(err){ console.error(err); } });
       await schoolDataReady;
       const [ok1, ok2] = await Promise.all([saveAbsences(), saveSubs()]);
       btn.disabled = false;
       if(!ok1 || !ok2){
         const ids = new Set(recs.map(r=>r.id));
         absences = absences.filter(a=>!ids.has(a.id)); subs.splice(subsBefore);
+        reused.forEach(({ex,prev})=>Object.assign(ex, JSON.parse(prev)));
         toast("⚠️ تعذّر الحفظ — تحقق من الاتصال وحاول مرة أخرى"); return;
       }
       logAction("تسجيل غياب معلم من المدير", {teacher:t.name, dates, type});
       document.getElementById("taReason").value = "";
-      toast(`✅ سُجّل غياب ${t.name} (${dates.length} ${dates.length===1?"يوم":"أيام"}) — ${slots} ${slots===1?"حصة تحتاج":"حصص تحتاج"} احتياط`);
-      renderTeacherAbsence(); try{ renderAdminDash(); }catch(_){}
-      if(slots){ saUI.all = dates.length>1; saUI.date = dates[0]; const de=document.getElementById("saDate"); if(de) de.value = dates[0]; showView("adminsubassign"); }
+      const theirSlots = subs.filter(x=>x.absent===t.name && dates.includes(x.date));
+      renderTeacherAbsence(); try{ renderAdminDash(); renderAdminAbsences(); }catch(_){}
+      if(!theirSlots.length){ toast(`⚠️ سُجّل الغياب، لكن لا توجد لـ ${t.name} حصص في الجدول في ${dates.length===1?"هذا اليوم":"هذه الأيام"} — لا يوجد ما يحتاج احتياط`); return; }
+      toast(`✅ سُجّل غياب ${t.name} — ${theirSlots.length} ${theirSlots.length===1?"حصة":"حصص"} جاهزة للتكليف`);
+      saUI.who = t.name; saUI.all = dates.length>1; saUI.date = dates[0];
+      const de=document.getElementById("saDate"); if(de) de.value = dates[0];
+      showView("adminsubassign");
     });
     v.addEventListener("click", async e=>{
       const del = e.target.closest("[data-tadel]"); if(!del) return;
@@ -6105,11 +6123,11 @@ ${fields.map(f=>GAME_SPEC[f]).join(",\n")}
     });
   })();
   // ===== تكليف الاحتياط — the admin picks every substitute himself (no auto / AI distribution) =====
-  const saUI = {date:"", all:true, edit:null};
+  const saUI = {date:"", all:true, edit:null, who:""};
   function saPerNum(p){ return typeof p==="number" ? p : (periodNumFromLabel(p)||0); }
   function saRows(){
     const today = todayISO();
-    return subs.filter(s=> saUI.all ? (s.date||"")>=today : s.date===saUI.date)
+    return subs.filter(s=> (saUI.all ? (s.date||"")>=today : s.date===saUI.date) && (!saUI.who || s.absent===saUI.who))
       .sort((a,b)=>(a.date||"").localeCompare(b.date||"") || saPerNum(a.period)-saPerNum(b.period));
   }
   function saCandOptions(s){
@@ -6123,6 +6141,12 @@ ${fields.map(f=>GAME_SPEC[f]).join(",\n")}
     if(!saUI.date) saUI.date = todayISO();
     if(dEl && !dEl.value) dEl.value = saUI.date;
     if(allEl) allEl.checked = saUI.all;
+    const whoEl = document.getElementById("saWho");
+    if(whoEl){
+      const today = todayISO();
+      const names = [...new Set(subs.filter(s=>(s.date||"")>=today || s.date===saUI.date).map(s=>s.absent).concat(saUI.who?[saUI.who]:[]))].sort((a,b)=>a.localeCompare(b,"ar"));
+      whoEl.innerHTML = `<option value="">الكل</option>` + names.map(n=>`<option value="${escapeHTML(n)}"${n===saUI.who?" selected":""}>${escapeHTML(n)}</option>`).join("");
+    }
     const rows = saRows();
     const pending = rows.filter(s=>subStatusCode(s)==="PENDING");
     const assigned = rows.filter(s=>subStatusCode(s)!=="PENDING");
@@ -6153,6 +6177,7 @@ ${fields.map(f=>GAME_SPEC[f]).join(",\n")}
     const v = document.getElementById("view-adminsubassign"); if(!v) return;
     document.getElementById("saDate").addEventListener("change", e=>{ saUI.date = e.target.value; saUI.all = false; renderSubAssign(); });
     document.getElementById("saAll").addEventListener("change", e=>{ saUI.all = e.target.checked; renderSubAssign(); });
+    document.getElementById("saWho").addEventListener("change", e=>{ saUI.who = e.target.value; renderSubAssign(); });
     document.getElementById("saExport").addEventListener("click", ()=>{
       exportRowsAsXlsx("تكليف-الاحتياط.xlsx","الاحتياط",["التاريخ","اليوم","الحصة","الغائب","المادة","الصف","الشعبة","البديل","الحالة"],
         saRows().map(s=>[s.date,s.day,"ح"+saPerNum(s.period),s.absent,s.subject||"",s.grade||"",s.section||"",s.subTeacher||"— لم يُكلَّف —",s.status||""]));
