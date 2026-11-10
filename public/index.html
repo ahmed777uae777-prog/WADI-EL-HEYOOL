@@ -648,6 +648,10 @@
   .tk-svc button{display:flex; flex-direction:column; align-items:center; gap:4px; padding:12px 8px; border:1.5px solid var(--border); border-radius:14px; background:var(--surface); cursor:pointer; font:inherit; font-size:13px; font-weight:800; color:var(--text); text-align:center; transition:.15s;}
   .tk-svc button span{font-size:22px;} .tk-svc button small{font-weight:500; font-size:11px; color:var(--text-muted);}
   .tk-svc button:hover{border-color:var(--primary);} .tk-svc button.on{border-color:var(--primary); background:var(--primary-tint); box-shadow:0 0 0 2px var(--primary-tint);}
+  .rp-grid{display:grid; grid-template-columns:repeat(auto-fill,minmax(260px,1fr)); gap:10px; margin-top:6px;}
+  .rp-card{border:1px solid var(--border); border-radius:14px; padding:14px; background:var(--surface); display:flex; flex-direction:column; gap:6px;}
+  .rp-card h3{margin:0; font-size:15px;} .rp-card p{margin:0; font-size:12.5px; color:var(--text-muted); flex:1;}
+  .rp-card .rp-n{font-size:12px; font-weight:800; color:var(--primary);}
   .pill{display:inline-block; padding:4px 12px; border-radius:999px; font-size:11px; font-weight:800; white-space:nowrap;}
   .pill.ok{background:color-mix(in srgb, var(--success) 16%, transparent); color:var(--success);}
   .pill.bad{background:color-mix(in srgb, var(--danger) 16%, transparent); color:var(--danger);}
@@ -1800,6 +1804,20 @@
     </div>
   </section>
 
+  <section class="view" id="view-adminreports">
+    <div class="card">
+      <div class="view-head"><h2>📥 مركز التقارير</h2><p>اختر الفترة ثم نزّل أي تقرير بصيغة Excel أو PDF.</p></div>
+      <div class="row" style="align-items:flex-end;gap:10px">
+        <div class="field" style="max-width:180px"><label>من تاريخ</label><input type="date" id="rpFrom"></div>
+        <div class="field" style="max-width:180px"><label>إلى تاريخ</label><input type="date" id="rpTo"></div>
+        <div class="field" style="max-width:260px"><label>المعلم (اختياري)</label><select id="rpTeacher"></select></div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px">
+          <button class="btn ghost sm" data-rprange="week">هذا الأسبوع</button><button class="btn ghost sm" data-rprange="month">هذا الشهر</button><button class="btn ghost sm" data-rprange="term">الفصل كاملًا</button>
+        </div>
+      </div>
+      <div id="rpList" class="rp-grid"></div>
+    </div>
+  </section>
   <section class="view" id="view-adminteacherabsence">
     <div class="card">
       <div class="view-head"><h2>📝 تسجيل غياب معلم</h2><p>إذا غاب المعلم ولم يرسل طلبًا، سجّل غيابه من هنا. يُعتمد مباشرة باسمك، ويظهر للمعلم في سجله، وتنتقل حصصه إلى «تكليف الاحتياط» لتختار البديل.</p></div>
@@ -2137,6 +2155,7 @@
     // at once) instead of always landing wherever the tabs were last left.
     {id:"admintimetables", iconId:"adminteacherschedules", icon:"🛠️", title:"إعداد جداول المعلمين", desc:"تعديل جدول أي معلم حصة بحصة أو عدة حصص دفعة واحدة، وتصدير Excel/PDF", presetTab:"teacher"},
     {id:"techsupport", icon:"🛠️", title:"الدعم الفني للأجهزة المدرسية", desc:"طلبات الخدمة الفنية وحالتها ومسؤولو الدعم الفني (أ. مريم الكعبي)"},
+    {id:"adminreports", icon:"📥", title:"مركز التقارير", desc:"تنزيل البيانات والتقارير بصيغة PDF أو Excel", accent:true},
     {id:"adminteacherabsence", icon:"📝", title:"تسجيل غياب معلم", desc:"سجّل غياب معلم لم يرسل طلبًا — يُعتمد مباشرة وتنتقل حصصه للاحتياط", accent:true},
     {id:"adminsubassign", icon:"🧑‍🏫", title:"تكليف الاحتياط", desc:"اختر بنفسك المعلم البديل لكل حصة غياب من بين المتاحين فعلًا", accent:true},
     {id:"adminabsencehub", icon:"🗂️", title:"إدارة الغياب والحصص", desc:"غياب الطلاب والمعلمين — من الطلب إلى الاعتماد وتوزيع الاحتياط وإشعار أولياء الأمور والتقارير", accent:true},
@@ -2153,6 +2172,7 @@
   ];
 
   const ICON_PATHS = {
+    adminreports: '<path d="M6 3h8l4 4v14H6z"/><path d="M14 3v4h4"/><path d="M12 10v7m-3-3 3 3 3-3"/>',
     techsupport: '<path d="M14.7 6.3a4 4 0 0 0-5.4 5.1L4 16.7 7.3 20l5.3-5.3a4 4 0 0 0 5.1-5.4l-2.4 2.4-2.6-.6-.6-2.6z"/><rect x="14" y="15" width="7" height="5" rx="1"/>',
     adminteacherabsence: '<rect x="4" y="5" width="16" height="15" rx="2"/><path d="M8 3v4M16 3v4M4 10h16"/><path d="m10 13.5 4 4M14 13.5l-4 4"/>',
     adminsubassign: '<circle cx="9" cy="7.5" r="3"/><path d="M3.5 19c.6-3.2 2.8-5 5.5-5s4.9 1.8 5.5 5"/><path d="M16 8.5h5M18.5 6v5"/><path d="m15.5 15.5 1.8 1.8 3.2-3.3"/>',
@@ -2435,6 +2455,7 @@
     if(id==="adminpoints" && currentUser && currentUser.role==="admin") renderAdminPoints(true);
     if(id==="adminsubassign" && currentUser && currentUser.role==="admin") renderSubAssign();
     if(id==="adminteacherabsence" && currentUser && currentUser.role==="admin") renderTeacherAbsence();
+    if(id==="adminreports" && currentUser && currentUser.role==="admin") renderReports();
     document.getElementById("crumbWrap").hidden = (id==="dashboard" || id==="identify" || (id==="absinbox" && currentUser && currentUser.role==="teacher"));
     window.scrollTo({top:0, behavior:"smooth"});
   }
@@ -6179,6 +6200,108 @@ ${fields.map(f=>GAME_SPEC[f]).join(",\n")}
 
   /* ---------- admin: teacher points ---------- */
   let ptBonusFor = null;
+  // ===== مركز التقارير — every report downloadable as Excel or PDF (Arabic-safe PDF via html2canvas) =====
+  function rpRange(){ return {from:document.getElementById("rpFrom").value||"0000", to:document.getElementById("rpTo").value||"9999", who:document.getElementById("rpTeacher").value}; }
+  const rpIn = (d, r) => (d||"") >= r.from && (d||"") <= r.to;
+  const rpDayOf = d => { try{ return dateToArDay(d)||""; }catch(e){ return ""; } };
+  const rpMs2D = ms => { try{ const d = new Date(ms); return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0"); }catch(e){ return ""; } };
+  async function rpFetch(kind){ try{ return (await recApi(kind)).list||[]; }catch(e){ return []; } }
+  const REPORTS = [
+    {id:"tabs", icon:"🗓️", title:"غياب واستئذان المعلمين", desc:"كل طلبات الغياب والاستئذان والمهام الرسمية وحالتها", build: async r=>({
+      header:["المعلم","النوع","التاريخ","اليوم","الحصص المتأثرة","الحالة","اعتمده","السبب"],
+      rows: absences.filter(a=>rpIn(a.date,r) && (!r.who || a.teacherName===r.who)).sort((a,b)=>a.date.localeCompare(b.date))
+        .map(a=>[a.teacherName, (a.type||"").replace(/^\S+\s/,""), a.date, rpDayOf(a.date), (a.periods||[]).map(p=>"ح"+(periodNumFromLabel(p)||p)).join("، ")||"-", a.status, a.approvedBy||"", a.reason||""])})},
+    {id:"subs", icon:"🔄", title:"حصص الاحتياط", desc:"كل حصة احتياط: الغائب، البديل، الصف، والحالة", build: async r=>({
+      header:["التاريخ","اليوم","الحصة","المعلم الغائب","المادة","الصف","الشعبة","المعلم البديل","الحالة"],
+      rows: subs.filter(x=>rpIn(x.date,r) && (!r.who || x.absent===r.who || x.subTeacher===r.who)).sort((a,b)=>a.date.localeCompare(b.date)||(periodNumFromLabel(a.period)||0)-(periodNumFromLabel(b.period)||0))
+        .map(x=>[x.date, x.day||rpDayOf(x.date), "ح"+(periodNumFromLabel(x.period)||x.period), x.absent, x.subject||"", x.grade||"", x.section||"", x.subTeacher||"— لم يُكلَّف —", x.status||""])})},
+    {id:"subcount", icon:"📊", title:"إحصائية الاحتياط لكل معلم", desc:"عدد حصص الاحتياط التي غطاها كل معلم وعدد غياباته", build: async r=>{
+      const m = new Map(); const g = n => m.get(n) || (m.set(n,{cover:0, abs:0, absDays:new Set()}), m.get(n));
+      subs.filter(x=>rpIn(x.date,r)).forEach(x=>{ if(x.subTeacher) g(x.subTeacher).cover++; g(x.absent).abs++; });
+      absences.filter(a=>rpIn(a.date,r) && a.status==="معتمد").forEach(a=>g(a.teacherName).absDays.add(a.date));
+      return {header:["المعلم","المادة","حصص احتياط غطّاها","أيام غياب معتمدة","حصص احتاجت بديلًا عنه"],
+        rows:[...m.entries()].filter(([n])=>!r.who||n===r.who).map(([n,v])=>[n, (teachers.find(t=>t.name===n)||{}).subject||"", v.cover, v.absDays.size, v.abs]).sort((a,b)=>b[2]-a[2])}; }},
+    {id:"stuabs", icon:"🧑‍🎓", title:"غياب الطلاب", desc:"طلبات غياب الطلاب المرسلة من المعلمين وحالتها", build: async r=>({
+      header:["رقم الطلب","الطالب","الصف","الشعبة","التاريخ","الحصة","المادة","النوع","السبب","الحالة","سجّله"],
+      rows: studentAbsences.filter(a=>rpIn(a.date,r) && (!r.who || a.createdBy===r.who)).sort((a,b)=>a.date.localeCompare(b.date))
+        .map(a=>[a.reqNo||"", a.studentName, a.gradeId?gradeNameOf(a.gradeId):"", a.sectionId?sectionShort(a.sectionId):"", a.date, a.period||"", a.subjectId?subjectName(a.subjectId):"", a.type||"", a.reason||"", a.status||"", a.createdBy||""])})},
+    {id:"duty", icon:"🛡️", title:"المناوبات", desc:"المناوبات المنفذة والاعتذارات وملاحظات المعلمين", build: async r=>({
+      header:["التاريخ","اليوم","الفترة","المكان","المعلم","النوع","الحالات","الملاحظات","ملاحظة الإدارة"],
+      rows:(await rpFetch("duty")).filter(d=>rpIn(d.date,r) && (!r.who || d.teacherName===r.who)).sort((a,b)=>a.date.localeCompare(b.date))
+        .map(d=>[d.date, rpDayOf(d.date), d.slot, d.place, d.teacherName||"", d.type==="apology"?"اعتذار":"نُفّذت", d.cases||0, d.notes||"", d.adminNote||""])})},
+    {id:"tech", icon:"🛠️", title:"طلبات الدعم الفني", desc:"طلبات الخدمة الفنية، حالتها، والإجراء المتخذ", build: async r=>({
+      header:["رقم","التاريخ","صاحب الطلب","الخدمة","التفصيل","المكان","الأولوية","الحالة","المسؤول","الإجراء"],
+      rows:(await rpFetch("tech")).filter(x=>rpIn(rpMs2D(x.created),r) && (!r.who || x.teacherName===r.who)).sort((a,b)=>a.created-b.created)
+        .map(x=>[x.no, rpMs2D(x.created), x.teacherName, x.cat, x.sub||x.desc||"", x.place||"", x.pri, x.status, x.assignee||"", x.fix||""])})},
+    {id:"points", icon:"🏆", nodate:true, title:"نقاط المعلمين", desc:"ترتيب المعلمين حسب النقاط (المناوبات، التوصيات، المبادرات...)", build: async r=>{
+      let L = []; try{ const x = await fetch("/api/points",{credentials:"same-origin",cache:"no-store"}); if(x.ok) L = (await x.json()).list||[]; }catch(e){}
+      return {header:["الترتيب","المعلم","المادة","المناوبات","التوصيات المنفذة","المبادرات","الواقع المعزز","إضافي/خصم","المجموع"],
+        rows:L.filter(x=>!r.who||x.name===r.who).map((x,i)=>[i+1,x.name,x.subject||"",x.counts.duty||0,x.counts.recDone||0,x.counts.pf||0,x.counts.arShared||0,(x.bonus||[]).reduce((a,y)=>a+y.pts,0),x.total])}; }},
+    {id:"staff", icon:"👥", nodate:true, title:"قائمة المعلمين وأنصبتهم", desc:"المعلمون، موادهم، وعدد حصصهم الأسبوعية من الجدول", build: async r=>({
+      header:["المعلم","المادة","الحصص الأسبوعية","اجتماعات القسم","حصص احتياط (الإجمالي)"],
+      rows: teachers.filter(t=>!t.isAdmin && (!r.who || t.name===r.who)).sort((a,b)=>a.name.localeCompare(b.name,"ar"))
+        .map(t=>[t.name, t.subject||"", scheduleEntries.filter(e=>e.teacherId===t.id).length, (meetings||[]).filter(m=>m.teacherId===t.id).length, t.substituteCount||0])})},
+  ];
+  function rpPeriodText(r){ return r.from==="0000" && r.to==="9999" ? "كل الفترات" : `من ${r.from==="0000"?"البداية":r.from} إلى ${r.to==="9999"?"الآن":r.to}`; }
+  async function rpPdf(rep, data, r){
+    if(typeof window.jspdf==="undefined" || typeof html2canvas==="undefined"){ toast("⚠️ تعذّر تحميل مكتبة PDF — جرّب Excel"); return; }
+    const { jsPDF } = window.jspdf;
+    const pdf = new jsPDF({orientation:"landscape", unit:"pt", format:"a4"});
+    const per = 16, pages = Math.max(1, Math.ceil(data.rows.length/per));
+    const school = (schoolInfo && schoolInfo.name) || "مدرسة وادي الحيول (1-12)";
+    const stamp = new Date().toLocaleDateString("ar-OM");
+    for(let i=0;i<pages;i++){
+      const chunk = data.rows.slice(i*per, (i+1)*per);
+      const html = `<div dir="rtl" style="width:1120px;padding:26px 30px;background:#fff;color:#16302b;font-family:Tajawal,'Segoe UI',Tahoma,sans-serif">
+        <div style="display:flex;justify-content:space-between;align-items:flex-end;border-bottom:3px solid #0f5a52;padding-bottom:10px;margin-bottom:14px">
+          <div><div style="font-size:13px;color:#555">سلطنة عُمان — المديرية العامة للتعليم بمحافظة البريمي</div><div style="font-size:16px;font-weight:800">${escapeHTML(school)}</div></div>
+          <div style="text-align:left"><div style="font-size:21px;font-weight:800;color:#0f5a52">${rep.icon} ${escapeHTML(rep.title)}</div><div style="font-size:12.5px;color:#555">${escapeHTML(rep.nodate ? "حتى "+stamp : rpPeriodText(r))}${r.who?" · "+escapeHTML(r.who):""} · عدد السجلات: ${data.rows.length}</div></div>
+        </div>
+        <table style="width:100%;border-collapse:collapse;font-size:12.5px">
+          <thead><tr>${data.header.map(h=>`<th style="background:#0f5a52;color:#fff;padding:7px 6px;border:1px solid #0f5a52">${escapeHTML(h)}</th>`).join("")}</tr></thead>
+          <tbody>${chunk.length ? chunk.map((row,k)=>`<tr style="background:${k%2?"#f3f8f7":"#fff"}">${row.map(c=>`<td style="padding:6px;border:1px solid #d6e2df;text-align:center">${escapeHTML(String(c==null?"":c))}</td>`).join("")}</tr>`).join("") : `<tr><td colspan="${data.header.length}" style="padding:20px;text-align:center;color:#777">لا توجد بيانات في هذه الفترة</td></tr>`}</tbody>
+        </table>
+        <div style="display:flex;justify-content:space-between;font-size:11px;color:#777;margin-top:12px"><span>منصة المعلّم الذكية · صدر في ${escapeHTML(stamp)}</span><span>صفحة ${i+1} من ${pages}</span></div>
+      </div>`;
+      await renderHolderToPdfPage(pdf, html, i===0);
+    }
+    downloadBlob(`${rep.title}.pdf`, pdf.output("blob"));
+  }
+  function renderReports(){
+    const sel = document.getElementById("rpTeacher");
+    if(!sel.options.length){
+      sel.innerHTML = `<option value="">كل المعلمين</option>` + teachers.filter(t=>!t.isAdmin).sort((a,b)=>a.name.localeCompare(b.name,"ar")).map(t=>`<option value="${escapeHTML(t.name)}">${escapeHTML(t.name)}</option>`).join("");
+      rpSetRange("month");
+    }
+    document.getElementById("rpList").innerHTML = REPORTS.map(x=>`<div class="rp-card"><h3>${x.icon} ${escapeHTML(x.title)}</h3><p>${escapeHTML(x.desc)}${x.nodate?" (إجمالي حتى اليوم)":""}</p>
+      <div style="display:flex;gap:6px"><button class="btn sm" data-rpx="${x.id}">📊 Excel</button><button class="btn ghost sm" data-rpp="${x.id}">📄 PDF</button></div></div>`).join("");
+  }
+  function rpSetRange(kind){
+    const d = new Date(), iso = x => x.getFullYear()+"-"+String(x.getMonth()+1).padStart(2,"0")+"-"+String(x.getDate()).padStart(2,"0");
+    let f;
+    if(kind==="week"){ f = new Date(d); f.setDate(d.getDate() - d.getDay()); }
+    else if(kind==="month"){ f = new Date(d.getFullYear(), d.getMonth(), 1); }
+    else { f = new Date(d.getMonth()>=7 ? d.getFullYear() : d.getFullYear()-1, 7, 15); }
+    document.getElementById("rpFrom").value = iso(f); document.getElementById("rpTo").value = iso(d);
+  }
+  (function wireReports(){
+    const v = document.getElementById("view-adminreports"); if(!v) return;
+    v.addEventListener("click", async e=>{
+      const rg = e.target.closest("[data-rprange]"); if(rg){ rpSetRange(rg.dataset.rprange); return; }
+      const b = e.target.closest("[data-rpx],[data-rpp]"); if(!b || b.disabled) return;
+      const rep = REPORTS.find(x=>x.id===(b.dataset.rpx||b.dataset.rpp)); if(!rep) return;
+      const r = rpRange(); if(r.from>r.to){ toast("⚠️ تاريخ البداية بعد تاريخ النهاية"); return; }
+      b.disabled = true; const old = b.textContent; b.textContent = "⏳...";
+      try{
+        const data = await rep.build(r);
+        if(b.dataset.rpx) exportRowsAsXlsx(`${rep.title}.xlsx`, rep.title.slice(0,30), data.header, data.rows);
+        else await rpPdf(rep, data, r);
+        logAction("تنزيل تقرير", {report:rep.title, format:b.dataset.rpx?"Excel":"PDF", rows:data.rows.length});
+        toast(`✅ تم تنزيل «${rep.title}» (${data.rows.length} سجل)`);
+      }catch(err){ console.error(err); toast("⚠️ تعذّر إنشاء التقرير"); }
+      finally{ b.disabled = false; b.textContent = old; }
+    });
+  })();
   // ===== تسجيل غياب معلم — admin records an absence the teacher never submitted =====
   function taDates(){
     const f = document.getElementById("taFrom").value, t = document.getElementById("taTo").value || f;
