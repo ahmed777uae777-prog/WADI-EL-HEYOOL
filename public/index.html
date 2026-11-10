@@ -4722,11 +4722,12 @@ ${fields.map(f=>GAME_SPEC[f]).join(",\n")}
   // UI-only (not persisted) state for the inline "edit teacher absence request" box: which
   // periods are currently checked while the box for a given request id is open.
   const twEditUIState = {};
-  async function approveAbsence(id){
+  async function approveAbsence(id, adminPeriods){
     if(transferInFlight.has(id)) return;
     const a = absences.find(x=>x.id===id); if(!a) return;
     transferInFlight.add(id);
-    const prevStatus = a.status, prevReason = a.rejectionReason;
+    const prevStatus = a.status, prevReason = a.rejectionReason, prevPeriods = (a.periods||[]).slice(), prevPBA = a.periodsByAdmin;
+    if(Array.isArray(adminPeriods)){ a.periods = adminPeriods.slice(); a.periodsByAdmin = false; a.periodsSetBy = currentUser ? currentUser.name : "المدير"; }
     const prevApprovedBy = a.approvedBy, prevApprovalDate = a.approvalDate, prevUpdatedAt = a.updatedAt;
     try{
       const nowIso = new Date().toISOString();
@@ -4744,7 +4745,7 @@ ${fields.map(f=>GAME_SPEC[f]).join(",\n")}
       await schoolDataReady;
       const [ok1, ok2, ok3] = await Promise.all([saveAbsences(), saveTeachers(), saveSubs()]);
       if(!ok1 || !ok2 || !ok3){
-        a.status = prevStatus; a.rejectionReason = prevReason;
+        a.status = prevStatus; a.rejectionReason = prevReason; a.periods = prevPeriods; a.periodsByAdmin = prevPBA;
         a.approvedBy = prevApprovedBy; a.approvalDate = prevApprovalDate; a.updatedAt = prevUpdatedAt;
         renderAdminAbsences();
         toast("⚠️ تعذّر اعتماد الطلب — تحقق من الاتصال وحاول مرة أخرى");
@@ -5049,7 +5050,14 @@ ${fields.map(f=>GAME_SPEC[f]).join(",\n")}
     }
   }
   document.addEventListener("click", e=>{
-    const ap = e.target.closest("[data-approve]"); if(ap){ approveAbsence(ap.dataset.approve); return; }
+    const ap = e.target.closest("[data-approve]"); if(ap){
+      const id = ap.dataset.approve, boxes = [...document.querySelectorAll(`input[data-abp="${id}"]`)];
+      if(boxes.length){
+        const sel = boxes.filter(b=>b.checked).map(b=>b.value);
+        if(!sel.length && !confirm("لم تحدد أي حصة — اعتماد الطلب بدون حصص احتياط؟")) return;
+        approveAbsence(id, sel);
+      } else approveAbsence(id);
+      return; }
     const rj = e.target.closest("[data-reject]"); if(rj){ const box=document.getElementById("rjbox-"+rj.dataset.reject); if(box) box.hidden=!box.hidden; return; }
     const cr = e.target.closest("[data-confirmreject]"); if(cr){ const id=cr.dataset.confirmreject; const inp=document.getElementById("rjreason-"+id); const reason=(inp&&inp.value||"").trim()||"لم يتم قبول الطلب"; rejectAbsence(id, reason); return; }
     const delAbs = e.target.closest("[data-delete-abs]"); if(delAbs){ const box=document.getElementById("delbox-"+delAbs.dataset.deleteAbs); if(box) box.hidden=!box.hidden; return; }
@@ -6966,6 +6974,17 @@ ${fields.map(f=>GAME_SPEC[f]).join(",\n")}
     }
   }
   wireAbshubFilterInputs();
+  // The admin — not the teacher — fixes which timetable periods a request affects: full-day
+  // types default to every class the teacher has that day; partial-day types (استئذان / مهمة
+  // رسمية) start with the teacher's choice if any, and the admin ticks what actually applies.
+  function absPeriodPicker(a){
+    const cls = teacherClassPeriodsOn(a.teacherName, a.date);
+    if(!cls.length) return `<span style="font-size:12px;color:var(--text-muted)">لا حصص له في الجدول هذا اليوم</span>`;
+    const partial = PARTIAL_DAY_TYPES.includes(a.type) || a.periodsByAdmin;
+    const pre = partial && !a.periodsByAdmin && (a.periods||[]).length ? new Set(a.periods) : new Set(cls);
+    return `${partial?`<div style="font-size:11.5px;font-weight:800;color:var(--warning);margin-bottom:4px">حدّد الحصص المتأثرة${a.leaveTime?` (الخروج ${escapeHTML(a.leaveTime)})`:""}</div>`:`<div style="font-size:11.5px;color:var(--text-muted);margin-bottom:4px">كل حصصه في الجدول</div>`}
+      <div style="display:flex;flex-direction:column;gap:3px">${cls.map(p=>`<label style="display:flex;gap:5px;align-items:center;font-size:12px;white-space:nowrap"><input type="checkbox" data-abp="${a.id}" value="${escapeHTML(p)}" ${pre.has(p)?"checked":""} style="width:auto;margin:0"> ${escapeHTML(classPeriodLabel(a.teacherName, a.date, p))}</label>`).join("")}</div>`;
+  }
   function renderAdminAbsences(){
     wireAbshubFilterInputs();
     let rows = absences.slice();
@@ -6985,7 +7004,7 @@ ${fields.map(f=>GAME_SPEC[f]).join(",\n")}
           <td style="font-weight:700;">${escapeHTML(a.teacherName)}</td>
           <td>${escapeHTML(a.type)}<br><span style="color:var(--text-muted); font-size:11px;">${escapeHTML(a.term)}</span></td>
           <td>${escapeHTML(a.date)}</td>
-          <td>${a.periods && a.periods.length ? a.periods.join("، ") : "-"}</td>
+          <td>${canApprove ? absPeriodPicker(a) : (a.periods && a.periods.length ? a.periods.join("، ") : "-")}</td>
           <td>${statusPill(a.status)}${a.needsReapproval?` <span class="pill wait">✏️ عُدّل بعد الاعتماد</span>`:""}</td>
           <td>
             <div style="display:flex; flex-wrap:wrap; gap:6px;">
@@ -8833,6 +8852,22 @@ ${fields.map(f=>GAME_SPEC[f]).join(",\n")}
   // the fixed list doesn't cover (never blocks a teacher from submitting a real request).
   const ABSENCE_REQUEST_TYPES = ["🕐 استئذان (مغادرة مؤقتة)","📌 طلب غياب","🧳 طلب إجازة","🤒 إجازة مرضية","🚨 حالة طارئة","🎓 مهمة رسمية","📝 طلب آخر"];
   const ISTITHAN_TYPE = "🕐 استئذان (مغادرة مؤقتة)";
+  // Partial-day requests (leaving early / official mission): the teacher never picks periods —
+  // the admin decides which periods are affected when approving. Every other type is a full
+  // day, and its periods come straight from the teacher's timetable for that day.
+  const PARTIAL_DAY_TYPES = [ISTITHAN_TYPE, "🎓 مهمة رسمية"];
+  function teacherClassPeriodsOn(teacherName, iso){
+    const t = teachers.find(x=>x.name===teacherName); if(!t || !iso) return [];
+    const day = dateToArDay(iso); if(!SCHOOL_DAYS.includes(day)) return [];
+    const structured = teacherHasStructuredSchedule(t.id);
+    return SCHED_PERIODS.filter((p,i)=> structured ? !!scheduleEntryFor(t.id, day, i+1)
+      : !!(t.weeklySchedule && t.weeklySchedule[day] && t.weeklySchedule[day][p] && t.weeklySchedule[day][p]!=="-"));
+  }
+  function classPeriodLabel(teacherName, iso, p){
+    const t = teachers.find(x=>x.name===teacherName), n = periodNumFromLabel(p);
+    const e = t ? scheduleEntryFor(t.id, dateToArDay(iso), n) : null;
+    return "ح"+n + (e ? " · "+subjectName(e.subjectId)+(e.gradeId?" — "+gradeNameOf(e.gradeId):"") : "");
+  }
   let tw = {step:1, type:"", customType:"", term:"", date:"", periods:[], reason:"", attachmentUrl:"", rangeStart:"", rangeEnd:""};
   function twReset(){ tw = {step:1, type:"", customType:"", term:"", date: todayISO(), periods:[], reason:"", attachmentUrl:"", rangeStart:"", rangeEnd:""}; }
   function twStepNum(){ return tw.step==="1b" ? 1 : tw.step; }
@@ -8849,8 +8884,8 @@ ${fields.map(f=>GAME_SPEC[f]).join(",\n")}
         <div class="card" style="text-align:right; margin-top:18px; background:var(--bg-soft, rgba(0,0,0,0.03));">
           <div><strong>النوع:</strong> ${escapeHTML(tw.type||"-")}</div>
           <div><strong>التاريخ:</strong> ${escapeHTML(tw.date||"-")}</div>
-          ${tw.type===ISTITHAN_TYPE && tw.rangeStart && tw.rangeEnd ? `<div><strong>الفترة:</strong> ${escapeHTML(tw.rangeStart)} → ${escapeHTML(tw.rangeEnd)}</div>` : ""}
-          <div><strong>الحصص المتأثرة:</strong> ${tw.periods.length?tw.periods.join("، "):"لا توجد حصص متأثرة"}</div>
+          ${PARTIAL_DAY_TYPES.includes(tw.type) && tw.rangeStart ? `<div><strong>وقت الخروج المتوقع:</strong> ${escapeHTML(tw.rangeStart)}</div>` : ""}
+          <div><strong>الحصص المتأثرة:</strong> ${PARTIAL_DAY_TYPES.includes(tw.type) ? "يحددها مدير المدرسة عند الاعتماد" : (tw.periods.length?tw.periods.join("، "):"لا توجد حصص في الجدول لهذا اليوم")}</div>
           <div><strong>الحالة:</strong> بانتظار الاعتماد</div>
         </div>
         <button class="btn" id="twDoneBtn" style="margin-top:18px; width:100%;">العودة إلى الرئيسية</button>
@@ -8875,19 +8910,21 @@ ${fields.map(f=>GAME_SPEC[f]).join(",\n")}
         <input type="date" id="twDateInput" value="${tw.date}">
         <div class="result-actions"><button class="btn ghost sm" data-tw-back="2">← رجوع</button><button class="btn sm" id="twDateNext">متابعة →</button></div>`;
     } else if(tw.step===4){
-      if(tw.type===ISTITHAN_TYPE){
-        // استئذان = مغادرة لفترة زمنية محددة بدقة (وليس حصصًا كاملة) — يختار المعلم وقت البداية
-        // والنهاية الفعليين، ويحسب النظام تلقائيًا أي حصص تتقاطع مع هذه الفترة بالضبط اعتمادًا
-        // على جدول أوقات الحصص الثابت الحقيقي، دون أي تخمين.
-        const preview = (tw.rangeStart && tw.rangeEnd) ? periodsIntersectingRange(tw.rangeStart, tw.rangeEnd) : [];
-        body.innerHTML = `<div class="step-label">4️⃣ ⏰ فترة الاستئذان (من - إلى)</div>
-          <div class="field"><label>من الساعة</label><input type="time" id="twRangeStartInput" value="${escapeHTML(tw.rangeStart||"")}"></div>
-          <div class="field"><label>إلى الساعة</label><input type="time" id="twRangeEndInput" value="${escapeHTML(tw.rangeEnd||"")}"></div>
-          <div class="note" style="margin-top:6px;">${preview.length ? `الحصص المتأثرة تلقائيًا: <strong>${preview.join("، ")}</strong>` : (tw.rangeStart && tw.rangeEnd ? "⚠️ لا توجد حصص ضمن هذه الفترة." : "أدخل وقت البداية والنهاية لمعاينة الحصص المتأثرة.")}</div>
-          <div class="result-actions"><button class="btn ghost sm" data-tw-back="3">← رجوع</button><button class="btn sm" id="twRangeNext">متابعة →</button></div>`;
+      const day = dateToArDay(tw.date);
+      const mine = teacherClassPeriodsOn(currentUser && currentUser.name, tw.date);
+      const list = mine.length ? `<div class="chip-row">${mine.map(p=>`<span class="chip selected" style="cursor:default">${escapeHTML(classPeriodLabel(currentUser.name, tw.date, p))}</span>`).join("")}</div>`
+        : `<div class="note">لا توجد لديك حصص يوم ${escapeHTML(day||"")} حسب الجدول.</div>`;
+      if(PARTIAL_DAY_TYPES.includes(tw.type)){
+        tw.periods = [];
+        body.innerHTML = `<div class="step-label">4️⃣ ⏰ الحصص المتأثرة</div>
+          <div class="note">🛈 في ${escapeHTML(tw.type.replace(/^\S+\s/,""))} <b>يحدد مدير المدرسة</b> الحصص المتأثرة عند الاعتماد، ولا تحتاج لاختيارها.</div>
+          <div style="font-size:13px;margin:8px 0 4px">حصصك يوم ${escapeHTML(day||"")} حسب الجدول:</div>${list}
+          <div class="field" style="max-width:220px;margin-top:10px"><label>وقت الخروج المتوقع (اختياري)</label><input type="time" id="twLeaveTime" value="${escapeHTML(tw.rangeStart||"")}"></div>
+          <div class="result-actions"><button class="btn ghost sm" data-tw-back="3">← رجوع</button><button class="btn sm" data-tw-goto5="1">متابعة →</button></div>`;
       } else {
-        body.innerHTML = `<div class="step-label">4️⃣ ⏰ الحصص المتأثرة (اختر حصة أو أكثر)</div>
-          <div class="chip-row">${SCHED_PERIODS.map(p=>`<button class="chip${tw.periods.includes(p)?" selected":""}" data-tw-period="${p}">${p}</button>`).join("")}</div>
+        tw.periods = mine.slice();
+        body.innerHTML = `<div class="step-label">4️⃣ ⏰ الحصص المتأثرة (من جدولك تلقائيًا)</div>
+          <div style="font-size:13px;margin-bottom:6px">غيابك يوم <b>${escapeHTML(day||"")}</b> يشمل كل حصصك في الجدول، وستُحوَّل للاحتياط بعد اعتماد المدير:</div>${list}
           <div class="result-actions"><button class="btn ghost sm" data-tw-back="3">← رجوع</button><button class="btn sm" data-tw-goto5="1">متابعة →</button></div>`;
       }
     } else if(tw.step===5){
@@ -8907,8 +8944,9 @@ ${fields.map(f=>GAME_SPEC[f]).join(",\n")}
     // استئذان يحمل وقتًا حقيقيًا مُدخلاً من المعلم نفسه (مثال: 10:00 → 12:00) فيُحفظ كما هو
     // حرفيًا — أما بقية الأنواع (المعتمدة على اختيار حصص كاملة) فتُشتق أوقاتها من حدود الحصص
     // المختارة كما كان سابقًا.
-    const isRangeType = tw.type===ISTITHAN_TYPE && tw.rangeStart && tw.rangeEnd;
-    const bounds = isRangeType ? {start: tw.rangeStart, end: tw.rangeEnd} : absencePeriodBounds(tw.periods);
+    const partial = PARTIAL_DAY_TYPES.includes(tw.type);
+    if(!partial) tw.periods = teacherClassPeriodsOn(currentUser.name, tw.date||todayISO());
+    const bounds = partial ? {start: tw.rangeStart||"", end: ""} : absencePeriodBounds(tw.periods.length ? tw.periods : SCHED_PERIODS);
     // Duplicate-submission guard: if a save previously timed out client-side (see saveAbsences'
     // 15s timeout) the write may still have gone through server-side even though the teacher
     // saw an error and is now retrying — clicking "إرسال" again would otherwise create a
@@ -8948,7 +8986,8 @@ ${fields.map(f=>GAME_SPEC[f]).join(",\n")}
       approvedBy: null, approvalDate: null,
       createdAt: nowIso, updatedAt: nowIso,
       submittedAt: nowIso,
-      editHistory: [], needsReapproval: false
+      editHistory: [], needsReapproval: false,
+      periodsByAdmin: partial, leaveTime: partial ? (tw.rangeStart||"") : ""
     };
     const submitBtn = document.getElementById("twSubmitBtn");
     if(submitBtn){ submitBtn.disabled = true; submitBtn.textContent = "...جارٍ الإرسال"; }
@@ -8990,8 +9029,10 @@ ${fields.map(f=>GAME_SPEC[f]).join(",\n")}
     const t2 = e.target.closest("[data-tw-term]"); if(t2){ tw.term=t2.dataset.twTerm; tw.step=3; twRender(); return; }
     const bk = e.target.closest("[data-tw-back]"); if(bk){ tw.step=+bk.dataset.twBack; twRender(); return; }
     const pd = e.target.closest("[data-tw-period]"); if(pd){ const p=pd.dataset.twPeriod; const i=tw.periods.indexOf(p); if(i>=0) tw.periods.splice(i,1); else tw.periods.push(p); twRender(); return; }
-    if(e.target.id==="twDateNext"){ const di=document.getElementById("twDateInput"); tw.date=(di&&di.value)||todayISO(); tw.step=4; twRender(); return; }
-    if(e.target.closest("[data-tw-goto5]")){ tw.step=5; twRender(); return; }
+    if(e.target.id==="twDateNext"){ const di=document.getElementById("twDateInput"); tw.date=(di&&di.value)||todayISO();
+      if(!SCHOOL_DAYS.includes(dateToArDay(tw.date))){ toast("⚠️ هذا التاريخ ليس من أيام الدوام"); return; }
+      tw.step=4; twRender(); return; }
+    if(e.target.closest("[data-tw-goto5]")){ const lt=document.getElementById("twLeaveTime"); tw.rangeStart = lt ? lt.value : ""; tw.step=5; twRender(); return; }
     if(e.target.id==="twRangeNext"){
       const si=document.getElementById("twRangeStartInput"), ei=document.getElementById("twRangeEndInput");
       const sv=(si&&si.value)||"", ev=(ei&&ei.value)||"";
