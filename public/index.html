@@ -644,6 +644,10 @@
   table.sched td.sched-editable:hover{box-shadow:inset 0 0 0 2px var(--primary); background:var(--surface-2);}
   table.sched td.sched-selected{box-shadow:inset 0 0 0 2.5px var(--primary-strong, var(--primary)); background:var(--primary-tint) !important;}
 
+  .tk-svc{display:grid; grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); gap:8px; margin-bottom:12px;}
+  .tk-svc button{display:flex; flex-direction:column; align-items:center; gap:4px; padding:12px 8px; border:1.5px solid var(--border); border-radius:14px; background:var(--surface); cursor:pointer; font:inherit; font-size:13px; font-weight:800; color:var(--text); text-align:center; transition:.15s;}
+  .tk-svc button span{font-size:22px;} .tk-svc button small{font-weight:500; font-size:11px; color:var(--text-muted);}
+  .tk-svc button:hover{border-color:var(--primary);} .tk-svc button.on{border-color:var(--primary); background:var(--primary-tint); box-shadow:0 0 0 2px var(--primary-tint);}
   .pill{display:inline-block; padding:4px 12px; border-radius:999px; font-size:11px; font-weight:800; white-space:nowrap;}
   .pill.ok{background:color-mix(in srgb, var(--success) 16%, transparent); color:var(--success);}
   .pill.bad{background:color-mix(in srgb, var(--danger) 16%, transparent); color:var(--danger);}
@@ -1601,6 +1605,41 @@
   </section>
 
   <!-- المبادرات والإنجازات: teachers document their year's work (evidence for إجادة); leadership evaluates -->
+  <section class="view" id="view-techsupport">
+    <div class="card">
+      <div class="view-head"><h2>🛠️ الدعم الفني للأجهزة المدرسية</h2><p id="tkIntro">اختر نوع الخدمة الفنية التي تحتاجها، وتابع طلبك حتى يُنجز.</p></div>
+      <div class="stats-row" id="tkStats"></div>
+      <details class="lrc-block" id="tkNewBox" open><summary style="cursor:pointer;font-weight:800">➕ طلب خدمة فنية جديد</summary>
+        <div style="margin-top:12px">
+          <div id="tkSvc" class="tk-svc"></div>
+          <select id="tkCat" hidden></select>
+          <div class="field" id="tkSubWrap" hidden style="max-width:320px"><label>نوع الاستشارة</label><select id="tkSub"></select></div>
+          <div class="row">
+            <div class="field"><label>المكان (اختياري)</label><input type="text" id="tkPlace" list="tkPlaces" placeholder="مثال: الصف السابع / 1 — مختبر الحاسوب"><datalist id="tkPlaces"></datalist></div>
+            <div class="field"><label>الجهاز / البرنامج (اختياري)</label><input type="text" id="tkDevice" placeholder="مثال: حاسوب المعلم، طابعة HP، برنامج Scratch"></div>
+            <div class="field" style="max-width:150px"><label>الأولوية</label><select id="tkPri"></select></div>
+          </div>
+          <div class="field"><label>تفاصيل الطلب</label><textarea id="tkDesc" rows="3" placeholder="اكتب ما تحتاجه بالضبط، مثال: أحتاج تنزيل برنامج Scratch على أجهزة مختبر الحاسوب"></textarea></div>
+          <button class="btn" id="tkSend">📨 إرسال الطلب</button>
+        </div>
+      </details>
+      <div class="lrc-block" id="tkMineBox"><div class="lrc-block-head"><h3>📋 طلباتي</h3></div><div id="tkMine"></div></div>
+      <div class="lrc-block" id="tkMgrBox" hidden>
+        <div class="lrc-block-head"><h3>🧰 إدارة الطلبات</h3><button class="btn ghost sm" id="tkExport">⬇️ تصدير Excel</button></div>
+        <div class="row" style="align-items:flex-end">
+          <div class="field" style="max-width:190px"><label>الحالة</label><select id="tkFSt"></select></div>
+          <div class="field" style="max-width:210px"><label>النوع</label><select id="tkFCat"></select></div>
+          <div class="field" style="max-width:150px"><label>الأولوية</label><select id="tkFPri"></select></div>
+          <div class="field"><label>بحث</label><input type="text" id="tkFQ" placeholder="مكان، جهاز، معلم، رقم الطلب..."></div>
+        </div>
+        <div id="tkAll"></div>
+      </div>
+      <details class="lrc-block" id="tkCfgBox" hidden><summary style="cursor:pointer;font-weight:800">⚙️ مسؤولو الدعم الفني (يرون كل الطلبات ويحدّثون حالتها)</summary>
+        <div style="margin-top:10px"><div id="tkMgrs" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px"></div>
+        <div class="row" style="align-items:flex-end"><div class="field"><label>إضافة مسؤول</label><select id="tkAddMgr"></select></div><button class="btn ghost sm" id="tkAddMgrBtn" style="margin-bottom:10px">➕ إضافة</button></div></div>
+      </details>
+    </div>
+  </section>
   <section class="view" id="view-duty">
     <div class="card">
       <div class="view-head"><h2>🛡️ مناوباتي</h2><p>المناوبات التي كلّفتك بها إدارة المدرسة: أكّد تنفيذ كل مناوبة مع ملاحظاتك، أو قدّم اعتذارًا مع السبب لتعيد الإدارة التكليف.</p></div>
@@ -2085,6 +2124,7 @@
     {id:"teachersubs", icon:"🔄", title:"حصصي الاحتياطية", desc:"الحصص التي كُلّفت بتغطيتها"},
     {id:"lrc", icon:"🏛️", title:"مركز مصادر التعلم", desc:"حجز قاعة المصادر وأجهزة العرض لحصتك"},
     {id:"portfolio", icon:"🏅", title:"مبادراتي وإنجازاتي", desc:"وثّق أعمالك خلال السنة مع الشواهد لتقييمها في إجادة", accent:true},
+    {id:"techsupport", icon:"🛠️", title:"الدعم الفني للأجهزة", desc:"استشارة فنية، إنترنت، بروجكتر، برامج، طابعة، عمانتل وفني الشركة"},
     {id:"duty", icon:"🛡️", title:"مناوباتي", desc:"المناوبات المكلّف بها: تأكيد التنفيذ أو الاعتذار"},
     {id:"visits", icon:"📋", title:"توصيات الزيارات الإشرافية", desc:"تابع تنفيذ توصيات زياراتك وأرفق الشواهد"}
   ];
@@ -2096,6 +2136,7 @@
     // common task there (editing/building a teacher's weekly schedule, cell by cell or several
     // at once) instead of always landing wherever the tabs were last left.
     {id:"admintimetables", iconId:"adminteacherschedules", icon:"🛠️", title:"إعداد جداول المعلمين", desc:"تعديل جدول أي معلم حصة بحصة أو عدة حصص دفعة واحدة، وتصدير Excel/PDF", presetTab:"teacher"},
+    {id:"techsupport", icon:"🛠️", title:"الدعم الفني للأجهزة المدرسية", desc:"طلبات الخدمة الفنية وحالتها ومسؤولو الدعم الفني (أ. مريم الكعبي)"},
     {id:"adminteacherabsence", icon:"📝", title:"تسجيل غياب معلم", desc:"سجّل غياب معلم لم يرسل طلبًا — يُعتمد مباشرة وتنتقل حصصه للاحتياط", accent:true},
     {id:"adminsubassign", icon:"🧑‍🏫", title:"تكليف الاحتياط", desc:"اختر بنفسك المعلم البديل لكل حصة غياب من بين المتاحين فعلًا", accent:true},
     {id:"adminabsencehub", icon:"🗂️", title:"إدارة الغياب والحصص", desc:"غياب الطلاب والمعلمين — من الطلب إلى الاعتماد وتوزيع الاحتياط وإشعار أولياء الأمور والتقارير", accent:true},
@@ -2112,6 +2153,7 @@
   ];
 
   const ICON_PATHS = {
+    techsupport: '<path d="M14.7 6.3a4 4 0 0 0-5.4 5.1L4 16.7 7.3 20l5.3-5.3a4 4 0 0 0 5.1-5.4l-2.4 2.4-2.6-.6-.6-2.6z"/><rect x="14" y="15" width="7" height="5" rx="1"/>',
     adminteacherabsence: '<rect x="4" y="5" width="16" height="15" rx="2"/><path d="M8 3v4M16 3v4M4 10h16"/><path d="m10 13.5 4 4M14 13.5l-4 4"/>',
     adminsubassign: '<circle cx="9" cy="7.5" r="3"/><path d="M3.5 19c.6-3.2 2.8-5 5.5-5s4.9 1.8 5.5 5"/><path d="M16 8.5h5M18.5 6v5"/><path d="m15.5 15.5 1.8 1.8 3.2-3.3"/>',
     duty: '<path d="M12 3 5 6v5c0 4.4 3 8.2 7 10 4-1.8 7-5.6 7-10V6z"/><path d="m9 12 2 2 4-4"/>',
@@ -2386,6 +2428,7 @@
     if(id==="absinbox" && currentUser) renderAbsInbox(true);
     if(id==="portfolio" && currentUser) renderPortfolio(true);
     if(id==="duty" && currentUser) renderDuty(true);
+    if(id==="techsupport" && currentUser) renderTech(true);
     if(id==="visits" && currentUser) renderVisits(true);
     if(id==="adminduty" && currentUser && currentUser.role==="admin"){ renderAdminDuty(true); }
     if(id==="adminvisits" && currentUser && currentUser.role==="admin") renderAdminVisits(true);
@@ -3954,6 +3997,7 @@ ${fields.map(f=>GAME_SPEC[f]).join(",\n")}
           saveScheduleModel();
         }
         migrateToTimetable();
+        ensureSupportStaff();
         // Merge rather than overwrite (same reasoning as absences/subs/log above): the page
         // paints and becomes interactive before this load finishes, so an admin can add a
         // student (pushed into the local array) in that window. A straight overwrite with the
@@ -4057,6 +4101,18 @@ ${fields.map(f=>GAME_SPEC[f]).join(",\n")}
   // username, password and status; unmatched teachers that already have a password are kept
   // (without lessons) so nobody is locked out; everyone else is replaced by the new roster.
   const TIMETABLE_VERSION = "aSc-2026-11-06";
+  // أ. مريم الكعبي manages «الدعم الفني للأجهزة». She has no classes, so she is not in the aSc
+  // timetable — add her account record once (admin session only); the admin then issues her
+  // username/password from «حسابات المعلمين» like any other staff member.
+  function ensureSupportStaff(){
+    if(!currentUser || currentUser.role!=="admin") return;
+    if(teachers.some(t=>/مريم/.test(t.name||"") && /الكعب/.test(t.name||""))) return;
+    const n = Math.max(100, ...teachers.map(t=>parseInt(String(t.id).replace(/\D/g,""),10)||0)) + 1;
+    const ws = {}; SCHOOL_DAYS.forEach(d=>{ ws[d] = {}; SCHED_PERIODS.forEach(p=>{ ws[d][p] = "-"; }); });
+    teachers.push({id:"t"+n, name:"مريم الكعبي", subject:"الدعم الفني", title:"فنية دعم الأجهزة المدرسية", username:"mrym.alkaby",
+      code:"", active:true, substituteCount:0, weeklySchedule:ws});
+    saveTeachers();
+  }
   function migrateToTimetable(){
     if(schoolInfo.timetableVersion === TIMETABLE_VERSION) return;
     const fresh = JSON.parse(JSON.stringify(DEFAULT_TEACHERS));
@@ -5882,6 +5938,118 @@ ${fields.map(f=>GAME_SPEC[f]).join(",\n")}
   document.getElementById("roPrint").onclick = ()=>{ const w = window.open("","_blank"); if(!w){ toast("اسمح بالنوافذ المنبثقة"); return; } w.document.write(`<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8"><title>جدول المناوبة</title><style>body{font-family:Tahoma,Arial;padding:18px}h2{text-align:center}table{width:100%;border-collapse:collapse;font-size:12px}th,td{border:1px solid #999;padding:6px;vertical-align:top}th{background:#E3EFEE}</style></head><body><h2>جدول المناوبة الأسبوعي — ${escapeHTML((schoolInfo&&schoolInfo.name)||"")}</h2><table>${rosterTable(roster.weekly,false)}</table></body></html>`); w.document.close(); setTimeout(()=>w.print(), 500); };
 
   /* ---------- teacher: duty ---------- */
+  /* ======================= الدعم الفني للأجهزة المدرسية ======================= */
+  let tk = {list:[], isMgr:false, managers:[], cats:[], pris:[], statuses:[]};
+  const TK_PRI_CLS = {"عاجل":"bad","متوسط":"wait","منخفض":"neutral"};
+  const TK_ST_CLS = {"جديد":"bad","قيد التنفيذ":"wait","بانتظار جهة خارجية":"wait","تم الإنجاز":"ok","تعذّر التنفيذ":"neutral"};
+  const TK_SVC = [["استشارة فنية","💡","مواصفات جهاز، تصميم بوستر تقني"],["ضبط إعدادات الإنترنت","📶","واي فاي، شبكة، اتصال"],["توصيل بروجكتر","📽️","ربط الحاسوب بجهاز العرض"],["تنزيل برامج للحاسوب","💿","تثبيت برنامج أو تطبيق"],["تحديث الأجهزة","🔄","تحديث النظام والبرامج"],["ضبط إعدادات الطابعة","🖨️","تعريف وطباعة ومشاركة"],["التواصل مع عمانتل","📞","خط الإنترنت أو الهاتف"],["التواصل مع فني الشركة","👷","صيانة عبر الشركة المختصة"],["إصلاح عطل جهاز","🧯","جهاز لا يعمل أو به خلل"],["أخرى","➕","طلب فني آخر"]];
+  const tkIcon = c => (TK_SVC.find(x=>x[0]===c)||[])[1]||"🛠️";
+  const tkTime = ms => { try{ return new Date(ms).toLocaleString("ar-OM",{weekday:"short", day:"numeric", month:"numeric", hour:"numeric", minute:"2-digit"}); }catch(e){ return ""; } };
+  const tkOpen = x => x.status!=="تم الإنجاز" && x.status!=="تعذّر التنفيذ";
+  function tkPlaces(){ const out = new Set(["مختبر الحاسوب","مركز مصادر التعلم","غرفة المعلمين","الإدارة","القاعة متعددة الأغراض","مختبر العلوم"]);
+    (grades||[]).forEach(g=>(sections||[]).filter(sc=>sc.gradeId===g.id).forEach(sc=>out.add(g.name+" / "+(sc.name||"").replace(/[^\d]/g,"")))); return [...out]; }
+  function tkCard(x, mgr){
+    const mine = x.teacherId === (currentUser && currentUser.teacherId) || (currentUser.role==="admin" && x.teacherId==="admin");
+    const log = (x.log||[]).slice().reverse().map(l=>`<div style="font-size:12px;padding:3px 0;border-bottom:1px dashed var(--border)">${tkTime(l.at)} — <b>${escapeHTML(l.by||"")}</b>: ${escapeHTML(l.status||"")}${l.note?" · "+escapeHTML(l.note):""}</div>`).join("");
+    return `<div class="lrc-block" style="margin-bottom:10px;${x.pri==="عاجل"&&tkOpen(x)?"border-color:var(--danger)":""}" data-tk="${x.id}">
+      <div class="lrc-block-head" style="margin-bottom:6px;flex-wrap:wrap;gap:6px"><h3>${tkIcon(x.cat)} #${x.no||"-"} · ${escapeHTML(x.cat)}${x.sub?" — "+escapeHTML(x.sub):""}${x.place?" · 📍 "+escapeHTML(x.place):""}</h3>
+        <div style="display:flex;gap:6px"><span class="pill ${TK_PRI_CLS[x.pri]||"neutral"}">${escapeHTML(x.pri)}</span><span class="pill ${TK_ST_CLS[x.status]||"neutral"}">${escapeHTML(x.status)}${x.confirmed?" ✓":""}</span></div></div>
+      ${x.device?`<div style="font-size:13px">💻 ${escapeHTML(x.device)}</div>`:""}
+      <div style="font-size:13.5px;margin:4px 0;white-space:pre-wrap">${escapeHTML(x.desc)}</div>
+      <div style="font-size:12px;color:var(--text-muted)">صاحب الطلب: ${escapeHTML(x.teacherName||"")} · ${tkTime(x.created)}${x.assignee?` · المسؤول: <b>${escapeHTML(x.assignee)}</b>`:""}</div>
+      ${x.fix?`<div style="font-size:13px;margin-top:6px;color:var(--success)">🔧 الإجراء: ${escapeHTML(x.fix)}</div>`:""}
+      ${mgr ? `<div class="row" style="align-items:flex-end;margin-top:8px">
+          <div class="field" style="max-width:190px"><label>الحالة</label><select data-tkst>${opts(tk.statuses, x.status)}</select></div>
+          <div class="field" style="max-width:140px"><label>الأولوية</label><select data-tkpri>${opts(tk.pris, x.pri)}</select></div>
+          <div class="field" style="max-width:190px"><label>المسؤول عن التنفيذ</label><input type="text" data-tkas value="${escapeHTML(x.assignee||"")}" placeholder="${escapeHTML(currentUser.name||"")}"></div>
+          <div class="field"><label>الإجراء المتخذ / ملاحظة</label><input type="text" data-tkfix value="${escapeHTML(x.fix||"")}" placeholder="مثال: تم تثبيت البرنامج على 20 جهازًا"></div>
+          <button class="btn sm" data-tksave style="margin-bottom:10px">💾 حفظ</button></div>` : ""}
+      ${mine && x.status==="تم الإنجاز" && !x.confirmed ? `<div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap"><button class="btn sm" data-tkok>✔ تأكيد: تم الإنجاز</button><button class="btn ghost sm" data-tkre>↩️ لم يُنجز — إعادة فتح</button></div>` : ""}
+      ${mine && x.status==="تعذّر التنفيذ" ? `<div style="margin-top:8px"><button class="btn ghost sm" data-tkre>↩️ إعادة فتح الطلب</button></div>` : ""}
+      ${mine && x.status==="جديد" ? `<div style="margin-top:8px"><button class="btn ghost sm" data-tkdel>🗑️ حذف الطلب</button></div>` : (currentUser.role==="admin" && mgr ? `<div style="margin-top:4px;text-align:left"><button class="btn ghost sm" data-tkdel>🗑️ حذف</button></div>` : "")}
+      ${log?`<details style="margin-top:6px"><summary style="cursor:pointer;font-size:12.5px">🕓 سجل المتابعة (${(x.log||[]).length})</summary>${log}</details>`:""}
+    </div>`;
+  }
+  async function renderTech(reload){
+    if(reload){ try{ tk = await recApi("tech"); }catch(e){ toast("⚠️ تعذّر تحميل الطلبات"); } }
+    const me = currentUser || {}, isAdmin = me.role==="admin";
+    const cs = document.getElementById("tkCat");
+    if(!cs.options.length && tk.cats.length){ cs.innerHTML = opts(tk.cats); document.getElementById("tkSub").innerHTML = opts(tk.subs||[]);
+      document.getElementById("tkSvc").innerHTML = TK_SVC.filter(x=>tk.cats.includes(x[0])).map((x,i)=>`<button type="button" data-svc="${escapeHTML(x[0])}" class="${i===0?"on":""}"><span>${x[1]}</span>${escapeHTML(x[0])}<small>${escapeHTML(x[2])}</small></button>`).join("");
+      cs.value = tk.cats[0]; document.getElementById("tkSubWrap").hidden = cs.value!=="استشارة فنية"; document.getElementById("tkPri").innerHTML = opts(tk.pris, "متوسط");
+      document.getElementById("tkPlaces").innerHTML = tkPlaces().map(p=>`<option value="${escapeHTML(p)}">`).join("");
+      document.getElementById("tkFSt").innerHTML = `<option value="open">المفتوحة فقط</option><option value="">كل الحالات</option>` + opts(tk.statuses);
+      document.getElementById("tkFCat").innerHTML = opts(tk.cats, "", "كل الأنواع"); document.getElementById("tkFPri").innerHTML = opts(tk.pris, "", "كل الأولويات"); }
+    const mine = tk.list.filter(x=>x.teacherId===me.teacherId || (isAdmin && x.teacherId==="admin"));
+    document.getElementById("tkIntro").textContent = tk.isMgr
+      ? "أنت من مسؤولي الدعم الفني: تصلك كل طلبات الخدمة الفنية من المعلمين والإدارة، حدّث حالتها والإجراء المتخذ، ويرى صاحب الطلب التحديث مباشرة."
+      : "اختر نوع الخدمة الفنية التي تحتاجها، وتابع طلبك حتى يُنجز.";
+    document.getElementById("tkNewBox").open = !tk.isMgr;
+    const base = tk.isMgr ? tk.list : mine;
+    document.getElementById("tkStats").innerHTML = statTile(base.filter(x=>x.status==="جديد").length,"جديد","🆕") + statTile(base.filter(x=>x.status==="قيد التنفيذ"||x.status==="بانتظار جهة خارجية").length,"قيد التنفيذ","🔧")
+      + statTile(base.filter(x=>x.status==="تم الإنجاز").length,"تم الإنجاز","✅") + (tk.isMgr ? statTile(base.filter(x=>x.pri==="عاجل"&&tkOpen(x)).length,"عاجل مفتوح","🚨") : "");
+    document.getElementById("tkMineBox").hidden = tk.isMgr && !mine.length;
+    document.getElementById("tkMine").innerHTML = mine.length ? mine.map(x=>tkCard(x,false)).join("") : `<div style="color:var(--text-muted);text-align:center;padding:12px">لا توجد طلبات منك بعد</div>`;
+    document.getElementById("tkMgrBox").hidden = !tk.isMgr;
+    if(tk.isMgr){
+      const fs = document.getElementById("tkFSt").value, fc = document.getElementById("tkFCat").value, fp = document.getElementById("tkFPri").value, q = document.getElementById("tkFQ").value.trim();
+      const pr = {"عاجل":0,"متوسط":1,"منخفض":2};
+      const list = tk.list.filter(x=>(fs==="open" ? tkOpen(x) : !fs || x.status===fs) && (!fc || x.cat===fc) && (!fp || x.pri===fp)
+          && (!q || [x.no, x.cat, x.sub, x.place, x.device, x.desc, x.teacherName, x.assignee].join(" ").includes(q.replace(/^#/,""))))
+        .sort((a,b)=>(tkOpen(b)-tkOpen(a)) || (pr[a.pri]-pr[b.pri]) || (b.created-a.created));
+      document.getElementById("tkAll").innerHTML = list.length ? list.map(x=>tkCard(x,true)).join("") : `<div style="color:var(--text-muted);text-align:center;padding:12px">لا توجد طلبات مطابقة 👍</div>`;
+    }
+    const cfg = document.getElementById("tkCfgBox"); cfg.hidden = !isAdmin;
+    if(isAdmin){
+      document.getElementById("tkMgrs").innerHTML = tk.managers.length ? tk.managers.map(m=>`<span class="pill admin" style="font-size:12.5px">${escapeHTML(m.name||m.id)} <button class="btn ghost sm" data-tkrm="${escapeHTML(m.id)}" style="padding:0 6px;margin-inline-start:4px" title="إزالة">✖</button></span>`).join("")
+        : `<span style="font-size:12.5px;color:var(--danger)">لا يوجد مسؤول — أضف مسؤولًا من القائمة (حساب «مريم الكعبي» يُضاف تلقائيًا في «حسابات المعلمين»)</span>`;
+      document.getElementById("tkAddMgr").innerHTML = teacherOpts("", "اختر...");
+    }
+  }
+  async function tkSaveMgrs(ids){
+    try{ await db.doc("school/techsupport").set({managers:ids}); toast("✔ حُفظ مسؤولو الدعم الفني"); renderTech(true); }catch(e){ toast("⚠️ تعذّر الحفظ"); }
+  }
+  (function wireTech(){
+    const v = document.getElementById("view-techsupport"); if(!v) return;
+    ["tkFSt","tkFCat","tkFPri"].forEach(id=>document.getElementById(id).addEventListener("change", ()=>renderTech(false)));
+    document.getElementById("tkFQ").addEventListener("input", ()=>renderTech(false));
+    document.getElementById("tkSend").addEventListener("click", async e=>{
+      const b = e.currentTarget; if(b.disabled) return;
+      const body = {cat:document.getElementById("tkCat").value, sub:document.getElementById("tkSub").value, place:document.getElementById("tkPlace").value.trim(), device:document.getElementById("tkDevice").value.trim(), pri:document.getElementById("tkPri").value, desc:document.getElementById("tkDesc").value.trim()};
+      if(!body.desc){ toast("اكتب تفاصيل الطلب"); return; }
+      b.disabled = true;
+      try{ const r = await recApi("tech","POST",body); toast(`📨 أُرسل الطلب رقم #${r.no} لمسؤول الدعم الفني`); ["tkPlace","tkDevice","tkDesc"].forEach(id=>document.getElementById(id).value=""); await renderTech(true); }
+      catch(err){ toast("⚠️ تعذّر الإرسال: "+err.message); }
+      b.disabled = false;
+    });
+    document.getElementById("tkExport").addEventListener("click", ()=>{
+      exportRowsAsXlsx("طلبات-الدعم-الفني.xlsx","الطلبات",["رقم","التاريخ","صاحب الطلب","الخدمة","التفصيل","المكان","الجهاز","الوصف","الأولوية","الحالة","المسؤول","الإجراء","تأكيد المعلم"],
+        tk.list.map(x=>[x.no, tkTime(x.created), x.teacherName, x.cat, x.sub||"", x.place, x.device, x.desc, x.pri, x.status, x.assignee, x.fix, x.confirmed?"نعم":""]));
+    });
+    document.getElementById("tkAddMgrBtn").addEventListener("click", ()=>{
+      const id = document.getElementById("tkAddMgr").value; if(!id) return;
+      const ids = [...new Set(tk.managers.map(m=>m.id).concat(id))]; tkSaveMgrs(ids);
+    });
+    v.addEventListener("click", async e=>{
+      const sv = e.target.closest("[data-svc]");
+      if(sv){ v.querySelectorAll("[data-svc]").forEach(x=>x.classList.toggle("on", x===sv)); document.getElementById("tkCat").value = sv.dataset.svc;
+        document.getElementById("tkSubWrap").hidden = sv.dataset.svc!=="استشارة فنية"; return; }
+      const rm = e.target.closest("[data-tkrm]");
+      if(rm){ if(!confirm("إزالة هذا المسؤول؟")) return; tkSaveMgrs(tk.managers.map(m=>m.id).filter(x=>x!==rm.dataset.tkrm)); return; }
+      const card = e.target.closest("[data-tk]"); if(!card) return;
+      const id = card.dataset.tk;
+      try{
+        if(e.target.closest("[data-tksave]")){
+          const st = card.querySelector("[data-tkst]").value, fix = card.querySelector("[data-tkfix]").value.trim();
+          let as = card.querySelector("[data-tkas]").value.trim(); if(!as && st!=="جديد") as = currentUser.name||"";
+          await recApi("tech","PUT",{status:st, pri:card.querySelector("[data-tkpri]").value, assignee:as, fix, note:fix}, id); toast("✔ حُدّث الطلب"); return renderTech(true);
+        }
+        if(e.target.closest("[data-tkok]")){ await recApi("tech","PUT",{confirm:true}, id); toast("✔ شكرًا — أُغلق الطلب"); return renderTech(true); }
+        if(e.target.closest("[data-tkre]")){ const note = prompt("ما الذي ما زال لا يعمل؟") ; if(note===null) return; await recApi("tech","PUT",{reopen:true, note}, id); toast("↩️ أُعيد فتح الطلب"); return renderTech(true); }
+        if(e.target.closest("[data-tkdel]")){ if(!confirm("حذف هذا الطلب؟")) return; await recApi("tech","DELETE",null, id); toast("🗑️ حُذف"); return renderTech(true); }
+      }catch(err){ toast("⚠️ "+err.message); }
+    });
+  })();
   async function renderDuty(reload){
     const ds = document.getElementById("dutySlot");
     if(!ds.options.length){ ds.innerHTML = opts(DUTY_SLOTS_UI, currentSlot()); document.getElementById("dutyPlace").innerHTML = opts(DUTY_PLACES); document.getElementById("dutyDate").value = lISO(); }

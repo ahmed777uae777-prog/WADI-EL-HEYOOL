@@ -436,6 +436,84 @@ const REC_STATUS = ["لم يبدأ", "قيد التنفيذ", "منفذة"];
 const VISIT_TYPES = ["زيارة إشرافية (المشرف)", "زيارة إدارية (مدير المدرسة)", "زيارة إدارية (مساعد المدير)", "زيارة المعلم الأول", "زيارة تبادلية", "زيارة أخرى"];
 const isDate = (v) => /^\d{4}-\d{2}-\d{2}$/.test(String(v || "")) ? String(v) : "";
 const cleanUrl = (u) => { u = clip(u, 500).trim(); return /^https?:\/\//i.test(u) ? u : ""; };
+/* ---------------- الدعم الفني للأجهزة المدرسية (kind=tech) ---------------- */
+const TECH_CATS = ["استشارة فنية", "ضبط إعدادات الإنترنت", "توصيل بروجكتر", "تنزيل برامج للحاسوب", "تحديث الأجهزة", "ضبط إعدادات الطابعة", "التواصل مع عمانتل", "التواصل مع فني الشركة", "إصلاح عطل جهاز", "أخرى"];
+const TECH_SUBS = ["مواصفات جهاز مناسب للعمل", "تصميم بوستر تقني", "أخرى"];
+const TECH_PRI = ["عاجل", "متوسط", "منخفض"];
+const TECH_ST = ["جديد", "قيد التنفيذ", "بانتظار جهة خارجية", "تم الإنجاز", "تعذّر التنفيذ"];
+// Who manages tickets besides the admin: ids saved by the admin in school/techsupport; until the
+// admin saves a list, the school's named support teacher (مريم الكعبي) is the default manager.
+async function techManagers(db, teachers) {
+  const cfg = await getDoc(db, "school/techsupport");
+  if (cfg && Array.isArray(cfg.managers)) return new Set(cfg.managers.map(String));
+  return new Set(teachers.filter((t) => /مريم/.test(t.name || "") && /الكعب/.test(t.name || "")).map((t) => t.id));
+}
+function techFields(b) {
+  const cat = TECH_CATS.includes(b.cat) ? b.cat : "أخرى";
+  return { cat, sub: cat === "استشارة فنية" && TECH_SUBS.includes(b.sub) ? b.sub : "", place: clip(b.place, 80).trim(), device: clip(b.device, 80).trim(),
+    desc: clip(b.desc, 1500).trim(), pri: TECH_PRI.includes(b.pri) ? b.pri : "متوسط" };
+}
+async function handleTech(db, request, user, url) {
+  const teachers = (await getDoc(db, "school/teachers"))?.list || [];
+  const isAdmin = user.role === "admin";
+  const mgrs = await techManagers(db, teachers);
+  const isMgr = isAdmin || (user.teacherId && mgrs.has(user.teacherId));
+  const id = url.searchParams.get("id") || "";
+  const out = (r) => ({ ...JSON.parse(r.data), id: r.id, teacherId: r.teacher_id, created: r.created, updated: r.updated });
+  if (request.method === "GET") {
+    const rows = isMgr
+      ? (await db.prepare("SELECT * FROM records WHERE kind = 'tech' ORDER BY created DESC LIMIT 3000").all()).results
+      : (await db.prepare("SELECT * FROM records WHERE kind = 'tech' AND teacher_id = ? ORDER BY created DESC LIMIT 500").bind(user.teacherId || "-").all()).results;
+    return json({ list: (rows || []).map(out), isMgr, managers: [...mgrs].map((m) => ({ id: m, name: (teachers.find((t) => t.id === m) || {}).name || "" })), cats: TECH_CATS, subs: TECH_SUBS, pris: TECH_PRI, statuses: TECH_ST });
+  }
+  const body = request.method === "DELETE" ? {} : await request.json().catch(() => ({}));
+  const by = user.name || (isAdmin ? "الإدارة" : "");
+  const now = Date.now();
+  if (request.method === "POST") {
+    const tid = isAdmin ? (body.teacherId ? String(body.teacherId) : "admin") : user.teacherId;
+    const t = teachers.find((x) => x.id === tid);
+    if (!tid || (!t && tid !== "admin")) return json({ error: "forbidden" }, 403);
+    const data = techFields(body);
+    if (!data.desc) return json({ error: "missing_fields" }, 400);
+    const n = ((await db.prepare("SELECT COUNT(*) AS c FROM records WHERE kind = 'tech'").first()) || {}).c || 0;
+    Object.assign(data, { no: n + 1, teacherName: t ? t.name : "الإدارة", by, status: "جديد", assignee: "", fix: "", confirmed: false,
+      log: [{ at: now, by, status: "جديد", note: "إرسال الطلب" }] });
+    const rid = "tk" + randHex(8);
+    await db.prepare("INSERT INTO records (id, kind, teacher_id, data, created, updated) VALUES (?, 'tech', ?, ?, ?, ?)").bind(rid, tid, JSON.stringify(data), now, now).run();
+    return json({ ok: true, id: rid, no: data.no });
+  }
+  const row = id ? await db.prepare("SELECT * FROM records WHERE id = ? AND kind = 'tech'").bind(id).first() : null;
+  if (!row) return json({ error: "not_found" }, 404);
+  const mine = row.teacher_id === user.teacherId || (isAdmin && row.teacher_id === "admin");
+  if (!isMgr && !mine) return json({ error: "forbidden" }, 403);
+  const cur = JSON.parse(row.data);
+  if (request.method === "DELETE") {
+    if (!isAdmin && !(mine && cur.status === "جديد")) return json({ error: "forbidden" }, 403);
+    await db.prepare("DELETE FROM records WHERE id = ?").bind(id).run(); return json({ ok: true });
+  }
+  if (request.method !== "PUT") return json({ error: "method_not_allowed" }, 405);
+  const next = { ...cur, log: Array.isArray(cur.log) ? cur.log.slice(-60) : [] };
+  if (mine && cur.status === "جديد" && body.edit) Object.assign(next, techFields({ ...cur, ...body }));
+  if (mine && cur.status === "تم الإنجاز" && body.confirm) { next.confirmed = true; next.log.push({ at: now, by, status: "تم الإنجاز", note: "أكّد المعلم إنجاز الطلب" }); }
+  if (mine && (cur.status === "تم الإنجاز" || cur.status === "تعذّر التنفيذ") && body.reopen) {
+    next.status = "جديد"; next.confirmed = false;
+    next.log.push({ at: now, by, status: "جديد", note: "أُعيد فتح الطلب: " + clip(body.note, 300).trim() });
+  }
+  if (isMgr && (body.status || "assignee" in body || "fix" in body || body.note)) {
+    const st = TECH_ST.includes(body.status) ? body.status : cur.status;
+    if ("assignee" in body) next.assignee = clip(body.assignee, 60).trim();
+    if ("fix" in body) next.fix = clip(body.fix, 1000).trim();
+    if (TECH_PRI.includes(body.pri)) next.pri = body.pri;
+    const note = clip(body.note, 400).trim();
+    if (st !== cur.status || note) next.log.push({ at: now, by, status: st, note: note || (st !== cur.status ? "تغيير الحالة" : "") });
+    if (st !== cur.status && st !== "تم الإنجاز") next.confirmed = false;
+    if (st === "تم الإنجاز" && cur.status !== "تم الإنجاز") next.solvedAt = now;
+    next.status = st;
+  }
+  await db.prepare("UPDATE records SET data = ?, updated = ? WHERE id = ?").bind(JSON.stringify(next), now, id).run();
+  return json({ ok: true });
+}
+
 function dutyFields(b) {
   return { date: isDate(b.date), slot: DUTY_SLOTS.includes(b.slot) ? b.slot : "", place: clip(b.place, 80).trim(), notes: clip(b.notes, 1500).trim(), cases: Math.max(0, Math.min(99, parseInt(b.cases, 10) || 0)), type: b.type === "apology" ? "apology" : "done" };
 }
@@ -462,6 +540,7 @@ function visitFields(b, prev, isAdmin) {
 async function handleRecords(db, request, user, url) {
   if (!user) return json({ error: "unauthorized" }, 401);
   const kind = url.searchParams.get("kind");
+  if (kind === "tech") return handleTech(db, request, user, url);
   if (kind !== "duty" && kind !== "visit" && kind !== "bonus") return json({ error: "bad_kind" }, 400);
   const isAdmin = user.role === "admin", id = url.searchParams.get("id") || "";
   if (kind === "bonus" && request.method !== "GET" && !isAdmin) return json({ error: "forbidden" }, 403);
