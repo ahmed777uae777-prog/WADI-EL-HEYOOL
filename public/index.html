@@ -648,6 +648,18 @@
   .tk-svc button{display:flex; flex-direction:column; align-items:center; gap:4px; padding:12px 8px; border:1.5px solid var(--border); border-radius:14px; background:var(--surface); cursor:pointer; font:inherit; font-size:13px; font-weight:800; color:var(--text); text-align:center; transition:.15s;}
   .tk-svc button span{font-size:22px;} .tk-svc button small{font-weight:500; font-size:11px; color:var(--text-muted);}
   .tk-svc button:hover{border-color:var(--primary);} .tk-svc button.on{border-color:var(--primary); background:var(--primary-tint); box-shadow:0 0 0 2px var(--primary-tint);}
+  .pl-notif{display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:8px; margin-bottom:12px;}
+  .pl-notif button{border:1px solid var(--border); border-radius:14px; padding:12px; background:var(--surface); text-align:start; cursor:pointer; font:inherit; color:var(--text);}
+  .pl-notif button b{display:block; font-size:22px;} .pl-notif button span{font-size:12.5px;}
+  .pl-notif .late{border-color:#e5484d; background:#fff1f1;} .pl-notif .now{border-color:#f5a524; background:#fff8ec;} .pl-notif .soon{border-color:#3b82f6; background:#eef5ff;} .pl-notif .done{border-color:#16a34a; background:#effaf2;}
+  .pl-tabs{display:flex; gap:6px; flex-wrap:wrap; margin-bottom:10px;}
+  .pl-tabs button{border:1px solid var(--border); border-radius:999px; padding:6px 14px; background:var(--surface); cursor:pointer; font:inherit; font-size:13px; color:var(--text);}
+  .pl-tabs button.on{background:var(--primary); color:#fff; border-color:var(--primary);}
+  .pl-obj{margin:14px 0 6px; padding:10px 12px; border-radius:12px; background:var(--primary-tint); font-size:13.5px;}
+  .pl-tbl td{vertical-align:top; font-size:12.8px;} .pl-tbl .pl-t{min-width:260px;}
+  .pl-badge{display:inline-block; padding:3px 9px; border-radius:999px; font-size:11.5px; font-weight:800; white-space:nowrap;}
+  .pl-badge.late{background:#fde2e2;color:#b42318;} .pl-badge.now{background:#fff1d6;color:#9a5b00;} .pl-badge.soon{background:#e0edff;color:#1d4ed8;} .pl-badge.later{background:#eef0f2;color:#555;} .pl-badge.done{background:#dcfce7;color:#166534;}
+  @media (prefers-color-scheme: dark){ .pl-notif .late,.pl-notif .now,.pl-notif .soon,.pl-notif .done{background:var(--surface);} }
   .rp-grid{display:grid; grid-template-columns:repeat(auto-fill,minmax(260px,1fr)); gap:10px; margin-top:6px;}
   .rp-card{border:1px solid var(--border); border-radius:14px; padding:14px; background:var(--surface); display:flex; flex-direction:column; gap:6px;}
   .rp-card h3{margin:0; font-size:15px;} .rp-card p{margin:0; font-size:12.5px; color:var(--text-muted); flex:1;}
@@ -1804,6 +1816,34 @@
     </div>
   </section>
 
+  <section class="view" id="view-adminplan">
+    <div class="card">
+      <div class="view-head"><h2>📋 متابعة الخطة المدرسية</h2><p>أهداف الخطة المدرسية بمجالاتها الخمسة، وبرامج الإنماء المهني، وخطة مجلس الآباء والأمهات للعام 2026/2027 — مرتبطة بمواعيدها، مع إشعارات بما تأخر وما سيبدأ وما أُنجز.</p></div>
+      <div id="plNotif" class="pl-notif"></div>
+      <div class="pl-tabs" id="plTabs"></div>
+      <div class="row" style="align-items:flex-end;gap:10px">
+        <div class="field" style="max-width:240px"><label>المجال / القسم</label><select id="plDom"></select></div>
+        <div class="field" style="max-width:220px"><label>الحالة</label><select id="plSt">
+          <option value="">كل الحالات</option><option value="late">🔴 متأخر — لم يُنجز</option><option value="now">🟠 جارٍ الآن</option><option value="soon">🔵 يبدأ خلال 7 أيام</option><option value="later">⚪ مجدول لاحقًا</option><option value="done">✅ تم الإنجاز</option><option value="notdone">كل ما لم يُنجز</option></select></div>
+        <div class="field"><label>بحث</label><input type="text" id="plQ" placeholder="إجراء، برنامج، منفذ..."></div>
+        <div style="display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap">
+          <button class="btn ghost sm" id="plXls">📊 Excel</button><button class="btn ghost sm" id="plPdf">📄 PDF</button><button class="btn ghost sm" id="plAddBtn">➕ مهمة</button>
+        </div>
+      </div>
+      <div class="lrc-block" id="plAddBox" hidden>
+        <div class="row" style="align-items:flex-end;gap:10px">
+          <div class="field"><label>المهمة</label><input type="text" id="plAddT"></div>
+          <div class="field" style="max-width:200px"><label>المجال</label><input type="text" id="plAddD" placeholder="مهام إضافية"></div>
+          <div class="field" style="max-width:160px"><label>من</label><input type="date" id="plAddF"></div>
+          <div class="field" style="max-width:160px"><label>إلى</label><input type="date" id="plAddTo"></div>
+          <div class="field" style="max-width:220px"><label>المنفذ</label><input type="text" id="plAddE"></div>
+          <button class="btn sm" id="plAddGo" style="margin-bottom:10px">حفظ</button>
+        </div>
+      </div>
+      <div id="plSummary" class="stats-row"></div>
+      <div id="plList"></div>
+    </div>
+  </section>
   <section class="view" id="view-adminreports">
     <div class="card">
       <div class="view-head"><h2>📥 مركز التقارير</h2><p>اختر الفترة ثم نزّل أي تقرير بصيغة Excel أو PDF.</p></div>
@@ -2155,6 +2195,7 @@
     // at once) instead of always landing wherever the tabs were last left.
     {id:"admintimetables", iconId:"adminteacherschedules", icon:"🛠️", title:"إعداد جداول المعلمين", desc:"تعديل جدول أي معلم حصة بحصة أو عدة حصص دفعة واحدة، وتصدير Excel/PDF", presetTab:"teacher"},
     {id:"techsupport", icon:"🛠️", title:"الدعم الفني للأجهزة المدرسية", desc:"طلبات الخدمة الفنية وحالتها ومسؤولو الدعم الفني (أ. مريم الكعبي)"},
+    {id:"adminplan", icon:"📋", title:"متابعة الخطة المدرسية", desc:"أهداف الخطة والإنماء المهني ومجلس الآباء: المنجز والمتأخر والقادم مع إشعارات", accent:true},
     {id:"adminreports", icon:"📥", title:"مركز التقارير", desc:"تنزيل البيانات والتقارير بصيغة PDF أو Excel", accent:true},
     {id:"adminteacherabsence", icon:"📝", title:"تسجيل غياب معلم", desc:"سجّل غياب معلم لم يرسل طلبًا — يُعتمد مباشرة وتنتقل حصصه للاحتياط", accent:true},
     {id:"adminsubassign", icon:"🧑‍🏫", title:"تكليف الاحتياط", desc:"اختر بنفسك المعلم البديل لكل حصة غياب من بين المتاحين فعلًا", accent:true},
@@ -2172,6 +2213,7 @@
   ];
 
   const ICON_PATHS = {
+    adminplan: '<rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4V2.8h6V4"/><path d="m8.5 10 1.5 1.5 2.5-2.5M8.5 15.5l1.5 1.5 2.5-2.5"/><path d="M14.5 10.5h2M14.5 16h2"/>',
     adminreports: '<path d="M6 3h8l4 4v14H6z"/><path d="M14 3v4h4"/><path d="M12 10v7m-3-3 3 3 3-3"/>',
     techsupport: '<path d="M14.7 6.3a4 4 0 0 0-5.4 5.1L4 16.7 7.3 20l5.3-5.3a4 4 0 0 0 5.1-5.4l-2.4 2.4-2.6-.6-.6-2.6z"/><rect x="14" y="15" width="7" height="5" rx="1"/>',
     adminteacherabsence: '<rect x="4" y="5" width="16" height="15" rx="2"/><path d="M8 3v4M16 3v4M4 10h16"/><path d="m10 13.5 4 4M14 13.5l-4 4"/>',
@@ -2292,7 +2334,8 @@
   }
   function tileHTML(it){
     let badge = 0;
-    if(it.id==="adminsubassign") badge = subs.filter(s=>subStatusCode(s)==="PENDING").length;
+    if(it.id==="adminplan") badge = planBadge;
+    else if(it.id==="adminsubassign") badge = subs.filter(s=>subStatusCode(s)==="PENDING").length;
     else if(it.id==="adminabsencehub") badge = absences.filter(a=>a.status==="بانتظار الاعتماد").length + subs.filter(s=>subStatusCode(s)==="PENDING").length + studentAbsences.filter(a=>a.status==="بانتظار اعتماد المدير" || a.status==="يحتاج إعادة اعتماد").length;
     else if(it.id==="portfolio" && currentUser && currentUser.role==="admin") badge = pfList.filter(e=>e.status==="pending").length;
     else if(it.id==="portfolio") badge = pfList.filter(e=>e.status==="needs_info").length;
@@ -2456,6 +2499,7 @@
     if(id==="adminsubassign" && currentUser && currentUser.role==="admin") renderSubAssign();
     if(id==="adminteacherabsence" && currentUser && currentUser.role==="admin") renderTeacherAbsence();
     if(id==="adminreports" && currentUser && currentUser.role==="admin") renderReports();
+    if(id==="adminplan" && currentUser && currentUser.role==="admin") renderPlan(true);
     document.getElementById("crumbWrap").hidden = (id==="dashboard" || id==="identify" || (id==="absinbox" && currentUser && currentUser.role==="teacher"));
     window.scrollTo({top:0, behavior:"smooth"});
   }
@@ -4019,6 +4063,7 @@ ${fields.map(f=>GAME_SPEC[f]).join(",\n")}
         }
         migrateToTimetable();
         ensureSupportStaff();
+        plNotifyOnLogin();
         // Merge rather than overwrite (same reasoning as absences/subs/log above): the page
         // paints and becomes interactive before this load finishes, so an admin can add a
         // student (pushed into the local array) in that window. A straight overwrite with the
@@ -6200,6 +6245,149 @@ ${fields.map(f=>GAME_SPEC[f]).join(",\n")}
 
   /* ---------- admin: teacher points ---------- */
   let ptBonusFor = null;
+  // ===== متابعة الخطة المدرسية (admin only) =====
+  let plan = null, planBadge = 0;
+  const plUI = {tab:"all", dom:"", st:"", q:""};
+  const PL_TABS = [["all","الكل"],["goals","🎯 أهداف الخطة المدرسية"],["pd","🎓 برامج الإنماء المهني"],["council","👨‍👩‍👧 مجلس الآباء والأمهات"],["extra","➕ مهام إضافية"]];
+  const plDays = (a,b) => Math.round((Date.parse(b+"T00:00:00")-Date.parse(a+"T00:00:00"))/86400000);
+  const plIso = ms => { const d = new Date(ms); return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0"); };
+  function plItems(){
+    if(!plan) return [];
+    const st = plan.state.byId||{};
+    return plan.seed.items.concat(plan.state.extra||[]).map(x=>{
+      const o = st[x.id]||{}, it = Object.assign({}, x, {from:o.from||x.from||"", to:o.to||x.to||x.from||"", status:o.status||x.status||"open", adminNote:o.note||"", doneAt:o.doneAt||null, doneBy:o.doneBy||"", log:o.log||[], moved:!!o.to && o.to!==x.to});
+      if(it.status==="progress") it.status="open";
+      if(x.ok && plan.seed.objs[x.ok]) it.obj = plan.seed.objs[x.ok];
+      it.st = plState(it); return it;
+    });
+  }
+  function plState(it){
+    const today = todayISO();
+    if(it.status==="done") return {k:"done", txt:"✅ تم الإنجاز"+(it.doneAt?" "+plIso(it.doneAt):"")+(it.doneAt && it.to && plIso(it.doneAt)>it.to ? ` (بعد الموعد بـ${plDays(it.to, plIso(it.doneAt))} يوم)`:"")};
+    if(!it.to) return {k:"later", txt:"⚪ بلا موعد"};
+    if(it.to < today) return {k:"late", txt:`🔴 متأخر ${plDays(it.to,today)} يوم — لم يُنجز`};
+    if(it.from <= today) return {k:"now", txt:`🟠 جارٍ — متبقٍ ${plDays(today,it.to)} يوم`};
+    const d = plDays(today, it.from);
+    return d<=7 ? {k:"soon", txt:`🔵 يبدأ بعد ${d} يوم`} : {k:"later", txt:`⚪ يبدأ ${it.from}`};
+  }
+  async function plLoad(){
+    const r = await fetch("/api/plan",{credentials:"same-origin",cache:"no-store"});
+    if(!r.ok) throw new Error("HTTP "+r.status);
+    plan = await r.json();
+    const L = plItems(); planBadge = L.filter(x=>x.st.k==="late"||x.st.k==="soon").length;
+  }
+  async function plNotifyOnLogin(){
+    if(!currentUser || currentUser.role!=="admin") return;
+    try{
+      await plLoad(); try{ renderDashboardTiles(); }catch(_){}
+      const L = plItems(), late = L.filter(x=>x.st.k==="late").length, soon = L.filter(x=>x.st.k==="soon").length, now = L.filter(x=>x.st.k==="now").length;
+      const key = "plNotif-"+todayISO(); let seen = false; try{ seen = !!localStorage.getItem(key); localStorage.setItem(key,"1"); }catch(_){}
+      if(!seen && (late||soon||now)) toast(`📋 الخطة المدرسية: ${late} متأخر · ${now} جارٍ الآن · ${soon} يبدأ هذا الأسبوع — افتح «متابعة الخطة المدرسية»`, 7000);
+    }catch(e){ console.warn("plan notify", e); }
+  }
+  async function plPut(body){
+    const r = await fetch("/api/plan",{method:"PUT",credentials:"same-origin",headers:{"content-type":"application/json"},body:JSON.stringify(body)});
+    if(!r.ok) throw new Error((await r.json().catch(()=>({}))).error||("HTTP "+r.status));
+    const j = await r.json(); plan.state.byId[body.id] = j.state;
+  }
+  function plFiltered(){
+    const q = plUI.q.trim();
+    return plItems().filter(x=>(plUI.tab==="all"||x.src===plUI.tab) && (!plUI.dom||x.domain===plUI.dom)
+      && (!plUI.st || (plUI.st==="notdone" ? x.st.k!=="done" : x.st.k===plUI.st))
+      && (!q || [x.title,x.exec,x.domain,x.support,x.obj&&x.obj.goal,x.adminNote].join(" ").includes(q)));
+  }
+  function plRow(x){
+    const acts = x.st.k==="done"
+      ? `<button class="btn ghost sm" data-plundo="${x.id}">↩ إلغاء الإنجاز</button>`
+      : `<button class="btn sm" data-pldone="${x.id}">✔ تم الإنجاز</button> <button class="btn ghost sm" data-plmove="${x.id}">⏸ تأجيل</button>`;
+    return `<tr data-plid="${x.id}"><td class="pl-t"><b>${x.n?x.n+") ":""}${escapeHTML(x.title||"")}</b>${x.src==="pd"&&x.goal?`<div style="font-size:11.5px;color:var(--text-muted);margin-top:3px">${escapeHTML(x.goal.slice(0,160))}${x.goal.length>160?"…":""}</div>`:""}
+        ${x.adminNote?`<div style="font-size:12px;margin-top:4px">📝 ${escapeHTML(x.adminNote)}</div>`:""}${x.src==="council"&&x.note?`<div style="font-size:11.5px;color:var(--text-muted);margin-top:3px">${escapeHTML(x.note.slice(0,140))}</div>`:""}</td>
+      <td style="white-space:nowrap">${x.from===x.to?escapeHTML(x.from||"-"):`${escapeHTML(x.from||"")}<br>← ${escapeHTML(x.to||"")}`}${x.moved?`<div style="font-size:11px;color:var(--warning)">⏸ مؤجل</div>`:""}${x.src==="council"&&x.evalby?`<div style="font-size:11px;color:var(--text-muted)">${escapeHTML(x.evalby)}</div>`:""}</td>
+      <td>${escapeHTML((x.exec||"").slice(0,140))}</td>
+      <td><span class="pl-badge ${x.st.k}">${escapeHTML(x.st.txt)}</span>${x.doneBy?`<div style="font-size:11px;color:var(--text-muted);margin-top:3px">بواسطة ${escapeHTML(x.doneBy)}</div>`:""}</td>
+      <td style="white-space:nowrap">${acts} <button class="btn ghost sm" data-plnote="${x.id}" title="ملاحظة">📝</button>${x.src==="extra"?` <button class="btn ghost sm" data-pldel="${x.id}">🗑️</button>`:""}</td></tr>`;
+  }
+  const plHead = `<thead><tr><th>الإجراء / البرنامج / الفعالية</th><th>الموعد</th><th>المنفذون</th><th>الحالة</th><th></th></tr></thead>`;
+  async function renderPlan(reload){
+    if(reload || !plan){ try{ await plLoad(); }catch(e){ document.getElementById("plList").innerHTML = `<div class="note warn">تعذّر تحميل الخطة: ${escapeHTML(e.message)}</div>`; return; } }
+    const all = plItems();
+    const cnt = k => all.filter(x=>x.st.k===k).length;
+    const recent = all.filter(x=>x.st.k==="done" && x.doneAt && Date.now()-x.doneAt < 14*86400000).length;
+    document.getElementById("plNotif").innerHTML = `
+      <button class="late" data-plst="late"><b>${cnt("late")}</b><span>🔴 متأخر — انتهى موعده ولم يُنجز</span></button>
+      <button class="now" data-plst="now"><b>${cnt("now")}</b><span>🟠 جارٍ الآن — في فترة تنفيذه</span></button>
+      <button class="soon" data-plst="soon"><b>${cnt("soon")}</b><span>🔵 سيبدأ خلال 7 أيام</span></button>
+      <button class="done" data-plst="done"><b>${cnt("done")}</b><span>✅ تم الإنجاز${recent?` (${recent} خلال أسبوعين)`:""}</span></button>`;
+    document.getElementById("plTabs").innerHTML = PL_TABS.filter(([k])=>k==="all"||all.some(x=>x.src===k)).map(([k,t])=>`<button data-pltab="${k}" class="${plUI.tab===k?"on":""}">${t} (${k==="all"?all.length:all.filter(x=>x.src===k).length})</button>`).join("");
+    const doms = [...new Set(all.filter(x=>plUI.tab==="all"||x.src===plUI.tab).map(x=>x.domain))];
+    if(plUI.dom && !doms.includes(plUI.dom)) plUI.dom = "";
+    document.getElementById("plDom").innerHTML = `<option value="">الكل</option>`+doms.map(d=>`<option${d===plUI.dom?" selected":""}>${escapeHTML(d)}</option>`).join("");
+    document.getElementById("plSt").value = plUI.st;
+    const L = plFiltered();
+    const done = L.filter(x=>x.st.k==="done").length, pct = L.length ? Math.round(done*100/L.length) : 0;
+    document.getElementById("plSummary").innerHTML = statTile(L.length,"المعروض","📋")+statTile(done,"منجز","✅")+statTile(L.length-done,"لم يُنجز","⏳")+statTile(pct+"%","نسبة الإنجاز","📈");
+    if(!L.length){ document.getElementById("plList").innerHTML = `<div style="text-align:center;color:var(--text-muted);padding:18px">لا توجد عناصر مطابقة</div>`; return; }
+    // group: goals by domain → objective; others by domain
+    const groups = new Map();
+    L.forEach(x=>{ const g = x.src==="goals" ? x.domain+"|"+(x.obj?x.obj.obj:0) : x.src+"|"+x.domain; if(!groups.has(g)) groups.set(g, []); groups.get(g).push(x); });
+    let html = "", lastDom = "";
+    groups.forEach((rows, g)=>{
+      const x0 = rows[0], d = rows.filter(r=>r.st.k==="done").length;
+      if(x0.domain!==lastDom){ html += `<h3 style="margin:18px 0 4px">${x0.src==="goals"?"🎯 مجال: ":""}${escapeHTML(x0.domain)}</h3>`; lastDom = x0.domain; }
+      if(x0.src==="goals" && x0.obj) html += `<div class="pl-obj"><b>الهدف ${x0.obj.obj}:</b> ${escapeHTML(x0.obj.goal)}<div style="font-size:12px;margin-top:4px;color:var(--text-muted)">منجز ${d} من ${rows.length}${x0.obj.supnote?` · ملاحظات المشرف: ${escapeHTML(x0.obj.supnote.slice(0,220))}`:""}</div></div>`;
+      html += `<div class="tbl-wrap"><table class="datatable pl-tbl">${plHead}<tbody>${rows.sort((a,b)=>(a.from||"").localeCompare(b.from||"")||(a.n||0)-(b.n||0)).map(plRow).join("")}</tbody></table></div>`;
+    });
+    document.getElementById("plList").innerHTML = html;
+  }
+  function plExportRows(){ return plFiltered().map(x=>[x.domain, x.obj?x.obj.goal:(x.goal||""), (x.n?x.n+") ":"")+(x.title||""), x.from, x.to, x.exec||"", x.st.txt, x.doneAt?plIso(x.doneAt):"", x.doneBy||"", x.adminNote||""]); }
+  const PL_HDR = ["المجال/القسم","الهدف","الإجراء/البرنامج","من","إلى","المنفذون","الحالة","تاريخ الإنجاز","أنجزه/سجّله","ملاحظة"];
+  (function wirePlan(){
+    const v = document.getElementById("view-adminplan"); if(!v) return;
+    document.getElementById("plDom").addEventListener("change", e=>{ plUI.dom = e.target.value; renderPlan(false); });
+    document.getElementById("plSt").addEventListener("change", e=>{ plUI.st = e.target.value; renderPlan(false); });
+    document.getElementById("plQ").addEventListener("input", e=>{ plUI.q = e.target.value; renderPlan(false); });
+    document.getElementById("plXls").addEventListener("click", ()=>exportRowsAsXlsx("متابعة-الخطة-المدرسية.xlsx","الخطة", PL_HDR, plExportRows()));
+    document.getElementById("plPdf").addEventListener("click", async e=>{
+      const b = e.currentTarget; b.disabled = true;
+      try{ const rows = plExportRows().map(r=>[r[0], r[2].slice(0,110), r[3]+(r[4]&&r[4]!==r[3]?" ← "+r[4]:""), r[5].slice(0,60), r[6], r[7]]);
+        await rpPdf({icon:"📋", title:"متابعة الخطة المدرسية", nodate:true}, {header:["المجال","الإجراء/البرنامج","الموعد","المنفذون","الحالة","تاريخ الإنجاز"], rows}, {from:"0000",to:"9999",who:""}); }
+      catch(err){ toast("⚠️ تعذّر إنشاء PDF"); } b.disabled = false;
+    });
+    document.getElementById("plAddBtn").addEventListener("click", ()=>{ const bx = document.getElementById("plAddBox"); bx.hidden = !bx.hidden; });
+    document.getElementById("plAddGo").addEventListener("click", async ()=>{
+      const body = {title:document.getElementById("plAddT").value, domain:document.getElementById("plAddD").value, from:document.getElementById("plAddF").value, to:document.getElementById("plAddTo").value, exec:document.getElementById("plAddE").value};
+      if(!body.title.trim() || !body.from){ toast("اكتب المهمة وتاريخ البداية"); return; }
+      const r = await fetch("/api/plan",{method:"POST",credentials:"same-origin",headers:{"content-type":"application/json"},body:JSON.stringify(body)});
+      if(!r.ok){ toast("⚠️ تعذّر الحفظ"); return; }
+      toast("✔ أُضيفت المهمة"); ["plAddT","plAddD","plAddF","plAddTo","plAddE"].forEach(id=>document.getElementById(id).value=""); document.getElementById("plAddBox").hidden = true; renderPlan(true);
+    });
+    v.addEventListener("click", async e=>{
+      const tb = e.target.closest("[data-pltab]"); if(tb){ plUI.tab = tb.dataset.pltab; renderPlan(false); return; }
+      const sb = e.target.closest("[data-plst]"); if(sb){ plUI.st = plUI.st===sb.dataset.plst ? "" : sb.dataset.plst; renderPlan(false); return; }
+      const b = e.target.closest("[data-pldone],[data-plundo],[data-plmove],[data-plnote],[data-pldel]"); if(!b || b.disabled) return;
+      const id = b.dataset.pldone||b.dataset.plundo||b.dataset.plmove||b.dataset.plnote||b.dataset.pldel;
+      const it = plItems().find(x=>x.id===id); if(!it) return;
+      try{
+        b.disabled = true;
+        if(b.dataset.pldone){
+          const d = prompt("تاريخ الإنجاز (YYYY-MM-DD):", todayISO()); if(d===null){ b.disabled=false; return; }
+          await plPut({id, status:"done", doneAt:(d||todayISO()).trim()}); toast("✅ سُجّل الإنجاز");
+        } else if(b.dataset.plundo){ await plPut({id, status:"open"}); toast("↩ أُلغي الإنجاز"); }
+        else if(b.dataset.plmove){
+          const d = prompt("تأجيل إلى تاريخ (YYYY-MM-DD):", it.to||todayISO()); if(!d){ b.disabled=false; return; }
+          await plPut({id, status:"postponed", to:d.trim(), note:it.adminNote||""}); toast("⏸ أُجّل الموعد");
+        } else if(b.dataset.plnote){
+          const n = prompt("ملاحظة المتابعة:", it.adminNote||""); if(n===null){ b.disabled=false; return; }
+          await plPut({id, note:n}); toast("📝 حُفظت الملاحظة");
+        } else if(b.dataset.pldel){
+          if(!confirm("حذف هذه المهمة؟")){ b.disabled=false; return; }
+          await fetch("/api/plan",{method:"DELETE",credentials:"same-origin",headers:{"content-type":"application/json"},body:JSON.stringify({id})}); await plLoad(); toast("🗑️ حُذفت");
+        }
+        const L = plItems(); planBadge = L.filter(x=>x.st.k==="late"||x.st.k==="soon").length;
+        renderPlan(false);
+      }catch(err){ toast("⚠️ "+err.message); b.disabled = false; }
+    });
+  })();
   // ===== مركز التقارير — every report downloadable as Excel or PDF (Arabic-safe PDF via html2canvas) =====
   function rpRange(){ return {from:document.getElementById("rpFrom").value||"0000", to:document.getElementById("rpTo").value||"9999", who:document.getElementById("rpTeacher").value}; }
   const rpIn = (d, r) => (d||"") >= r.from && (d||"") <= r.to;

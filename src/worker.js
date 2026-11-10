@@ -1,3 +1,4 @@
+import PLAN_SEED from "./plan-seed.js";
 // Cloudflare Worker for منصة المعلّم الذكية.
 // - Serves public/ as static assets.
 // - /api/public  : school name + whether an admin exists (no secrets) — for the login screen.
@@ -595,6 +596,50 @@ const POINT_RULES = [
   ["pf", "مبادرة أو إنجاز مقدَّم", 5], ["pfممتاز", "تقييم «ممتاز»", 20], ["pfجيد جدًا", "تقييم «جيد جدًا»", 15], ["pfجيد", "تقييم «جيد»", 10], ["pfمقبول", "تقييم «مقبول»", 5],
   ["arShared", "مشهد واقع معزز شاركه مع المعلمين", 10],
 ];
+/* ---------------- متابعة الخطة المدرسية (admin only) ----------------
+   The plan items come from the school's ministry reports (src/plan-seed.js); what the admin
+   changes (done / postponed / notes / new dates / extra items) lives in an internal doc that
+   /api/doc cannot reach ("plan:state"), so teachers never see it. */
+const PLAN_ST = ["open", "done", "postponed"];
+async function handlePlan(db, request, user) {
+  if (!user) return json({ error: "unauthorized" }, 401);
+  if (user.role !== "admin") return json({ error: "forbidden" }, 403);
+  const state = (await getDoc(db, "plan:state")) || { byId: {}, extra: [] };
+  state.byId = state.byId || {}; state.extra = Array.isArray(state.extra) ? state.extra : [];
+  if (request.method === "GET") return json({ seed: PLAN_SEED, state });
+  const b = await request.json().catch(() => ({}));
+  const now = Date.now(), by = user.name || "المدير";
+  const isDate = (d) => (typeof d === "string" && /^\d{4}-\d{2}-\d{2}$/.test(d) ? d : "");
+  if (request.method === "POST") {
+    const title = clip(b.title, 400).trim(); if (!title) return json({ error: "missing_title" }, 400);
+    const it = { id: "x" + randHex(6), src: "extra", domain: clip(b.domain, 80).trim() || "مهام إضافية", title, from: isDate(b.from), to: isDate(b.to) || isDate(b.from),
+      exec: clip(b.exec, 200).trim(), status: "open", created: now, by };
+    state.extra.push(it); await putDoc(db, "plan:state", state); return json({ ok: true, item: it });
+  }
+  const id = String(b.id || "");
+  const known = PLAN_SEED.items.some((x) => x.id === id) || state.extra.some((x) => x.id === id);
+  if (!known) return json({ error: "not_found" }, 404);
+  if (request.method === "DELETE") {
+    if (!id.startsWith("x")) return json({ error: "forbidden" }, 403);
+    state.extra = state.extra.filter((x) => x.id !== id); delete state.byId[id];
+    await putDoc(db, "plan:state", state); return json({ ok: true });
+  }
+  if (request.method !== "PUT") return json({ error: "method_not_allowed" }, 405);
+  const cur = state.byId[id] || {}; const next = { ...cur, log: Array.isArray(cur.log) ? cur.log.slice(-30) : [] };
+  const entry = { at: now, by };
+  if (PLAN_ST.includes(b.status) && b.status !== cur.status) {
+    next.status = b.status; entry.status = b.status;
+    if (b.status === "done") { next.doneAt = isDate(b.doneAt) ? Date.parse(b.doneAt + "T12:00:00+04:00") : now; next.doneBy = by; }
+    else { delete next.doneAt; delete next.doneBy; }
+  }
+  if ("to" in b) { const t = isDate(b.to); if (t) { next.to = t; entry.to = t; } }
+  if ("from" in b) { const f = isDate(b.from); if (f) next.from = f; }
+  if ("note" in b) { next.note = clip(b.note, 600).trim(); entry.note = next.note; }
+  next.log.push(entry); next.updated = now;
+  state.byId[id] = next; await putDoc(db, "plan:state", state);
+  return json({ ok: true, state: next });
+}
+
 async function handlePoints(db, request, user) {
   if (!user) return json({ error: "unauthorized" }, 401);
   const isAdmin = user.role === "admin";
@@ -858,6 +903,7 @@ export default {
             return json({ list: out });
           }
           case "/api/points": return handlePoints(db, request, await currentUser(db, request));
+          case "/api/plan": return handlePlan(db, request, await currentUser(db, request));
           case "/api/records": return handleRecords(db, request, await currentUser(db, request), url);
           case "/api/portfolio": return handlePortfolio(db, request, await currentUser(db, request), url);
           case "/api/image": return handleImage(db, env, request, await currentUser(db, request));
