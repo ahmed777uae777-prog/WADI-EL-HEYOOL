@@ -4689,6 +4689,8 @@ ${fields.map(f=>GAME_SPEC[f]).join(",\n")}
     if(teacherHasStructuredSchedule(t.id)) return teacherScheduleEntries(t.id).length;
     return Object.values(t.weeklySchedule||{}).reduce((n,day)=>n+Object.values(day).filter(v=>v!=="-").length,0);
   }
+  // Staff never given substitute periods (admin's decision): the database specialist.
+  const NO_SUB_STAFF = t => /قواعد البيانات/.test((t.subject||"")+" "+(t.title||"")) || (/سلطان/.test(t.name||"") && /الصولي/.test(t.name||""));
   function findCandidates(absentName, day, dateStr, per, excludeSubId, subjectHint){
     const assignedSamePeriod = new Set(
       subs.filter(s=>s.id!==excludeSubId && s.date===dateStr && s.period===per && s.status!=="معتذر" && s.subTeacher).map(s=>s.subTeacher)
@@ -4707,6 +4709,7 @@ ${fields.map(f=>GAME_SPEC[f]).join(",\n")}
       if(t.active===false){ excluded.push({teacher:t, reason:"الحساب معطّل"}); return; }
       if(t.isAdmin){ excluded.push({teacher:t, reason:"من إدارة المدرسة"}); return; }
       if(t.name===absentName){ excluded.push({teacher:t, reason:"هو المعلم الغائب نفسه"}); return; }
+      if(NO_SUB_STAFF(t)){ excluded.push({teacher:t, reason:"أخصائي قواعد البيانات — لا يُكلَّف بالاحتياط"}); return; }
       const absentToday = absences.some(a=>a.teacherName===t.name && a.date===dateStr && a.status==="معتمد" && (a.periods||[]).includes(per));
       if(absentToday){ excluded.push({teacher:t, reason:"غائب هو نفسه في هذه الحصة"}); return; }
       if(assignedSamePeriod.has(t.name)){ excluded.push({teacher:t, reason:"لديه حصة احتياط أخرى في نفس الوقت"}); return; }
