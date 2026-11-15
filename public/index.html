@@ -648,6 +648,20 @@
   .tk-svc button{display:flex; flex-direction:column; align-items:center; gap:4px; padding:12px 8px; border:1.5px solid var(--border); border-radius:14px; background:var(--surface); cursor:pointer; font:inherit; font-size:13px; font-weight:800; color:var(--text); text-align:center; transition:.15s;}
   .tk-svc button span{font-size:22px;} .tk-svc button small{font-weight:500; font-size:11px; color:var(--text-muted);}
   .tk-svc button:hover{border-color:var(--primary);} .tk-svc button.on{border-color:var(--primary); background:var(--primary-tint); box-shadow:0 0 0 2px var(--primary-tint);}
+  .sg-box{margin-top:10px; border:1px solid var(--border); border-radius:14px; background:var(--surface); padding:10px;}
+  .sg-top{display:flex; justify-content:space-between; align-items:center; gap:8px; flex-wrap:wrap; margin-bottom:6px; font-size:13.5px;}
+  .sg-legend{display:flex; flex-wrap:wrap; gap:6px; font-size:11.5px; margin-bottom:8px; align-items:center;}
+  .sg-legend span[class]{padding:2px 8px; border-radius:6px; border:1px solid #d9d9d9;}
+  .sg-wrap{max-height:460px; overflow:auto; border-radius:10px; border:1px solid var(--border);}
+  .sg-tbl{border-collapse:collapse; width:100%; font-size:11.5px;}
+  .sg-tbl th{position:sticky; top:0; background:var(--surface-3,#eef1f1); z-index:2; padding:5px 3px; border:1px solid #d9d9d9; min-width:46px;}
+  .sg-tbl td{border:1px solid #e1e1e1; padding:4px 2px; text-align:center; height:30px;}
+  .sg-tbl .sg-name{text-align:start; padding:4px 8px; min-width:150px; position:sticky; right:0; background:var(--surface); z-index:1; font-weight:700; white-space:nowrap;}
+  .sg-tbl th.sg-name{z-index:3;} .sg-subj{font-weight:400; font-size:10.5px; color:var(--text-muted);} .sg-time{font-weight:400; font-size:9.5px; color:var(--text-muted);}
+  .sg-cls{background:#f8c9cf; color:#7a1020;} .sg-sub{background:#dccdfa; color:#3b1f7a;} .sg-meet{background:#ffd8a8; color:#7a4100;} .sg-abs{background:#c9ccd1; color:#333;} .sg-free{background:#fff;}
+  .sg-tbl td.sg-hl, .sg-tbl th.sg-hl{outline:2px solid #e6b800; outline-offset:-2px;} .sg-tbl th.sg-hl{background:#ffe066;} .sg-tbl td.sg-free.sg-hl{background:#fff4b3;}
+  .sg-tbl tr.sg-ok{cursor:pointer;} .sg-tbl tr.sg-ok:hover td{filter:brightness(.94);} .sg-tbl tr.sg-ok:hover td.sg-name{background:var(--primary-tint);}
+  .sg-tbl tr.sg-no td.sg-name{color:var(--text-muted); font-weight:500;} .sg-num{font-weight:800; min-width:40px;}
   .pl-notif{display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:8px; margin-bottom:12px;}
   .pl-notif button{border:1px solid var(--border); border-radius:14px; padding:12px; background:var(--surface); text-align:start; cursor:pointer; font:inherit; color:var(--text);}
   .pl-notif button b{display:block; font-size:22px;} .pl-notif button span{font-size:12.5px;}
@@ -6610,7 +6624,45 @@ ${fields.map(f=>GAME_SPEC[f]).join(",\n")}
     });
   })();
   // ===== تكليف الاحتياط — the admin picks every substitute himself (no auto / AI distribution) =====
-  const saUI = {date:"", all:true, edit:null, who:""};
+  const saUI = {date:"", all:true, edit:null, who:"", grid:null, onlyFree:false, q:""};
+  // Teachers' timetable for the slot's day (like aSc «الاحتياط»): every teacher × every period,
+  // coloured by what they are doing, with the slot's period highlighted — so the admin sees who
+  // is free before choosing. Clicking a free teacher's row assigns them.
+  function saCell(t, iso, day, n){
+    const lbl = SCHED_PERIODS[n-1];
+    const ab = absences.find(a=>a.teacherName===t.name && a.date===iso && a.status==="معتمد" && (!(a.periods||[]).length || a.periods.includes(lbl)));
+    if(ab) return {k:"abs", txt:"غائب"};
+    const sb = subs.find(x=>x.subTeacher===t.name && x.date===iso && saPerNum(x.period)===n && x.status!=="معتذر");
+    if(sb) return {k:"sub", txt:"احتياط", tip:`احتياط عن ${sb.absent} — ${sb.subject||""} ${sb.grade||""}`};
+    const e = scheduleEntryFor(t.id, day, n);
+    if(e){ const g = e.gradeId ? gradeNameOf(e.gradeId) : ""; return {k:"cls", txt:(subjectName(e.subjectId)||"").split(/\s+/)[0], tip:`${subjectName(e.subjectId)} — ${g}${e.sectionId?" / "+sectionShort(e.sectionId):""}`}; }
+    if(meetingFor(t.id, day, n)) return {k:"meet", txt:"اجتماع", tip:"اجتماع القسم"};
+    return {k:"free", txt:""};
+  }
+  function saGridHTML(s){
+    const n = saPerNum(s.period), iso = s.date, day = s.day || dateToArDay(iso);
+    const {available} = findCandidates(s.absent, day, iso, s.period, s.id, s.subject);
+    const avail = new Map(available.map(t=>[t.name, t]));
+    const q = (saUI.q||"").trim();
+    let list = teachers.filter(t=>!t.isAdmin && t.active!==false && t.name!==s.absent && (!q || t.name.includes(q) || (t.subject||"").includes(q)));
+    const load = t => SCHED_PERIODS.reduce((k,_,i)=>k+(["cls","sub"].includes(saCell(t,iso,day,i+1).k)?1:0),0);
+    const rows = list.map(t=>({t, ok:avail.has(t.name), same:t.subject===s.subject, load:load(t)}))
+      .filter(r=>!saUI.onlyFree || r.ok)
+      .sort((a,b)=>(b.ok-a.ok) || (b.same-a.same) || (a.load-b.load) || ((a.t.substituteCount||0)-(b.t.substituteCount||0)) || a.t.name.localeCompare(b.t.name,"ar"));
+    const head = SCHED_PERIODS.map((_,i)=>`<th class="${i+1===n?"sg-hl":""}">${i+1}<div class="sg-time">${(PERIOD_TIMES_DISPLAY[i+1]||"").split(/\s*[-–]\s*/)[0]}</div></th>`).join("");
+    const body = rows.map(r=>`<tr class="${r.ok?"sg-ok":"sg-no"}" ${r.ok?`data-sagrid="${escapeHTML(r.t.name)}" title="اضغط لتكليف ${escapeHTML(r.t.name)}"`:""}>
+        <td class="sg-name">${r.ok?"🟢":"⛔"} ${r.same?"⭐ ":""}${escapeHTML(r.t.name)}<div class="sg-subj">${escapeHTML(r.t.subject||"")}</div></td>
+        ${SCHED_PERIODS.map((_,i)=>{ const c = saCell(r.t, iso, day, i+1); return `<td class="sg-${c.k}${i+1===n?" sg-hl":""}" title="${escapeHTML(c.tip||c.txt||"فراغ")}">${escapeHTML(c.txt)}</td>`; }).join("")}
+        <td class="sg-num">${r.load}</td><td class="sg-num">${r.t.substituteCount||0}</td></tr>`).join("");
+    return `<div class="sg-box">
+      <div class="sg-top"><b>📅 جدول المعلمين يوم ${escapeHTML(day||"")} ${escapeHTML(iso)} — الحصة ${n} مظلّلة</b>
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><input type="text" id="saGridQ" value="${escapeHTML(saUI.q||"")}" placeholder="بحث باسم أو مادة" style="max-width:180px;padding:5px 8px">
+        <label style="display:flex;gap:5px;align-items:center;font-size:12.5px"><input type="checkbox" id="saOnlyFree" ${saUI.onlyFree?"checked":""} style="width:auto;margin:0"> المتاحون فقط</label>
+        <button class="btn ghost sm" data-sagridclose="1">✖ إغلاق</button></div></div>
+      <div class="sg-legend"><span class="sg-cls">حصة</span><span class="sg-sub">احتياط</span><span class="sg-meet">اجتماع</span><span class="sg-abs">غائب</span><span class="sg-free">فراغ</span><span>🟢 متاح للتكليف · ⭐ نفس المادة · اضغط على صف المعلم المتاح لتكليفه</span></div>
+      <div class="sg-wrap"><table class="sg-tbl"><thead><tr><th class="sg-name">المعلم (${available.length} متاح)</th>${head}<th title="حصص اليوم (حصص + احتياط)">اليوم</th><th title="إجمالي حصص الاحتياط">احتياط</th></tr></thead><tbody>${body||`<tr><td colspan="${SCHED_PERIODS.length+3}" style="padding:14px;text-align:center">لا نتائج</td></tr>`}</tbody></table></div>
+    </div>`;
+  }
   function saPerNum(p){ return typeof p==="number" ? p : (periodNumFromLabel(p)||0); }
   function saRows(){
     const today = todayISO();
@@ -6642,13 +6694,19 @@ ${fields.map(f=>GAME_SPEC[f]).join(",\n")}
       <div class="stat-tile"><div class="stat-ic">${iconSVG("adminsubassign")}</div><div class="num">${pending.length}</div><div class="lbl">تحتاج تكليف</div></div>
       <div class="stat-tile"><div class="stat-ic">${iconSVG("adminsubs")}</div><div class="num">${waiting}</div><div class="lbl">بانتظار تأكيد المعلم</div></div>
       <div class="stat-tile"><div class="stat-ic">${iconSVG("adminabsencehub")}</div><div class="num">${assigned.length-waiting}</div><div class="lbl">مؤكدة</div></div>`;
+    if(saUI.grid===null && pending.length) saUI.grid = pending[0].id;
+    if(saUI.grid && !pending.some(s=>s.id===saUI.grid)) saUI.grid = pending.length ? pending[0].id : "";
     document.getElementById("saPending").innerHTML = pending.length ? pending.map(s=>{
       const opts = saCandOptions(s);
-      return `<div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border)">
+      const open = saUI.grid===s.id;
+      return `<div style="padding:10px 0;border-bottom:1px solid var(--border)${open?";background:var(--primary-tint);border-radius:12px;padding:10px":""}"><div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between">
         <div style="min-width:220px"><div style="font-weight:800">${saWhen(s)}</div>
           <div style="font-size:12.5px">الغائب: <b>${escapeHTML(s.absent)}</b> · ${saClass(s)}</div></div>
-        ${opts ? `<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center"><select id="sapick-${s.id}" style="min-width:260px">${opts}</select><button class="btn sm" data-sago="${s.id}">تكليف</button></div>`
-               : `<div class="note warn" style="margin:0">لا يوجد معلم متاح في هذه الحصة</div>`}
+        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+          <button class="btn ${open?"":"ghost "}sm" data-sagridopen="${s.id}">📅 ${open?"إخفاء الجدول":"عرض جدول المعلمين"}</button>
+          ${opts ? `<select id="sapick-${s.id}" style="min-width:240px">${opts}</select><button class="btn sm" data-sago="${s.id}">تكليف</button>`
+               : `<div class="note warn" style="margin:0">لا يوجد معلم متاح في هذه الحصة</div>`}</div></div>
+        ${open ? saGridHTML(s) : ""}
       </div>`;
     }).join("") : `<div style="color:var(--text-muted);padding:12px;text-align:center">لا توجد حصص تحتاج تكليفًا ${saUI.all?"في الأيام القادمة":"في هذا التاريخ"} 👍</div>`;
     const pill = s => s.status==="بانتظار التأكيد" ? `<span class="pill wait">بانتظار التأكيد</span>` : s.status==="معتذر" ? `<span class="pill bad">معتذر</span>` : `<span class="pill ok">${escapeHTML(s.status||"مؤكد")}</span>`;
@@ -6664,6 +6722,8 @@ ${fields.map(f=>GAME_SPEC[f]).join(",\n")}
     const v = document.getElementById("view-adminsubassign"); if(!v) return;
     document.getElementById("saDate").addEventListener("change", e=>{ saUI.date = e.target.value; saUI.all = false; renderSubAssign(); });
     document.getElementById("saAll").addEventListener("change", e=>{ saUI.all = e.target.checked; renderSubAssign(); });
+    v.addEventListener("change", e=>{ if(e.target.id==="saOnlyFree"){ saUI.onlyFree = e.target.checked; renderSubAssign(); } });
+    v.addEventListener("input", e=>{ if(e.target.id==="saGridQ"){ saUI.q = e.target.value; const pos = e.target.selectionStart; renderSubAssign(); const q = document.getElementById("saGridQ"); if(q){ q.focus(); try{ q.setSelectionRange(pos,pos); }catch(_){} } } });
     document.getElementById("saWho").addEventListener("change", e=>{ saUI.who = e.target.value; renderSubAssign(); });
     document.getElementById("saExport").addEventListener("click", ()=>{
       exportRowsAsXlsx("تكليف-الاحتياط.xlsx","الاحتياط",["التاريخ","اليوم","الحصة","الغائب","المادة","الصف","الشعبة","البديل","الحالة"],
@@ -6679,6 +6739,16 @@ ${fields.map(f=>GAME_SPEC[f]).join(",\n")}
           go.disabled = true;
           await commitAssignment(s, sel.value, "manual", "تكليف من المدير");
           renderSubAssign(); return;
+        }
+        const go2 = e.target.closest("[data-sagridopen]"); if(go2){ saUI.grid = saUI.grid===go2.dataset.sagridopen ? "" : go2.dataset.sagridopen; renderSubAssign(); return; }
+        if(e.target.closest("[data-sagridclose]")){ saUI.grid = ""; renderSubAssign(); return; }
+        const gr = e.target.closest("[data-sagrid]");
+        if(gr){
+          const s = subs.find(x=>x.id===saUI.grid); if(!s) return;
+          const name = gr.dataset.sagrid;
+          if(!confirm(`تكليف ${name} بحصة الاحتياط (ح${saPerNum(s.period)} — ${s.subject||""} ${s.grade||""}) بدل ${s.absent}؟`)) return;
+          await commitAssignment(s, name, "manual", "تكليف من المدير (من جدول المعلمين)");
+          saUI.grid = null; renderSubAssign(); return;
         }
         const ch = e.target.closest("[data-sachange]"); if(ch){ saUI.edit = ch.dataset.sachange; renderSubAssign(); return; }
         if(e.target.closest("[data-saclose]")){ saUI.edit = null; renderSubAssign(); return; }
