@@ -2369,6 +2369,7 @@
     if(currentUser && !lrcLoaded && !window.__lrcLoading){ window.__lrcLoading = true; refreshLrcQuiet().finally(()=>{ window.__lrcLoading = false; }); }
     let items = [];
     if(currentUser && currentUser.role==="admin") items = ADMIN_TILES;
+    else if(currentUser && currentUser.role==="teacher" && isTechStaff()) items = [{id:"techsupport", icon:"🛠️", title:"طلبات الدعم الفني", desc:"طلبات المعلمين والإدارة: استشارة، إنترنت، بروجكتر، برامج، طابعة، عمانتل، فني الشركة", accent:true}];
     else if(currentUser && currentUser.role==="teacher") items = isDataSpecialist() ? [{id:"absinbox", icon:"📥", title:"الغياب الوارد", desc:"غياب الطلاب المرسل من المعلمين", accent:true}] : TEACHER_SCHOOL_TILES.concat(TEACHER_TOOL_TILES);
     document.getElementById("dashboardGrid").innerHTML = items.map(tileHTML).join("");
     const note = document.getElementById("schoolNameNote");
@@ -2423,6 +2424,15 @@
     if(!db || !currentUser) return;
     refreshLrcQuiet();
     try{
+      if(currentUser.role==="teacher" && isTechStaff()){
+        const before = new Set((tk.list||[]).map(x=>x.id));
+        const had = (tk.list||[]).length>0 || window.__tkPolled;
+        tk = await recApi("tech"); window.__tkPolled = true;
+        const fresh = (tk.list||[]).filter(x=>!before.has(x.id));
+        if(had && fresh.length) toast(`🛠️ ${fresh.length===1?"طلب دعم فني جديد: "+fresh[0].cat+" — "+fresh[0].teacherName:fresh.length+" طلبات دعم فني جديدة"}`);
+        if(document.getElementById("view-techsupport")?.classList.contains("active")) renderTech(false);
+        return;
+      }
       if(currentUser.role==="teacher" && isDataSpecialist()){
         const before = new Set(studentAbsences.map(a=>a.id));
         await refreshStudentAbsencesFromRemote();
@@ -2495,6 +2505,7 @@
     }
     // The database specialist account only ever sees the incoming-absences screen.
     if(currentUser && currentUser.role==="teacher" && isDataSpecialist() && id!=="absinbox" && id!=="identify") id = "absinbox";
+    if(currentUser && currentUser.role==="teacher" && isTechStaff() && id!=="techsupport" && id!=="identify") id = "techsupport";
     document.querySelectorAll("section.view").forEach(s=>s.classList.remove("active"));
     const target = document.getElementById("view-"+id);
     if(target) target.classList.add("active");
@@ -4252,6 +4263,7 @@ ${fields.map(f=>GAME_SPEC[f]).join(",\n")}
     if(!currentUser) return "identify";
     if(currentUser.role==="admin" && isAdminPath()) return "adminaccounts";
     if(currentUser.role==="teacher" && isDataSpecialist()) return "absinbox";
+    if(currentUser.role==="teacher" && isTechStaff()) return "techsupport";
     return "dashboard";
   }
   function entryRoleFromUrl(){
@@ -6063,6 +6075,7 @@ ${fields.map(f=>GAME_SPEC[f]).join(",\n")}
   }
   async function renderTech(reload){
     if(reload){ try{ tk = await recApi("tech"); }catch(e){ toast("⚠️ تعذّر تحميل الطلبات"); } }
+    if(tk.isMgr && currentUser && currentUser.role==="teacher" && !techMgrFlag && !(scheduleEntries||[]).some(e=>e.teacherId===currentUser.teacherId)){ techMgrFlag = true; try{ renderDashboardTiles(); }catch(_){} }
     const me = currentUser || {}, isAdmin = me.role==="admin";
     const cs = document.getElementById("tkCat");
     if(!cs.options.length && tk.cats.length){ cs.innerHTML = opts(tk.cats); document.getElementById("tkSub").innerHTML = opts(tk.subs||[]);
@@ -8591,6 +8604,16 @@ ${fields.map(f=>GAME_SPEC[f]).join(",\n")}
   });
 
   /* ---------------- الغياب الوارد (أخصائي قواعد البيانات) ---------------- */
+  // The technical-support staff account (أ. مريم الكعبي, or any support manager with no classes)
+  // works only on «الدعم الفني للأجهزة» — no teacher tools, tiles or class data.
+  let techMgrFlag = false;
+  function isTechStaff(){
+    if(!currentUser || currentUser.role!=="teacher") return false;
+    const t = meTeacher() || {};
+    const teachesClasses = (scheduleEntries||[]).some(e=>e.teacherId===currentUser.teacherId);
+    if(teachesClasses) return false;
+    return techMgrFlag || /الدعم الفني/.test((t.subject||"")+" "+(t.title||"")) || (/مريم/.test(currentUser.name||"") && /الكعب/.test(currentUser.name||""));
+  }
   function isDataSpecialist(){
     const t = meTeacher();
     return !!((t && (t.absenceViewer || /قواعد البيانات/.test(t.title||""))) || (currentUser && currentUser.role==="teacher" && /قواعد البيانات/.test(currentUser.title||"")));
